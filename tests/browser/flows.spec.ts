@@ -44,7 +44,11 @@ const png = Buffer.from(
 );
 async function register(page: Page) {
   await page.goto("/register");
-  await page.getByLabel("ชื่อ–นามสกุล").fill("ลูกค้าทดสอบ");
+  await page.getByLabel("ชื่อหน้า").fill("ลูกค้า");
+  await page.getByLabel("นามสกุล").fill("ทดสอบ");
+  await page
+    .getByRole("textbox", { name: "เบอร์โทร", exact: true })
+    .fill("0812345678");
   await page
     .getByLabel("อีเมล")
     .fill("browser-" + crypto.randomUUID() + "@example.test");
@@ -63,6 +67,75 @@ async function adminLogin(page: Page) {
     page.getByRole("heading", { name: "ภาพรวมร้านค้า" }),
   ).toBeVisible();
 }
+test("registration validates phone, persists split profile and exposes contacts only in member admin", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/register");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: "output/playwright/register-mobile.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "สร้างบัญชี", exact: true }).click();
+  await expect(page.getByLabel("ชื่อหน้า")).toBeFocused();
+  await page.getByLabel("ชื่อหน้า").fill("อรุณ");
+  await page.getByLabel("นามสกุล").fill("แสงใส");
+  await page
+    .getByRole("textbox", { name: "เบอร์โทร", exact: true })
+    .fill("not-a-phone");
+  await page
+    .getByLabel("อีเมล")
+    .fill("profile-" + crypto.randomUUID() + "@example.test");
+  await page.getByLabel("รหัสผ่าน").fill(PASSWORD);
+  await page.getByLabel("รู้จักเราจากที่ไหน").fill("TikTok");
+  await page.getByLabel("Line ID Add").fill("@profile.member");
+  await page.getByRole("button", { name: "สร้างบัญชี", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "เบอร์โทร", exact: true }),
+  ).toHaveAttribute("aria-invalid", "true");
+  await expect(
+    page.getByRole("textbox", { name: "เบอร์โทร", exact: true }),
+  ).toBeFocused();
+  await expect(page.getByLabel("ชื่อหน้า")).toHaveValue("อรุณ");
+  await page
+    .getByRole("textbox", { name: "เบอร์โทร", exact: true })
+    .fill("081-234-5678");
+  await page.getByRole("button", { name: "สร้างบัญชี", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "ของที่ชอบ ให้เราหิ้วมาให้" }),
+  ).toBeVisible();
+  const me = (await (await page.request.get("/api/me")).json()).user;
+  expect(me).toMatchObject({
+    firstName: "อรุณ",
+    lastName: "แสงใส",
+    name: "อรุณ แสงใส",
+    phone: "0812345678",
+    discoverySource: "TikTok",
+    lineId: "@profile.member",
+  });
+  expect((await page.request.get("/api/admin/members")).status()).toBe(403);
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:4319",
+  });
+  try {
+    const adminPage = await context.newPage();
+    await adminLogin(adminPage);
+    await adminPage.goto("/admin/members");
+    await adminPage.getByRole("searchbox").fill("profile.member");
+    const row = adminPage.getByRole("row").filter({ hasText: "อรุณ แสงใส" });
+    await expect(row).toContainText("0812345678");
+    await expect(row).toContainText("LINE: @profile.member");
+    await expect(row).toContainText("TikTok");
+  } finally {
+    await context.close();
+  }
+});
 async function addAndCheckout(page: Page, payment = "deposit") {
   await page.goto("/");
   await page

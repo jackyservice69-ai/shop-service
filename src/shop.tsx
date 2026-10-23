@@ -383,19 +383,43 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           }}
         >
           {register && (
-            <Field
-              label="ชื่อ–นามสกุล"
-              name="name"
-              required
-              autoComplete="name"
-            />
+            <>
+              <div className="form-grid">
+                <Field
+                  label="ชื่อหน้า"
+                  name="firstName"
+                  required
+                  maxLength={80}
+                  autoComplete="given-name"
+                />
+                <Field
+                  label="นามสกุล"
+                  name="lastName"
+                  required
+                  maxLength={80}
+                  autoComplete="family-name"
+                />
+              </div>
+              <Field
+                label="เบอร์โทร"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                required
+                maxLength={30}
+                autoComplete="tel"
+                placeholder="0812345678"
+                help="เบอร์ไทย หรือเบอร์พร้อมรหัสประเทศ เช่น +66812345678"
+              />
+            </>
           )}
           <Field
             label="อีเมล"
             name="email"
             type="email"
             required
-            autoComplete="email"
+            autoComplete="username"
+            spellCheck={false}
             placeholder="you@example.com"
           />
           <Field
@@ -407,11 +431,31 @@ export function AuthPage({ register = false }: { register?: boolean }) {
             help={register ? "อย่างน้อย 12 ตัวอักษร" : ""}
           />
           {register && (
-            <Field
-              label="รหัสแนะนำเพื่อน (ถ้ามี)"
-              name="referralCode"
-              defaultValue={params.get("ref") || ""}
-            />
+            <>
+              <Field
+                label="รู้จักเราจากที่ไหน"
+                name="discoverySource"
+                maxLength={120}
+                autoComplete="off"
+                placeholder="เช่น Facebook, TikTok หรือเพื่อนแนะนำ"
+                help="ไม่บังคับ"
+              />
+              <Field
+                label="Line ID Add"
+                name="lineId"
+                maxLength={100}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="@yourlineid"
+                help="ไม่บังคับ · LINE ID ที่ใช้ติดต่อได้"
+              />
+              <Field
+                label="รหัสแนะนำเพื่อน (ถ้ามี)"
+                name="referralCode"
+                defaultValue={params.get("ref") || ""}
+              />
+            </>
           )}
         </Form>
         <p className="auth-switch">

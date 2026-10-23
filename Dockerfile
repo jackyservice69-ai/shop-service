@@ -4,6 +4,8 @@ COPY package*.json ./
 RUN npm ci
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
+COPY shared ./shared
+COPY scripts ./scripts
 COPY public ./public
 RUN npm run build && npm prune --omit=dev
 
@@ -15,6 +17,7 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node package*.json ./
 COPY --chown=node:node server ./server
+COPY --chown=node:node shared ./shared
 COPY --chown=node:node scripts ./scripts
 RUN mkdir data && chown node:node /app data
 USER node

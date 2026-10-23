@@ -8,6 +8,11 @@ import {
 export type User = {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  discoverySource: string;
+  lineId: string;
   email: string;
   roleId: string;
   roleName: string;

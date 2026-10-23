@@ -13,7 +13,10 @@ test("store, auth and dashboard pass automated accessibility checks", async ({
       scan.violations.map((v) => ({
         id: v.id,
         impact: v.impact,
-        nodes: v.nodes.map((n) => n.target),
+        nodes: v.nodes.map((n) => ({
+          target: n.target,
+          reason: n.failureSummary,
+        })),
       })),
       path,
     ).toEqual([]);
@@ -25,6 +28,10 @@ test("store, auth and dashboard pass automated accessibility checks", async ({
   await expect(
     page.getByRole("heading", { name: "ภาพรวมร้านค้า" }),
   ).toBeVisible();
+  await expect(page.locator(".mini-parcel")).toHaveCSS(
+    "background-color",
+    "rgb(246, 194, 194)",
+  );
   const scan = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
@@ -35,4 +42,8 @@ test("store, auth and dashboard pass automated accessibility checks", async ({
       nodes: v.nodes.map((n) => n.target),
     })),
   ).toEqual([]);
+  await page.screenshot({
+    path: "output/playwright/pink-admin-test.png",
+    fullPage: true,
+  });
 });

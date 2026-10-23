@@ -19,16 +19,16 @@ import { startBotWorker, answerBot, secret } from "../server/integrations.mjs";
 test("registration creates customer only, validates referral and password, sessions are HttpOnly", async () => {
   const f = fixture();
   const a = request.agent(f.app);
-  let r = await a
-    .post("/api/auth/register")
-    .send({
-      name: "ลูกค้าใหม่",
-      email: "new@example.test",
-      password: PASSWORD,
-      referralCode: f.customer.referral_code,
-      role_id: "admin",
-      balance: 99999,
-    });
+  let r = await a.post("/api/auth/register").send({
+    firstName: "ลูกค้า",
+    lastName: "ใหม่",
+    phone: "0812345678",
+    email: "new@example.test",
+    password: PASSWORD,
+    referralCode: f.customer.referral_code,
+    role_id: "admin",
+    balance: 99999,
+  });
   assert.equal(r.status, 200);
   assert.equal(r.body.user.roleId, "customer");
   assert.equal(r.body.user.balance, 0);
@@ -39,13 +39,21 @@ test("registration creates customer only, validates referral and password, sessi
       .referred_by,
     f.customer.id,
   );
-  r = await request(f.app)
-    .post("/api/auth/register")
-    .send({ name: "คนอื่น", email: "bad@example.test", password: "short" });
+  r = await request(f.app).post("/api/auth/register").send({
+    firstName: "คน",
+    lastName: "อื่น",
+    phone: "0812345678",
+    email: "bad@example.test",
+    password: "short",
+  });
   assert.equal(r.status, 400);
-  r = await request(f.app)
-    .post("/api/auth/register")
-    .send({ name: "คนอื่น", email: "new@example.test", password: PASSWORD });
+  r = await request(f.app).post("/api/auth/register").send({
+    firstName: "คน",
+    lastName: "อื่น",
+    phone: "0812345678",
+    email: "new@example.test",
+    password: PASSWORD,
+  });
   assert.equal(r.status, 409);
   f.db.close();
 });

@@ -68,6 +68,11 @@ const safeUser = (u) =>
     ? {
         id: u.id,
         name: u.name,
+        firstName: u.first_name,
+        lastName: u.last_name,
+        phone: u.phone,
+        discoverySource: u.discovery_source,
+        lineId: u.line_id,
         email: u.email,
         roleId: u.role_id,
         roleName: u.role_name,
@@ -214,7 +219,8 @@ export function createApp(db, config) {
     "/api",
     rateLimit({
       windowMs: 60000,
-      limit: 300,
+      // Functional browser suites share one loopback IP; production always keeps 300/min.
+      limit: config.production ? 300 : (config.apiRateLimit ?? 300),
       standardHeaders: "draft-8",
       legacyHeaders: false,
       message: { error: "คำขอมากเกินไป กรุณารอสักครู่" },
@@ -320,7 +326,40 @@ export function createApp(db, config) {
     asyncRoute((req, res) => {
       const input = parse(
         z.object({
-          name: z.string().trim().min(2).max(100),
+          firstName: z
+            .string()
+            .trim()
+            .min(1, "กรุณากรอกชื่อหน้า")
+            .max(80, "ชื่อหน้ายาวเกิน 80 ตัวอักษร"),
+          lastName: z
+            .string()
+            .trim()
+            .min(1, "กรุณากรอกนามสกุล")
+            .max(80, "นามสกุลยาวเกิน 80 ตัวอักษร"),
+          phone: z
+            .string()
+            .trim()
+            .min(1, "กรุณากรอกเบอร์โทร")
+            .max(30, "เบอร์โทรยาวเกินไป")
+            .transform((value) => value.replace(/[\s()-]/g, ""))
+            .refine(
+              (value) => /^(?:0\d{8,9}|\+[1-9]\d{7,14})$/.test(value),
+              "ใช้เบอร์ไทย 9–10 หลัก หรือรหัสประเทศ เช่น +66812345678",
+            ),
+          discoverySource: z
+            .string()
+            .trim()
+            .max(120, "ระบุช่องทางไม่เกิน 120 ตัวอักษร")
+            .default(""),
+          lineId: z
+            .string()
+            .trim()
+            .max(100, "LINE ID ยาวเกิน 100 ตัวอักษร")
+            .regex(
+              /^[A-Za-z0-9_.@-]*$/,
+              "LINE ID ใช้ตัวอักษรอังกฤษ ตัวเลข จุด ขีดล่าง ขีดกลาง หรือ @",
+            )
+            .default(""),
           email: z
             .email()
             .max(200)
@@ -341,16 +380,21 @@ export function createApp(db, config) {
       const uid = id();
       transaction(db, () => {
         db.prepare(
-          "INSERT INTO users(id,name,email,password,role_id,referral_code,referred_by,created_at) VALUES(?,?,?,?,?,?,?,?)",
+          "INSERT INTO users(id,name,email,password,role_id,referral_code,referred_by,created_at,first_name,last_name,phone,discovery_source,line_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
         ).run(
           uid,
-          input.name,
+          input.firstName + " " + input.lastName,
           input.email,
           passwordHash(input.password),
           "customer",
           id().slice(0, 10),
           ref?.id || null,
           now(),
+          input.firstName,
+          input.lastName,
+          input.phone,
+          input.discoverySource,
+          input.lineId,
         );
         audit(db, uid, "member.registered", uid, { referred: !!ref });
       });
@@ -998,8 +1042,8 @@ export function createApp(db, config) {
       res.json(
         pageRows(
           db,
-          "SELECT u.id,u.name,u.email,u.role_id,u.balance,u.active,u.created_at,r.name role_name FROM users u JOIN roles r ON r.id=u.role_id WHERE u.name LIKE ? OR u.email LIKE ? ORDER BY u.created_at DESC",
-          Array(2).fill("%" + paging(req).q + "%"),
+          "SELECT u.id,u.name,u.first_name,u.last_name,u.phone,u.discovery_source,u.line_id,u.email,u.role_id,u.balance,u.active,u.created_at,r.name role_name FROM users u JOIN roles r ON r.id=u.role_id WHERE u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.line_id LIKE ? ORDER BY u.created_at DESC",
+          Array(4).fill("%" + paging(req).q + "%"),
           req,
         ),
       ),

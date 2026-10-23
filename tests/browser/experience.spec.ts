@@ -79,7 +79,7 @@ test("appearance editor persists six pastel colors, uploaded logo/favicon and co
   const csrf = await admin(page),
     initial = await (await page.request.get("/api/admin/appearance")).json();
   try {
-    await page.getByRole("button", { name: "ลาเวนเดอร์", exact: true }).click();
+    await page.getByRole("button", { name: "ชมพู–ฟ้า", exact: true }).click();
     await page.getByLabel("รหัสสี muted").fill("#675a75");
     await page.getByLabel("ไฟล์โลโก้", { exact: true }).setInputFiles({
       name: "logo.jpg",
@@ -113,7 +113,14 @@ test("appearance editor persists six pastel colors, uploaded logo/favicon and co
         .evaluate((e) =>
           getComputedStyle(e).getPropertyValue("--primary").trim(),
         ),
-    ).toBe("#c4b5ed");
+    ).toBe("#f6c2c2");
+    const cta = page.getByRole("link", { name: "เลือกช้อปของที่ชอบ" });
+    await cta.hover();
+    await expect(cta).toHaveCSS("background-color", "rgb(242, 168, 168)");
+    await page.mouse.down();
+    await expect(cta).toHaveCSS("background-color", "rgb(235, 141, 141)");
+    await page.mouse.up();
+    await page.mouse.move(0, 0);
     const scan = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
       .analyze();
@@ -125,6 +132,20 @@ test("appearance editor persists six pastel colors, uploaded logo/favicon and co
     ).toEqual([]);
     await page.screenshot({
       path: "output/playwright/pastel-store.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    const mobileScan = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .analyze();
+    expect(mobileScan.violations.map((v) => v.id)).toEqual([]);
+    await page.screenshot({
+      path: "output/playwright/pink-sky-mobile.png",
       fullPage: true,
     });
     const saved = await (
@@ -311,7 +332,9 @@ test("admin uploads promotion image, member collects coupon then applies server-
     ).items[0].id;
     const r = await context.request.post("/api/auth/register", {
       data: {
-        name: "ผู้รับคูปอง",
+        firstName: "ผู้รับ",
+        lastName: "คูปอง",
+        phone: "0812345678",
         email: "coupon-" + crypto.randomUUID() + "@example.test",
         password,
       },

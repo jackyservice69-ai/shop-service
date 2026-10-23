@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import customerColors from "../shared/customer-colors.json" with { type: "json" };
 import {
   createHash,
   randomBytes,
@@ -81,6 +82,11 @@ export function openDb(path) {
   // Additive, repeatable migration: preserve existing products, orders and balances.
   transaction(db, () => {
     for (const [table, column, type] of [
+      ["users", "first_name", "TEXT NOT NULL DEFAULT ''"],
+      ["users", "last_name", "TEXT NOT NULL DEFAULT ''"],
+      ["users", "phone", "TEXT NOT NULL DEFAULT ''"],
+      ["users", "discovery_source", "TEXT NOT NULL DEFAULT ''"],
+      ["users", "line_id", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "image", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "title", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "description", "TEXT NOT NULL DEFAULT ''"],
@@ -98,7 +104,7 @@ export function openDb(path) {
           .some((c) => c.name === column)
       )
         db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-    db.exec("PRAGMA user_version=2");
+    db.exec("PRAGMA user_version=3");
   });
   db.prepare("INSERT OR IGNORE INTO roles VALUES (?,?,?)").run(
     "admin",
@@ -114,14 +120,11 @@ export function openDb(path) {
     shopName: "หิ้วลี่",
     depositPercent: 0,
     commissionPercent: 0,
-    theme: {
-      primary: "#6554c0",
-      ink: "#25243b",
-      muted: "#6e7085",
-      background: "#f6f7fb",
-      surface: "#ffffff",
-      positive: "#15785e",
-    },
+    theme: Object.fromEntries(
+      ["primary", "ink", "muted", "background", "surface", "positive"].map(
+        (role) => [role, customerColors[role].DEFAULT],
+      ),
+    ),
     logo: "",
     favicon: "",
     slideSeconds: 6,

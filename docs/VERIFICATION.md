@@ -1,15 +1,15 @@
 # ผลการตรวจระบบ
 
-ตรวจเมื่อ 23 ตุลาคม 2026 (Asia/Bangkok) บน Windows, Node.js 26.10.0
+ปรับปรุงผลการตรวจเมื่อ 24 ตุลาคม 2026 (Asia/Bangkok) บน Windows, Node.js 26.10.0 การเชื่อมต่อภายนอกและ npm audit ในตารางตรวจไว้เมื่อ 23 ตุลาคม ไม่ได้ทดสอบซ้ำในงานปรับฟอร์มสมัครสมาชิก
 
 | การตรวจ | ผล |
 |---|---|
 | `npm run build` | ผ่าน TypeScript และ Vite production build |
-| `npm test` | ผ่าน 75/75 กรณี ไม่มี skipped |
-| `npx playwright test` | ผ่าน 13/13 ชุด ใน Chromium ไม่มี skipped |
+| `npm test` | ผ่าน 79/79 กรณี ไม่มี skipped |
+| `npx playwright test` | ผ่าน 14/14 ชุด ใน Chromium ไม่มี skipped |
 | `npm audit --audit-level=low` | 0 vulnerabilities ที่ฐานข้อมูล npm รายงาน ณ เวลาตรวจ |
 | `npm run backup` | สร้าง SQLite snapshot สำเร็จ |
-| DESIGN.md lint | 0 errors, 1 warning: ไม่พบ YAML frontmatter ในชุดสีที่แก้ล่าสุด จึงยังยืนยัน token ด้วย linter ไม่ได้; คงเนื้อหาชุดสีเดิมไว้ |
+| DESIGN.md lint | 0 errors, 37 warnings: linter คาด primary แบบค่าเดี่ยวและ component references แต่ palette ใช้กลุ่ม DEFAULT/hover/active; runtime ใช้ shared/customer-colors.json ตาม mapping ใน DESIGN.md |
 | EasySlip `GET /banks` | ตอบ 200 จริง |
 | EasySlip `GET /bank-accounts` | ตอบ 200 จริง พบบัญชีธนาคาร เลขบัญชีและชื่อที่ตรงกับการตั้งค่าจากเจ้าของร้าน |
 | LINE `GET /v2/bot/info` | ตอบ 200 จริง |
@@ -42,6 +42,11 @@ Static premium scanner รอบปัจจุบัน `--mode strict` ผ่�
 
 ## การตรวจส่วนที่เพิ่ม
 
+- สมัครสมาชิก: ชื่อหน้า/นามสกุลแยกคอลัมน์ เบอร์โทรบังคับพร้อม normalize และตรวจรูปแบบ ช่องทางรู้จักร้าน/LINE ID ไม่บังคับ ตรวจความยาวและอักขระ LINE ID ฝั่ง server
+- ตรวจการสมัครผ่าน UI พร้อม error/focus/การรักษาค่าที่กรอก, บันทึกข้อมูลลง DB และ /me, ค้นหา/แสดงเบอร์และ LINE ID ในหลังบ้าน, ปฏิเสธ customer/anonymous ที่ขออ่านสมาชิกและไม่เผยข้อมูลผ่าน referral/audit
+- Migration profile รันซ้ำได้และรักษาชื่อ รหัสผ่าน และยอดเงินเดิม ภาพหน้าสมัคร desktop/mobile อยู่ใน output/playwright/register-desktop.png และ register-live-mobile.png
+- ชุดทดสอบเบราว์เซอร์ใช้เพดานคำขอสูงขึ้นเฉพาะเซิร์ฟเวอร์ in-memory เพื่อแยกการทดสอบฟังก์ชันจาก throttle; มี regression ยืนยัน production ยังคง 300 คำขอ/นาทีและไม่รับ override นี้
+
 - PNG/JPEG/JPG จริงผ่านการ decode/re-encode, ปฏิเสธไฟล์ปลอม SVG ขนาดเกิน สิทธิ์ไม่พอ CSRF และ favicon ไม่จัตุรัส
 - สี 6 ค่า รูปโลโก้/Favicon เวลาสไลด์และ % คอมบันทึกถาวร ตรวจ HEX ป้องกัน CSS injection และชนิด media ตรงกับตำแหน่งใช้
 - แบนเนอร์หลายภาพ schedule/sort/version conflict; ประกาศหลายรายการเรียงลำดับพร้อมรูป
@@ -50,6 +55,10 @@ Static premium scanner รอบปัจจุบัน `--mode strict` ผ่�
 - Ledger และ dashboard แสดงค่าคอมเป็นรายจ่าย; ผู้แนะนำเห็นเฉพาะรายการตนเอง
 - Migration แบบเพิ่มคอลัมน์รันซ้ำได้และรักษาข้อมูลเก่า
 - เบราว์เซอร์ทดสอบ preset/HEX, upload logo/JPEG และ favicon/PNG, CSS colors หลังโหลดใหม่, สี control เมื่อใช้ surface มืด, axe บนธีมพาสเทล
+- ชุดสีชมพู–ฟ้าจากเจ้าของร้านถูกใช้จริงผ่าน shared/customer-colors.json, ตรวจปุ่ม hover #f2a8a8 / active #eb8d8d, contrast บนเดสก์ท็อป/มือถือ 390px และภาพหน้าร้านจริงใน output/playwright/pink-sky-desktop.png / pink-sky-customer-mobile.png
+- เลิกใช้สีม่วงในระบบ: ธีมส่วนกลาง/หลังบ้าน/กราฟ/สถานะ/โฟกัส/placeholder เป็นชมพูหรือสีกลาง, นำ preset ลาเวนเดอร์ออกและเปลี่ยนแสงสะท้อนเป็นชมพูโรส; สแกน hex ใน src/shared/index ไม่พบม่วงตามช่วง hue 235–320° saturation > 12% และตรวจ contrast หลังบ้านผ่าน ภาพ pink-admin-test.png ใช้ฐานข้อมูลทดสอบแยก
+- นำ box-shadow ทั้ง 23 declarations และ transition ที่เกี่ยวข้องออกจาก stylesheet พร้อมคง outline สำหรับโฟกัส; production build และ browser regression ทั้ง 13 ชุดผ่านหลังเปลี่ยน
+- ขยายโลโก้อัปโหลด: หน้าร้าน desktop 264×99px, มือถือ 164–196px, เพิ่มพื้นที่ header และขยายใน sidebar/footer โดยคง object-fit contain และไม่มี box-shadow ตรวจภาพโลโก้จริงที่ 1440/390/320px ไม่ล้นเอกสาร; build และ browser regression 14/14 ผ่าน
 - เบราว์เซอร์ทดสอบประกาศ/แบนเนอร์หมุนอัตโนมัติ หยุด วนกลับ ปุ่มเปลี่ยนภาพ reduced-motion การจำปิด popup ปุ่มกลับด้านบนมุมซ้ายล่างบนมือถือ
 - เบราว์เซอร์ทดสอบสร้าง/แก้ไข/ปิดแบนเนอร์และรับ/ใช้คูปองพร้อมรูปผ่าน UI
 

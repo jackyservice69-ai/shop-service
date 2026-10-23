@@ -1,3 +1,4 @@
+---
 version: alpha
 colors:
   primary:
@@ -11,7 +12,7 @@ colors:
     active: '#8eccde'    # ฟ้าเข้มสำหรับ Active
     light: '#eff8fb'     # ฟ้าอ่อนมากสำหรับพื้นหลังรอง
   accent:
-    lavender: '#e2d4f4'  # ม่วงลาเวนเดอร์พาสเทล (เพิ่มสีสันให้ระบบ)
+    rose: '#f9d7df'      # ชมพูโรสพาสเทล
     peach: '#fce3d4'     # พีชพาสเทล
 
   # --- 2. NEUTRAL & TYPOGRAPHY (สีข้อความและโทนกลาง) ---
@@ -74,18 +75,19 @@ components:
 ---
 # Hiewly / หิ้วลี่
 ## Overview
-Thai personal-shopping service for customers on phones and shop operators on laptops. A parcel-label identity: lavender tracking line, small package mark, calm operational pages. Product register throughout the authenticated app. Do not imply sample products or unconfigured integrations are live transactions.
+Thai personal-shopping service for customers on phones and shop operators on laptops. Customer identity: pink and sky-blue pastel light around a parcel illustration and calm readable surfaces. Product register throughout the authenticated app. Do not imply sample products or unconfigured integrations are live transactions.
 ## Colors
-Runtime defaults: src/styles.css :root. Customer theme overrides are persisted in settings.theme and applied by src/experience.tsx themeStyle to .customer-shell. The six editable roles are primary, ink, muted, background, surface and positive; computed --on-primary selects a readable foreground. Admin navigation keeps the operational palette. Pastel lavender/peach/mint presets are available. Red means failed/destructive, amber means pending. Chart fills remain semantic.
+System palette owner: shared/customer-colors.json mirrors the owner's palette above. server/db.mjs derives the six initial settings.theme values from that same file. src/experience.tsx themeStyle flattens the palette into --role-shade CSS variables and maps settings.theme to the six editable roles (primary, ink, muted, background→--bg, surface, positive). It computes readable text and button-state foregrounds; src/styles.css .customer-shell consumes them. scripts/generate-colors.mjs exports src/brand.generated.css at build/dev start, and :root maps --palette-* into the shared/admin theme. Keep generated CSS derived from JSON. The pink–sky preset restores the owner's six values, with peach/mint alternatives. Purple is retired from system UI. Admin navigation and shared controls use the same pink brand, with dark rose text for readable links. Semantic status surfaces use pastel fills with dark status text. Muted/light tokens are decorative; ordinary supporting text and placeholders use contrast-checked --muted-text instead. Primary hover/active follow the exact palette; other primary colors derive shade states. Chart fills remain semantic.
 ## Typography
 Thai copy uses Noto Sans Thai with local system fallback. Brand uses heavy Thai lettering; amounts use tabular figures. Body 14px with 1.65 line-height; headings 24–32px.
 ## Layout
 Desktop: 248px navigation, flexible main, 32px gutters. Store: top navigation and responsive product grid. Below 800px navigation becomes a horizontal scrollable row. Below 520px single-column forms and cards. Natural document scrolling. There is no universal spacing divisor: compact optical gaps (6/9px), field rhythm (17px), and section rhythm (24px) are named roles; do not infer every dimension must be a multiple of 4.
 ## Elevation & Depth
-Customer surfaces use soft gradients, inset highlights and tinted shadows derived from primary/positive. Keep text on quiet surfaces; use light and shadow on hero, product cards and promotion surfaces. Admin remains restrained. Stable image aspect ratio. Cards 18px, controls 10px. The distinctive parcel tracking route belongs only in the storefront hero and brand.
+No box-shadow anywhere in the application, including hover, active, focus, dialogs, previews and illustrations. Separate surfaces with borders, spacing and color. Customer surfaces retain pink–sky gradients and rose reflected light through backgrounds. Keep text on quiet surfaces. Keyboard focus uses an outline, never a shadow. Admin uses restrained pink accents and neutral surfaces. Stable image aspect ratio. Cards 18px, controls 10px. The distinctive parcel tracking route belongs only in the storefront hero and brand. Preserve reduced-motion rules; decorative light stays static.
 ## Shapes
 Lucide line icons at 18–22px; quiet rounded rectangles. No emoji as functional icons.
 ## Components
 Shared Field, Form, Modal, Table, Empty, Badge, PageHeading, Stat, notification provider. Native selects and dates. All charts have textual summaries. Display 0% deposits literally; never treat 0 as missing.
+Uploaded logos use a prominent, uncropped contain frame: storefront 264×99px on desktop, 224×84px on tablet and 164–196px wide at an 8:3 frame on phones; sidebar 208×78px (200×75px on phones), footer 176×66px. Reserve these dimensions and leave navigation room. On narrow admin headers, place the workspace label below the logo to prevent overlap. Do not add shadows or modify the uploaded image to achieve prominence.
 ## Do's and Don'ts
 Use baht from integer satang and Asia/Bangkok timestamps. Never show fabricated dashboard gains or wallet credits. Every server action has pending/error/success feedback; no browser alert/confirm.

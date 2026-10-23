@@ -11,9 +11,10 @@
     "test": "node --test tests/*.test.mjs",
     "setup": "node scripts/setup.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
+    "predev": "node scripts/generate-colors.mjs",
     "dev": "node scripts/dev.mjs",
     "start": "node server/index.mjs",
-    "build": "tsc --noEmit && vite build",
+    "build": "node scripts/generate-colors.mjs && tsc --noEmit && vite build",
     "test:e2e": "npm run build && playwright test",
     "backup": "node scripts/backup.mjs",
     "format": "prettier --write src server scripts tests *.ts *.json *.html"

@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import customerColors from "../shared/customer-colors.json";
 import {
   ArrowUp,
   ChevronLeft,
@@ -49,7 +50,7 @@ export const IMAGE_SIZES: Record<
   logo: { w: 640, h: 240, label: "โลโก้" },
   favicon: { w: 256, h: 256, label: "Favicon" },
 };
-export function foreground(hex: string) {
+function luminance(hex: string) {
   const rgb = hex
     .replace("#", "")
     .match(/../g)
@@ -58,19 +59,146 @@ export function foreground(hex: string) {
       v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4,
     ),
     lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  return lum;
+}
+export function foreground(hex: string) {
+  const lum = luminance(hex);
   return 1.05 / (lum + 0.05) >= (lum + 0.05) / 0.05 ? "#ffffff" : "#000000";
 }
+function readable(color: string, background: string, fallback: string) {
+  const a = luminance(color),
+    b = luminance(background);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 4.5
+    ? color
+    : fallback;
+}
+function shade(color: string, ink: string, weight: number) {
+  return (
+    "#" +
+    [1, 3, 5]
+      .map((start) =>
+        Math.round(
+          parseInt(color.slice(start, start + 2), 16) * weight +
+            parseInt(ink.slice(start, start + 2), 16) * (1 - weight),
+        )
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")
+  );
+}
+const pinkTheme = Object.fromEntries(
+  (
+    ["primary", "ink", "muted", "background", "surface", "positive"] as const
+  ).map((role) => [role, customerColors[role].DEFAULT]),
+);
 export function themeStyle(theme: any): CSSProperties {
   if (!theme) return {};
+  const palette = Object.entries(customerColors).flatMap(([role, shades]) =>
+    typeof shades === "string"
+      ? [["--" + role, shades]]
+      : Object.entries(shades).map(([shade, value]) => [
+          "--" + role + (shade === "DEFAULT" ? "" : "-" + shade),
+          value,
+        ]),
+  );
+  const onSurface = readable(
+    theme.ink,
+    theme.surface,
+    foreground(theme.surface),
+  );
+  const isPink = theme.primary.toLowerCase() === customerColors.primary.DEFAULT;
+  const primaryHover = isPink
+    ? customerColors.primary.hover
+    : shade(theme.primary, theme.ink, 0.88);
+  const primaryActive = isPink
+    ? customerColors.primary.active
+    : shade(theme.primary, theme.ink, 0.8);
+  const positiveFill =
+    theme.positive === customerColors.positive.DEFAULT
+      ? theme.positive
+      : shade(theme.positive, theme.surface, 0.12);
   return Object.fromEntries([
+    ...palette,
     ...Object.entries(theme).map(([k, v]) => [
       "--" + (k === "background" ? "bg" : k),
       v,
     ]),
-    ["--on-primary", foreground(theme.primary)],
+    [
+      "--on-primary",
+      readable(theme.ink, theme.primary, foreground(theme.primary)),
+    ],
+    [
+      "--on-primary-hover",
+      readable(theme.ink, primaryHover, foreground(primaryHover)),
+    ],
+    [
+      "--on-primary-active",
+      readable(theme.ink, primaryActive, foreground(primaryActive)),
+    ],
+    ["--primary-hover", primaryHover],
+    ["--primary-active", primaryActive],
+    [
+      "--ink-heading",
+      theme.ink === customerColors.ink.DEFAULT
+        ? customerColors.ink.heading
+        : onSurface,
+    ],
+    [
+      "--ink-subtle",
+      theme.ink === customerColors.ink.DEFAULT
+        ? customerColors.ink.subtle
+        : onSurface,
+    ],
+    [
+      "--muted-text",
+      readable(
+        theme.muted,
+        theme.surface,
+        onSurface === customerColors.ink.DEFAULT
+          ? customerColors.ink.subtle
+          : onSurface,
+      ),
+    ],
+    [
+      "--positive-ink",
+      readable(
+        theme.positive,
+        theme.surface,
+        readable(customerColors.positive.text, theme.surface, onSurface),
+      ),
+    ],
+    ["--positive-fill", positiveFill],
+    [
+      "--positive-text",
+      readable(
+        customerColors.positive.text,
+        positiveFill,
+        foreground(positiveFill),
+      ),
+    ],
+    [
+      "--surface-hover",
+      theme.surface === customerColors.surface.DEFAULT
+        ? customerColors.surface.hover
+        : shade(theme.surface, theme.ink, 0.96),
+    ],
+    [
+      "--surface-subtle",
+      theme.surface === customerColors.surface.DEFAULT
+        ? customerColors.surface.subtle
+        : theme.surface,
+    ],
+    ["--focus-ring", onSurface],
+    [
+      "--link-ink",
+      readable(shade(theme.primary, theme.ink, 0.2), theme.surface, onSurface),
+    ],
     [
       "--primary-soft",
-      `color-mix(in srgb, ${theme.primary} 16%, ${theme.surface})`,
+      isPink && theme.surface === customerColors.surface.DEFAULT
+        ? customerColors.primary.light
+        : `color-mix(in srgb, ${theme.primary} 16%, ${theme.surface})`,
     ],
     [
       "--primary-dark",
@@ -337,14 +465,7 @@ export function BackToTop() {
 }
 
 const presets = {
-  lavender: {
-    primary: "#c4b5ed",
-    ink: "#302840",
-    muted: "#71677d",
-    background: "#f8f6fc",
-    surface: "#ffffff",
-    positive: "#277257",
-  },
+  pink: pinkTheme,
   peach: {
     primary: "#efb69d",
     ink: "#42302d",
@@ -423,9 +544,11 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
               >
                 <i style={{ background: t.primary }} />
                 {
-                  { lavender: "ลาเวนเดอร์", peach: "พีช", mint: "มิ้นต์" }[
-                    name as keyof typeof presets
-                  ]
+                  {
+                    pink: "ชมพู–ฟ้า",
+                    peach: "พีช",
+                    mint: "มิ้นต์",
+                  }[name as keyof typeof presets]
                 }
               </button>
             ))}
@@ -463,13 +586,13 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
           >
             <small>ตัวอย่างหน้าร้าน</small>
             <h3 style={{ color: theme.ink }}>ของที่ชอบ ให้เราหิ้วมาให้</h3>
-            <p style={{ color: theme.muted }}>
+            <p style={{ color: "var(--muted-text)" }}>
               ปรับแสง เงา และสีให้เป็นร้านของคุณ
             </p>
             <span className="button primary" aria-hidden="true">
               เลือกซื้อสินค้า
             </span>
-            <strong style={{ color: theme.positive }}>พร้อมหิ้ว</strong>
+            <strong style={{ color: "var(--positive-ink)" }}>พร้อมหิ้ว</strong>
           </div>
           <p className="muted">
             สีมีผลกับหน้าลูกค้า ตัวอักษรบนปุ่มปรับสีอัตโนมัติให้เหมาะกับ primary

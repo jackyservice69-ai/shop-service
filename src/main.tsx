@@ -60,6 +60,7 @@ import {
   SettingsPage,
   AuditPage,
 } from "./admin";
+import "./brand.generated.css";
 import "./styles.css";
 const nav = [
   ["dashboard", "ภาพรวม", LayoutDashboard],

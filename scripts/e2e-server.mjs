@@ -1,6 +1,8 @@
 // Isolated in-memory environment. Never loads .env or contacts external providers.
 import { fixture, slip, PASSWORD } from "../tests/helpers.mjs";
 const f = fixture({
+  // In-memory functional tests generate more traffic than one real browser session.
+  apiRateLimit: 3000,
   origin: "http://127.0.0.1:4319",
   fetch: async (url, options) => {
     if (url.includes("/verify/bank"))

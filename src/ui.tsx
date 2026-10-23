@@ -26,8 +26,8 @@ export function Brand() {
         <img
           src={publicData.logo}
           alt={publicData.shopName}
-          width="160"
-          height="60"
+          width="264"
+          height="99"
         />
       </span>
     );
@@ -137,7 +137,7 @@ export function Stat({
   value,
   detail,
   icon,
-  tone = "purple",
+  tone = "pink",
 }: {
   label: string;
   value: ReactNode;
@@ -252,6 +252,9 @@ type FieldProps = {
   placeholder?: string;
   help?: string;
   autoComplete?: string;
+  inputMode?: "tel" | "email" | "text" | "numeric";
+  spellCheck?: boolean;
+  autoCapitalize?: string;
   disabled?: boolean;
   defaultValue?: any;
   accept?: string;

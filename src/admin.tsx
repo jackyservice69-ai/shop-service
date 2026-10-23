@@ -1,4 +1,5 @@
 import { ImageUpload } from "./experience";
+import brandColors from "../shared/customer-colors.json";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -76,10 +77,10 @@ const statusNames: Record<string, string> = {
 };
 const colors = [
   "#f0b85f",
-  "#6554c0",
+  brandColors.primary.DEFAULT,
   "#79acd5",
   "#53b2a0",
-  "#b3a6e4",
+  "#80b492",
   "#e49eab",
 ];
 const statusColor = (status: string) =>
@@ -92,7 +93,7 @@ const statusColor = (status: string) =>
       "completed",
       "cancelled",
     ].indexOf(status)
-  ] || "#eeecf7";
+  ] || "#f4eeee";
 export function DashboardPage() {
   const [days, setDays] = useState(7);
   const { user } = useApp();
@@ -205,10 +206,12 @@ export function DashboardPage() {
                 </div>
                 <div className="chart-legend">
                   <span>
-                    <i style={{ background: "#6554c0" }} /> รายรับ
+                    <i style={{ background: brandColors.primary.DEFAULT }} />{" "}
+                    รายรับ
                   </span>
                   <span>
-                    <i style={{ background: "#dcd6f5" }} /> รายจ่าย
+                    <i style={{ background: brandColors.primary.active }} />{" "}
+                    รายจ่าย
                   </span>
                 </div>
                 <div
@@ -267,14 +270,14 @@ export function DashboardPage() {
                       <Bar
                         isAnimationActive={false}
                         dataKey="income"
-                        fill="#6554c0"
+                        fill={brandColors.primary.DEFAULT}
                         radius={[5, 5, 0, 0]}
                         maxBarSize={24}
                       />
                       <Bar
                         isAnimationActive={false}
                         dataKey="expense"
-                        fill="#dcd6f5"
+                        fill={brandColors.primary.active}
                         radius={[5, 5, 0, 0]}
                         maxBarSize={24}
                       />
@@ -329,7 +332,7 @@ export function DashboardPage() {
                               fill={
                                 d.statuses.length
                                   ? statusColor(s.status)
-                                  : "#eeecf7"
+                                  : "#f4eeee"
                               }
                             />
                           ),
@@ -421,7 +424,7 @@ export function DashboardPage() {
                   <strong>{d.products}</strong>
                 </div>
                 <div>
-                  <span className="health-icon purple">
+                  <span className="health-icon pink">
                     <Wallet size={19} />
                   </span>
                   <span>
@@ -1331,7 +1334,7 @@ export function MembersPage() {
           <SearchBox
             value={list.q}
             onChange={list.setQ}
-            placeholder="ค้นหาชื่อหรืออีเมลสมาชิก…"
+            placeholder="ค้นหาชื่อ อีเมล เบอร์โทร หรือ LINE ID…"
           />
           <span className="muted">{data?.total || 0} บัญชี</span>
         </div>
@@ -1344,6 +1347,8 @@ export function MembersPage() {
             <Table
               headers={[
                 "สมาชิก",
+                "ข้อมูลติดต่อ",
+                "รู้จักเราจากที่ไหน",
                 "บทบาท",
                 "กระเป๋าเงิน",
                 "สถานะ",
@@ -1357,6 +1362,13 @@ export function MembersPage() {
                     <b>{r.name}</b>
                     <small className="block muted">{r.email}</small>
                   </td>
+                  <td>
+                    <span>{r.phone || "—"}</span>
+                    <small className="block muted">
+                      LINE: {r.line_id || "—"}
+                    </small>
+                  </td>
+                  <td>{r.discovery_source || "—"}</td>
                   <td>{r.role_name}</td>
                   <td>{money(r.balance)}</td>
                   <td>
@@ -1492,7 +1504,7 @@ export function RolesPage() {
             <section className="panel" key={r.id}>
               <div className="panel-title">
                 <h2>{r.name}</h2>
-                <ShieldCheck size={22} className="purple-ink" />
+                <ShieldCheck size={22} className="pink-ink" />
               </div>
               <p className="muted">
                 {r.id === "admin"
