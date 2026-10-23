@@ -1,0 +1,57 @@
+{
+  "name": "shopping-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "setup": "node scripts/setup.mjs",
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "dev": "node scripts/dev.mjs",
+    "start": "node server/index.mjs",
+    "build": "tsc --noEmit && vite build",
+    "test:e2e": "npm run build && playwright test",
+    "backup": "node scripts/backup.mjs",
+    "format": "prettier --write src server scripts tests *.ts *.json *.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "lucide-react": "^1.61.0",
+    "multer": "^2.5.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.4",
+    "recharts": "^3.10.1",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "prettier": "^3.9.10",
+    "supertest": "^7.3.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

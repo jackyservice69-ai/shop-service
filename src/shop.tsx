@@ -1,0 +1,1187 @@
+import { StoreBanners, Carousel } from "./experience";
+import { useEffect, useRef, useState } from "react";
+import {
+  Link,
+  useNavigate,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  ShoppingBag,
+  ShieldCheck,
+  Truck,
+  Wallet,
+  Upload,
+  Copy,
+  Gift,
+  Package,
+  Minus,
+  Plus,
+  Trash2,
+  Check,
+  Link2,
+  CreditCard,
+  Clock,
+  ChevronRight,
+} from "lucide-react";
+import QRCode from "qrcode";
+import {
+  api,
+  ApiError,
+  send,
+  useApp,
+  useData,
+  money,
+  date,
+  type Product,
+  type PageData,
+} from "./api";
+import {
+  PageHeading,
+  Loading,
+  ErrorBox,
+  Empty,
+  Badge,
+  Modal,
+  Confirm,
+  Form,
+  Field,
+  formObject,
+  cents,
+  Table,
+  Pagination,
+  useListQuery,
+  SearchBox,
+} from "./ui";
+
+export function StorePage() {
+  const { publicData, cart, setCart, notify } = useApp();
+  const list = useListQuery();
+  const [params, setParams] = useSearchParams();
+  const category = params.get("category") || "";
+  const { data, error, loading, reload } = useData<PageData<Product>>(
+    "/products?" + list.query + "&category=" + encodeURIComponent(category),
+  );
+  const [selected, setSelected] = useState<Product | null>(null);
+  const add = (p: Product) => {
+    const old = cart.find((i) => i.product.id === p.id);
+    if ((old?.quantity || 0) >= p.stock) {
+      notify("จำนวนสินค้าในตะกร้าถึงสต็อกที่มีแล้ว");
+      return;
+    }
+    setCart((items) =>
+      old
+        ? items.map((i) =>
+            i.product.id === p.id
+              ? { product: p, quantity: i.quantity + 1 }
+              : i,
+          )
+        : [...items, { product: p, quantity: 1 }],
+    );
+    notify("เพิ่ม " + p.name + " ในตะกร้าแล้ว");
+  };
+  return (
+    <>
+      <StoreBanners />
+      <section className="store-hero">
+        <div className="hero-copy">
+          <span className="eyebrow">
+            <span /> YOUR EVERYDAY PERSONAL SHOPPER
+          </span>
+          <h1>
+            ของที่ชอบ
+            <br />
+            ให้เรา<span>หิ้ว</span>มาให้
+          </h1>
+          <p>
+            รวมของน่ารัก ของน่าใช้ และของที่คุณเล็งไว้
+            <br />
+            สั่งง่าย จ่ายสะดวก ติดตามได้ทุกขั้นตอน
+          </p>
+          <a className="button primary" href="#catalog">
+            เลือกช้อปของที่ชอบ <ArrowRight size={18} />
+          </a>
+          <div className="hero-trust">
+            <span>
+              <ShieldCheck size={17} /> ตรวจสลิปอัตโนมัติ
+            </span>
+            <span>
+              <Wallet size={17} /> จองเริ่ม {publicData?.depositPercent ?? 0}%
+            </span>
+          </div>
+        </div>
+        <div className="hero-art" aria-hidden="true">
+          <div className="orbit orbit-one" />
+          <div className="orbit orbit-two" />
+          <span className="floating-tag tag-one">
+            <Check size={15} /> เจอของที่ใช่แล้ว!
+          </span>
+          <div className="parcel">
+            <span className="parcel-tape" />
+            <span className="parcel-label">
+              <ShoppingBag size={30} />
+              <b>hiewly</b>
+              <i>WITH A LITTLE EXTRA CARE</i>
+              <span className="barcode" />
+            </span>
+          </div>
+          <span className="floating-tag tag-two">
+            <Truck size={18} />
+            <span>
+              <b>หิ้วให้ด้วยใจ</b>
+              <small>ส่งความสุขถึงมือคุณ</small>
+            </span>
+          </span>
+          <div className="spark spark-one">✦</div>
+          <div className="spark spark-two">✦</div>
+        </div>
+      </section>
+      <div className="service-strip">
+        <div>
+          <Package size={23} />
+          <span>
+            <b>คัดของดีมาให้แล้ว</b>
+            <small>เลือกสินค้าที่คุณชอบได้เลย</small>
+          </span>
+        </div>
+        <div>
+          <CreditCard size={23} />
+          <span>
+            <b>จ่ายง่ายในกระเป๋าเดียว</b>
+            <small>เติมเงินด้วยสลิปธนาคาร</small>
+          </span>
+        </div>
+        <div>
+          <Truck size={23} />
+          <span>
+            <b>ติดตามได้ทุกขั้นตอน</b>
+            <small>ดูสถานะและเลขพัสดุในระบบ</small>
+          </span>
+        </div>
+      </div>
+      <section id="catalog" className="catalog">
+        <PageHeading
+          title="เลือกของที่ใช่ สำหรับคุณ"
+          sub="ของโปรดชิ้นต่อไป อาจอยู่ตรงนี้"
+        >
+          <SearchBox
+            value={list.q}
+            onChange={list.setQ}
+            placeholder="ค้นหาสินค้าที่อยากได้…"
+          />
+        </PageHeading>
+        <div className="category-tabs">
+          {["", ...(publicData?.categories || [])].map((c) => (
+            <button
+              key={c}
+              className={category === c ? "selected" : ""}
+              onClick={() => {
+                const p = new URLSearchParams(params);
+                c ? p.set("category", c) : p.delete("category");
+                p.delete("page");
+                setParams(p);
+              }}
+            >
+              {c || "สินค้าทั้งหมด"}
+            </button>
+          ))}
+        </div>
+        {error ? (
+          <ErrorBox error={error} retry={reload} />
+        ) : loading && !data ? (
+          <Loading />
+        ) : data?.items.length ? (
+          <>
+            <div className="product-grid">
+              {data.items.map((p) => (
+                <article className="product-card" key={p.id}>
+                  <button
+                    className="product-image"
+                    onClick={() => setSelected(p)}
+                    aria-label={"ดูรายละเอียด " + p.name}
+                  >
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      width="400"
+                      height="320"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = "/assets/placeholder.svg";
+                      }}
+                    />
+                    <span className="product-tag">{p.category}</span>
+                    {!p.stock && <span className="soldout">สินค้าหมด</span>}
+                  </button>
+                  <div className="product-copy">
+                    <small>{p.category}</small>
+                    <button
+                      className="product-title"
+                      onClick={() => setSelected(p)}
+                    >
+                      {p.name}
+                    </button>
+                    <p>{p.description}</p>
+                    <div>
+                      <strong>{money(p.price)}</strong>
+                      <button
+                        className="add-cart"
+                        aria-label={"เพิ่ม " + p.name + " ลงตะกร้า"}
+                        disabled={!p.stock}
+                        onClick={() => add(p)}
+                      >
+                        <Plus size={19} />
+                      </button>
+                    </div>
+                    <small className="stock-label">
+                      <i className={p.stock ? "available" : "unavailable"} />{" "}
+                      {p.stock
+                        ? "พร้อมหิ้ว · เหลือ " + p.stock + " ชิ้น"
+                        : "รอเติมสินค้า"}
+                    </small>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <Pagination data={data} onPage={list.setPage} />
+          </>
+        ) : (
+          <Empty
+            title="ยังไม่พบสินค้า"
+            description="ลองเปลี่ยนคำค้นหรือเลือกหมวดหมู่อื่น"
+          />
+        )}
+      </section>
+      <section className="referral-banner">
+        <span className="gift-tile">
+          <Gift size={30} />
+        </span>
+        <div>
+          <h2>ของดี บอกต่อเพื่อนได้</h2>
+          <p>ส่งลิงก์ชวนเพื่อน แล้วช้อปไปด้วยกัน</p>
+        </div>
+        <Link to="/referrals" className="button secondary">
+          ชวนเพื่อนเลย <ArrowUpRight size={17} />
+        </Link>
+      </section>
+      {selected && (
+        <Modal title={selected.name} onClose={() => setSelected(null)}>
+          <img
+            className="detail-image"
+            src={selected.image}
+            alt={selected.name}
+          />
+          <Badge status={selected.category} />
+          <p>{selected.description}</p>
+          <h2>{money(selected.price)}</h2>
+          <p className="muted">คงเหลือ {selected.stock} ชิ้น</p>
+          <button
+            className="button primary"
+            disabled={!selected.stock}
+            onClick={() => {
+              add(selected);
+              setSelected(null);
+            }}
+          >
+            เพิ่มลงตะกร้า <ShoppingBag size={18} />
+          </button>
+        </Modal>
+      )}
+    </>
+  );
+}
+export function AnnouncementPopup() {
+  const { publicData } = useApp();
+  const location = useLocation();
+  const [opened, setOpened] = useState(false);
+  const announcements = publicData?.announcements || [],
+    signature = announcements.map((a: any) => a.id + ":" + a.version).join("|");
+  useEffect(() => {
+    if (
+      location.pathname === "/" &&
+      signature &&
+      !sessionStorage.getItem("announcements-" + signature)
+    )
+      setOpened(true);
+  }, [signature, location.pathname]);
+  const close = () => {
+    sessionStorage.setItem("announcements-" + signature, "1");
+    setOpened(false);
+  };
+  return opened && location.pathname === "/" && announcements.length ? (
+    <Modal title="ประกาศจากร้าน" onClose={close}>
+      <Carousel
+        items={announcements}
+        label="ประกาศร้าน"
+        seconds={publicData.slideSeconds}
+        render={(a) => (
+          <article className="announcement-slide">
+            {a.image && (
+              <img src={a.image} alt={a.title} width="1080" height="1350" />
+            )}
+            <h3>{a.title}</h3>
+            <p className="announcement-body">{a.body}</p>
+          </article>
+        )}
+      />
+      <button className="button primary full" onClick={close}>
+        รับทราบ
+      </button>
+    </Modal>
+  ) : null;
+}
+export function AuthPage({ register = false }: { register?: boolean }) {
+  const { refresh, notify, user } = useApp();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const next = params.get("next") || "/";
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  useEffect(() => {
+    if (user) navigate(safeNext, { replace: true });
+  }, [user]);
+  return (
+    <div className="auth-layout">
+      <div className="auth-story">
+        <span className="eyebrow">WELCOME TO HIEWLY</span>
+        <h1>
+          ช้อปที่ชอบ
+          <br />
+          หิ้วที่ใช่
+        </h1>
+        <p>
+          กระเป๋าเงิน คำสั่งซื้อ และของโปรดของคุณ
+          <br />
+          ดูแลได้ง่าย ๆ ในที่เดียว
+        </p>
+        <div className="auth-parcel">
+          <ShoppingBag size={86} />
+        </div>
+        <span>
+          <ShieldCheck size={18} /> ข้อมูลของคุณได้รับการดูแลอย่างปลอดภัย
+        </span>
+      </div>
+      <div className="auth-card">
+        <h1>{register ? "เริ่มต้นช้อปกับหิ้วลี่" : "ยินดีต้อนรับกลับมา"}</h1>
+        <p className="muted">
+          {register
+            ? "สร้างบัญชีของคุณ ใช้เวลาเพียงครู่เดียว"
+            : "เข้าสู่ระบบเพื่อดูแลของโปรดของคุณ"}
+        </p>
+        <Form
+          noValidate
+          submit={register ? "สร้างบัญชี" : "เข้าสู่ระบบ"}
+          onSubmit={async (f) => {
+            const v = formObject(f);
+            await send(register ? "/auth/register" : "/auth/login", v);
+            await refresh();
+            notify(
+              register ? "สร้างบัญชีเรียบร้อยแล้ว" : "เข้าสู่ระบบเรียบร้อยแล้ว",
+            );
+            navigate(safeNext);
+          }}
+        >
+          {register && (
+            <Field
+              label="ชื่อ–นามสกุล"
+              name="name"
+              required
+              autoComplete="name"
+            />
+          )}
+          <Field
+            label="อีเมล"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+          />
+          <Field
+            label="รหัสผ่าน"
+            name="password"
+            type="password"
+            required
+            autoComplete={register ? "new-password" : "current-password"}
+            help={register ? "อย่างน้อย 12 ตัวอักษร" : ""}
+          />
+          {register && (
+            <Field
+              label="รหัสแนะนำเพื่อน (ถ้ามี)"
+              name="referralCode"
+              defaultValue={params.get("ref") || ""}
+            />
+          )}
+        </Form>
+        <p className="auth-switch">
+          {register ? "มีบัญชีแล้ว?" : "ยังไม่มีบัญชี?"}{" "}
+          <Link
+            to={
+              (register ? "/login" : "/register") +
+              "?next=" +
+              encodeURIComponent(safeNext)
+            }
+          >
+            {register ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+export function CartPage() {
+  const { cart, setCart, user, publicData, refresh, notify } = useApp();
+  const navigate = useNavigate();
+  const [shipping, setShipping] = useState({
+    name: "",
+    phone: "",
+    address: "",
+  });
+  useEffect(() => {
+    if (user) setShipping((s) => ({ ...s, name: s.name || user.name }));
+  }, [user?.id]);
+  const [cartParams] = useSearchParams();
+  const [coupon, setCoupon] = useState(cartParams.get("coupon") || ""),
+    [payment, setPayment] = useState("full"),
+    [quote, setQuote] = useState<any>(null),
+    [qError, setQError] = useState(""),
+    [quoting, setQuoting] = useState(false),
+    [quoteVersion, setQuoteVersion] = useState(0),
+    [confirmation, setConfirmation] = useState<any>(null);
+  const requestKey = useRef(crypto.randomUUID());
+  const payload = {
+    items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+    coupon,
+    payment,
+  };
+  useEffect(() => {
+    setQuote(null);
+    setQError("");
+    if (!user || !cart.length) return;
+    const ctrl = new AbortController();
+    setQuoting(true);
+    const t = setTimeout(
+      () =>
+        api("/orders/quote", {
+          method: "POST",
+          body: JSON.stringify(payload),
+          signal: ctrl.signal,
+        })
+          .then((q) => setQuote(q))
+          .catch((e) => {
+            if (e.name !== "AbortError") setQError(e.message);
+          })
+          .finally(() => {
+            if (!ctrl.signal.aborted) setQuoting(false);
+          }),
+      300,
+    );
+    return () => {
+      ctrl.abort();
+      clearTimeout(t);
+    };
+  }, [JSON.stringify(payload), user?.id, quoteVersion]);
+  const update = (id: string, qty: number) =>
+    setCart((c) =>
+      c.map((i) =>
+        i.product.id === id
+          ? { ...i, quantity: Math.max(1, Math.min(99, qty)) }
+          : i,
+      ),
+    );
+  return (
+    <div className="contained">
+      <PageHeading
+        title="ตะกร้าของคุณ"
+        sub="อีกนิดเดียว ของที่ชอบก็จะได้ไปต่อ"
+      />
+      {!cart.length ? (
+        <Empty
+          title="ตะกร้ายังว่างอยู่"
+          description="เลือกสินค้าที่ชอบ แล้วให้เราช่วยหิ้ว"
+        >
+          <Link className="button primary" to="/">
+            ไปเลือกสินค้า <ArrowRight size={17} />
+          </Link>
+        </Empty>
+      ) : (
+        <div className="checkout-grid">
+          <section className="panel">
+            <h2>
+              สินค้าที่เลือก <span className="count-pill">{cart.length}</span>
+            </h2>
+            {cart.map((i) => (
+              <div className="cart-row" key={i.product.id}>
+                <img src={i.product.image} alt={i.product.name} />
+                <div>
+                  <b>{i.product.name}</b>
+                  <p>{money(i.product.price)}</p>
+                  <div className="quantity">
+                    <button
+                      aria-label={"ลดจำนวน " + i.product.name}
+                      onClick={() => update(i.product.id, i.quantity - 1)}
+                      disabled={i.quantity <= 1}
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span>{i.quantity}</span>
+                    <button
+                      aria-label={"เพิ่มจำนวน " + i.product.name}
+                      onClick={() => update(i.product.id, i.quantity + 1)}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="cart-row-end">
+                  <strong>{money(i.product.price * i.quantity)}</strong>
+                  <button
+                    className="icon-button"
+                    aria-label={"นำ " + i.product.name + " ออก"}
+                    onClick={() =>
+                      setCart((c) =>
+                        c.filter((x) => x.product.id !== i.product.id),
+                      )
+                    }
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <Link to="/" className="text-button">
+              เลือกสินค้าเพิ่ม <ArrowRight size={16} />
+            </Link>
+          </section>
+          <section className="panel checkout-summary">
+            <h2>สรุปคำสั่งซื้อ</h2>
+            {user ? (
+              <>
+                <Field
+                  label="โค้ดโปรโมชั่น"
+                  name="coupon"
+                  value={coupon}
+                  onChange={(e) => setCoupon(e.target.value)}
+                  placeholder="ใส่โค้ดส่วนลด (ถ้ามี)"
+                />
+                <div className="payment-options">
+                  <label className={payment === "full" ? "chosen" : ""}>
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={payment === "full"}
+                      onChange={() => setPayment("full")}
+                    />
+                    <span>
+                      <b>ชำระเต็มจำนวน</b>
+                      <small>หักจากกระเป๋าเงินทันที</small>
+                    </span>
+                  </label>
+                  <label className={payment === "deposit" ? "chosen" : ""}>
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={payment === "deposit"}
+                      onChange={() => setPayment("deposit")}
+                    />
+                    <span>
+                      <b>จองมัดจำ {publicData?.depositPercent ?? 0}%</b>
+                      <small>จ่ายส่วนที่เหลือก่อนจัดส่ง</small>
+                    </span>
+                  </label>
+                </div>
+                {quoting && <Loading />}
+                {qError && <ErrorBox error={qError} />}
+                {quote && (
+                  <>
+                    <div className="summary-lines">
+                      <p>
+                        <span>ราคาสินค้า</span>
+                        <b>{money(quote.subtotal)}</b>
+                      </p>
+                      <p>
+                        <span>ส่วนลด</span>
+                        <b className="positive">−{money(quote.discount)}</b>
+                      </p>
+                      <p className="total">
+                        <span>ยอดรวม</span>
+                        <b>{money(quote.total)}</b>
+                      </p>
+                      <p>
+                        <span>ชำระตอนนี้</span>
+                        <b>{money(quote.payNow)}</b>
+                      </p>
+                      <p>
+                        <span>คงเหลือชำระก่อนส่ง</span>
+                        <b>{money(quote.due)}</b>
+                      </p>
+                    </div>
+                    <div className="wallet-hint">
+                      <Wallet size={18} /> กระเป๋าเงิน {money(user.balance)}{" "}
+                      <Link to="/wallet">เติมเงิน</Link>
+                    </div>
+                    <Form
+                      noValidate
+                      submit="ตรวจสอบและยืนยัน"
+                      onSubmit={async (f) => {
+                        const v = formObject(f);
+                        const errors = [];
+                        if (String(v.name).trim().length < 2)
+                          errors.push({
+                            path: "name",
+                            message: "กรุณาระบุชื่อผู้รับอย่างน้อย 2 ตัวอักษร",
+                          });
+                        if (String(v.address).trim().length < 10)
+                          errors.push({
+                            path: "address",
+                            message:
+                              "กรุณาระบุที่อยู่ให้ครบอย่างน้อย 10 ตัวอักษร",
+                          });
+                        if (errors.length)
+                          throw new ApiError(
+                            "กรุณาตรวจสอบข้อมูลจัดส่ง",
+                            400,
+                            errors,
+                          );
+                        setConfirmation({
+                          shipping: v,
+                          ...payload,
+                          expectedQuote: quote.fingerprint,
+                          quote,
+                        });
+                      }}
+                    >
+                      <h3>ข้อมูลจัดส่ง</h3>
+                      <Field
+                        name="name"
+                        label="ชื่อผู้รับ"
+                        required
+                        value={shipping.name}
+                        onChange={(e) =>
+                          setShipping((s) => ({ ...s, name: e.target.value }))
+                        }
+                        minLength={2}
+                        maxLength={100}
+                        autoComplete="name"
+                      />
+                      <Field
+                        name="phone"
+                        label="เบอร์โทรศัพท์"
+                        type="tel"
+                        required
+                        pattern="0[0-9]{8,9}"
+                        value={shipping.phone}
+                        onChange={(e) =>
+                          setShipping((s) => ({ ...s, phone: e.target.value }))
+                        }
+                        autoComplete="tel"
+                      />
+                      <Field
+                        name="address"
+                        label="ที่อยู่จัดส่งและรหัสไปรษณีย์"
+                        type="textarea"
+                        minLength={10}
+                        maxLength={1000}
+                        value={shipping.address}
+                        onChange={(e) =>
+                          setShipping((s) => ({
+                            ...s,
+                            address: e.target.value,
+                          }))
+                        }
+                        required
+                        autoComplete="street-address"
+                      />
+                      {quote.payNow > user.balance && (
+                        <div className="warning-box">
+                          ยอดเงินไม่พอ กรุณาเติมเงินก่อนยืนยัน
+                        </div>
+                      )}
+                    </Form>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="empty">
+                <Wallet size={32} />
+                <p>เข้าสู่ระบบเพื่อคำนวณยอดและสั่งซื้อ</p>
+                <Link className="button primary" to="/login?next=/cart">
+                  เข้าสู่ระบบ
+                </Link>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+      {confirmation && (
+        <Confirm
+          title="ยืนยันคำสั่งซื้อ"
+          description={`ยอดรวม ${money(confirmation.quote.total)} หักกระเป๋าเงินตอนนี้ ${money(confirmation.quote.payNow)} คงเหลือ ${money(confirmation.quote.due)} จัดส่งให้ ${confirmation.shipping.name} เมื่อชำระครบ`}
+          onClose={() => {
+            setConfirmation(null);
+            setQuoteVersion((v) => v + 1);
+            requestKey.current = crypto.randomUUID();
+          }}
+          onConfirm={async () => {
+            const { quote, ...body } = confirmation;
+            await send("/orders", body, "POST", requestKey.current);
+            setCart([]);
+            await refresh();
+            notify("สร้างคำสั่งซื้อแล้ว");
+            navigate("/orders");
+          }}
+        />
+      )}
+    </div>
+  );
+}
+export function WalletPage() {
+  const { user, publicData, refresh, notify } = useApp(),
+    list = useListQuery();
+  const { data, error, loading, reload } = useData<any>(
+    "/wallet?" + list.query,
+  );
+  const requestKey = useRef(crypto.randomUUID());
+  return (
+    <div className="contained">
+      <PageHeading
+        title="กระเป๋าเงิน"
+        sub="เติมเงินไว้ แล้วช้อปได้สะดวกกว่าเดิม"
+      />
+      <div className="wallet-layout">
+        <section>
+          <div className="wallet-card">
+            <div>
+              <span>HIEWLY WALLET</span>
+              <Wallet size={27} />
+            </div>
+            <small>ยอดเงินพร้อมใช้</small>
+            <strong>{money(user?.balance || 0)}</strong>
+            <div>
+              <span>{user?.name}</span>
+              <ShieldCheck size={20} />
+            </div>
+          </div>
+          <div className="panel bank-details">
+            <h2>บัญชีรับเงินของร้าน</h2>
+            <div className="bank-logo">SCB</div>
+            <strong>{publicData?.bankName || "ยังไม่ได้ตั้งค่าธนาคาร"}</strong>
+            <h2 className="bank-number">{publicData?.bankNumber || "—"}</h2>
+            <p>{publicData?.accountName}</p>
+            <p className="muted">{publicData?.accountNameEn}</p>
+            <p className="warning-note">
+              ตรวจสอบชื่อและเลขบัญชีให้ตรงก่อนโอนทุกครั้ง
+              สลิปต้องเป็นรายการภายใน 24 ชั่วโมง
+            </p>
+          </div>
+        </section>
+        <section className="panel">
+          <div className="panel-title">
+            <h2>เติมเงินด้วยสลิป</h2>
+            <span className="badge status-paid">
+              <ShieldCheck size={13} /> EasySlip
+            </span>
+          </div>
+          <p className="muted">
+            โอนเข้าบัญชีร้าน แล้วแนบสลิปเพื่อรับยอดอัตโนมัติ
+          </p>
+          {publicData?.topupReady ? (
+            <Form
+              noValidate
+              submit="ตรวจสอบสลิปและเติมเงิน"
+              onSubmit={async (f) => {
+                const data = new FormData(f);
+                data.set("amount", String(cents(data.get("amount"))));
+                await api("/wallet/topup", {
+                  method: "POST",
+                  body: data,
+                  headers: { "Idempotency-Key": requestKey.current },
+                });
+                requestKey.current = crypto.randomUUID();
+                await refresh();
+                reload();
+                f.reset();
+                notify("ตรวจสลิปสำเร็จ เติมเงินเข้ากระเป๋าแล้ว");
+              }}
+            >
+              <Field
+                label="จำนวนเงินที่โอน (บาท)"
+                name="amount"
+                type="number"
+                min="0.01"
+                max="1000000"
+                step="0.01"
+                required
+                placeholder="0.00"
+              />
+              <div className="upload-area">
+                <Upload size={30} />
+                <strong>แนบรูปสลิปการโอนเงิน</strong>
+                <span>JPG, PNG, GIF หรือ WebP ไม่เกิน 4 MB</span>
+                <Field
+                  label="เลือกรูปสลิป"
+                  name="image"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  required
+                />
+              </div>
+              <div className="info-box">
+                <ShieldCheck size={18} />
+                <p>
+                  ระบบตรวจยอด ชื่อและบัญชีผู้รับ พร้อมป้องกันสลิปซ้ำ
+                  เงินจะเข้าเมื่อการตรวจสอบผ่านครบเท่านั้น
+                </p>
+              </div>
+            </Form>
+          ) : (
+            <div className="warning-box">
+              ร้านยังตั้งค่ารับเงินไม่ครบ กรุณาติดต่อผู้ดูแลก่อนโอนเงิน
+            </div>
+          )}
+        </section>
+      </div>
+      <section className="panel section-space">
+        <div className="panel-title">
+          <h2>ประวัติกระเป๋าเงิน</h2>
+          <span className="muted">รายการล่าสุดของคุณ</span>
+        </div>
+        {error ? (
+          <ErrorBox error={error} retry={reload} />
+        ) : loading && !data ? (
+          <Loading />
+        ) : data?.items.length ? (
+          <>
+            <Table headers={["วันที่", "รายการ", "จำนวนเงิน", "ยอดคงเหลือ"]}>
+              {data.items.map((r: any) => (
+                <tr key={r.id}>
+                  <td>{date(r.created_at)}</td>
+                  <td>
+                    <Badge status={r.kind} />
+                  </td>
+                  <td className={r.amount >= 0 ? "positive" : "negative"}>
+                    {r.amount >= 0 ? "+" : ""}
+                    {money(r.amount)}
+                  </td>
+                  <td>{money(r.balance_after)}</td>
+                </tr>
+              ))}
+            </Table>
+            <Pagination data={data} onPage={list.setPage} />
+          </>
+        ) : (
+          <Empty
+            title="ยังไม่มีรายการในกระเป๋า"
+            description="รายการเติมเงิน ซื้อสินค้า และคืนเงินจะแสดงที่นี่"
+          />
+        )}
+      </section>
+    </div>
+  );
+}
+export function OrdersPage() {
+  const list = useListQuery(),
+    { refresh, notify } = useApp();
+  const { data, error, loading, reload } = useData<PageData>(
+    "/orders?" + list.query,
+  );
+  const [confirm, setConfirm] = useState<any>(null);
+  return (
+    <div className="contained">
+      <PageHeading
+        title="คำสั่งซื้อของฉัน"
+        sub="ติดตามของที่ชอบ ตั้งแต่จองจนถึงมือคุณ"
+      >
+        <Link to="/" className="button primary small">
+          <Plus size={16} /> เลือกสินค้าเพิ่ม
+        </Link>
+      </PageHeading>
+      {error ? (
+        <ErrorBox error={error} retry={reload} />
+      ) : loading && !data ? (
+        <Loading />
+      ) : data?.items.length ? (
+        <>
+          {data.items.map((o: any) => (
+            <section className="panel order-card" key={o.id}>
+              <div className="panel-title">
+                <div>
+                  <b>คำสั่งซื้อ #{o.id.slice(0, 8).toUpperCase()}</b>
+                  <small className="muted block">{date(o.created_at)}</small>
+                </div>
+                <Badge status={o.status} />
+              </div>
+              {o.items.map((i: any) => (
+                <div className="order-line" key={i.product_id}>
+                  <span>
+                    <Package size={18} />
+                    {i.name} <small>× {i.quantity}</small>
+                  </span>
+                  <b>{money(i.price * i.quantity)}</b>
+                </div>
+              ))}
+              <div className="order-summary">
+                <span>
+                  ยอดรวม <b>{money(o.total)}</b>
+                </span>
+                <span>
+                  ชำระแล้ว <b>{money(o.paid)}</b>
+                </span>
+                <span>
+                  คงเหลือ{" "}
+                  <b>
+                    {money(o.status === "cancelled" ? 0 : o.total - o.paid)}
+                  </b>
+                </span>
+              </div>
+              <p className="muted">
+                จัดส่งให้ {o.shipping.name} · {o.shipping.phone}
+                <br />
+                {o.shipping.address}
+              </p>
+              {o.tracking && (
+                <div className="info-box">
+                  <Truck size={20} />
+                  <span>
+                    เลขพัสดุ <b>{o.tracking}</b>
+                  </span>
+                </div>
+              )}
+              <div className="form-actions">
+                {!["cancelled", "shipped", "completed"].includes(o.status) && (
+                  <button
+                    className="button secondary small"
+                    onClick={() => setConfirm({ o, action: "cancel" })}
+                  >
+                    ยกเลิกคำสั่งซื้อ
+                  </button>
+                )}
+                {o.total > o.paid && o.status !== "cancelled" && (
+                  <button
+                    className="button primary small"
+                    onClick={() => setConfirm({ o, action: "pay" })}
+                  >
+                    ชำระส่วนที่เหลือ {money(o.total - o.paid)}
+                  </button>
+                )}
+              </div>
+            </section>
+          ))}
+          <Pagination data={data} onPage={list.setPage} />
+        </>
+      ) : (
+        <Empty
+          title="ยังไม่มีคำสั่งซื้อ"
+          description="เริ่มเลือกของที่ชอบ แล้วให้เราช่วยหิ้ว"
+        >
+          <Link to="/" className="button primary">
+            ไปเลือกสินค้า
+          </Link>
+        </Empty>
+      )}
+      {confirm && (
+        <Confirm
+          title={
+            confirm.action === "pay" ? "ยืนยันชำระเงิน" : "ยกเลิกคำสั่งซื้อ"
+          }
+          description={
+            confirm.action === "pay"
+              ? `หักเงินจากกระเป๋า ${money(confirm.o.total - confirm.o.paid)} สำหรับคำสั่งซื้อ #${confirm.o.id.slice(0, 8)}`
+              : `ยกเลิกคำสั่งซื้อ #${confirm.o.id.slice(0, 8)} และคืนเงินที่จ่ายจริง ${money(confirm.o.paid)} เข้ากระเป๋า`
+          }
+          danger={confirm.action === "cancel"}
+          onClose={() => setConfirm(null)}
+          onConfirm={async () => {
+            await send(`/orders/${confirm.o.id}/${confirm.action}`, {});
+            await refresh();
+            reload();
+            notify("ดำเนินการเรียบร้อยแล้ว");
+          }}
+        />
+      )}
+    </div>
+  );
+}
+export function ReferralPage() {
+  const { user, notify } = useApp();
+  const commissionList = useListQuery();
+  const { data, error, loading, reload } = useData(
+    "/referrals?" + commissionList.query,
+  );
+  const [qr, setQr] = useState("");
+  const link =
+    location.origin + "/register?ref=" + encodeURIComponent(data?.code || "");
+  useEffect(() => {
+    if (data)
+      QRCode.toDataURL(link, {
+        width: 240,
+        margin: 2,
+        color: { dark: "#25243b", light: "#ffffff" },
+      }).then(setQr);
+  }, [data?.code]);
+  return (
+    <div className="contained narrow">
+      <PageHeading
+        title="ชวนเพื่อนมาหิ้วด้วยกัน"
+        sub="แบ่งปันของที่ชอบ ผ่านลิงก์แนะนำของคุณ"
+      />
+      {error ? (
+        <ErrorBox error={error} retry={reload} />
+      ) : loading ? (
+        <Loading />
+      ) : (
+        <>
+          <section className="panel referral-panel">
+            <span className="gift-tile">
+              <Gift size={36} />
+            </span>
+            <h2>ช้อปสนุกกว่า เมื่อมีเพื่อน</h2>
+            <p className="muted">
+              เพื่อนสมัครผ่านลิงก์นี้ ระบบจะบันทึกว่าคุณเป็นผู้แนะนำ
+            </p>
+            {qr && (
+              <img
+                className="referral-qr"
+                src={qr}
+                width={240}
+                height={240}
+                alt="QR Code สมัครสมาชิกผ่านการแนะนำของคุณ"
+              />
+            )}
+            <div className="share-link">
+              <Link2 size={18} />
+              <input aria-label="ลิงก์แนะนำเพื่อน" readOnly value={link} />
+              <button
+                className="button primary small"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    notify("คัดลอกลิงก์แล้ว");
+                  } catch {
+                    notify("กรุณาเลือกลิงก์แล้วคัดลอกด้วยตนเอง");
+                  }
+                }}
+              >
+                <Copy size={16} /> คัดลอก
+              </button>
+            </div>
+            <p className="muted">
+              รหัสของคุณ <b>{data?.code}</b>
+            </p>
+          </section>
+          <div className="referral-stats">
+            <div className="panel">
+              <strong>{data?.count || 0}</strong>
+              <span>เพื่อนที่สมัครผ่านลิงก์</span>
+            </div>
+            <div className="panel">
+              <strong>{data?.converted || 0}</strong>
+              <span>เพื่อนที่ชำระคำสั่งซื้อครบแล้ว</span>
+            </div>
+          </div>
+          <div className="referral-stats">
+            <div className="panel">
+              <strong>{money(data?.commissionTotals?.pending || 0)}</strong>
+              <span>ค่าคอมรอออร์เดอร์สำเร็จ</span>
+            </div>
+            <div className="panel">
+              <strong>{money(data?.commissionTotals?.credited || 0)}</strong>
+              <span>ค่าคอมเข้ากระเป๋าแล้ว</span>
+            </div>
+          </div>
+          <section className="panel">
+            <h2>ประวัติค่าคอมมิชชั่น</h2>
+            {data?.commissions?.items.length ? (
+              <>
+                <Table headers={["บิล", "ฐาน / อัตรา", "ค่าคอม", "สถานะ"]}>
+                  {data.commissions.items.map((c: any) => (
+                    <tr key={c.order_id}>
+                      <td>#{c.order_id.slice(0, 8)}</td>
+                      <td>
+                        {money(c.base)} / {c.rate_bps / 100}%
+                      </td>
+                      <td>{money(c.amount)}</td>
+                      <td>
+                        <Badge status={c.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </Table>
+                <Pagination
+                  data={data.commissions}
+                  onPage={commissionList.setPage}
+                />
+              </>
+            ) : (
+              <Empty
+                title="ยังไม่มีค่าคอมมิชชั่น"
+                description="บิลจากเพื่อนที่คุณแนะนำจะแสดงที่นี่"
+              />
+            )}
+          </section>
+          <div className="info-box">
+            <Gift size={22} />
+            <p>
+              อัตราสำหรับบิลใหม่ {data?.commissionPercent || 0}%
+              จากยอดหลังส่วนลด จ่ายเข้ากระเป๋าเมื่อออร์เดอร์สำเร็จ
+              อัตราของบิลเดิมใช้ค่าที่ล็อกไว้ตอนสั่งซื้อ
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+export function AccountPage() {
+  const { user, refresh, notify } = useApp();
+  const navigate = useNavigate();
+  return (
+    <div className="contained narrow">
+      <PageHeading title="บัญชีของฉัน" sub="ดูแลข้อมูลการเข้าสู่ระบบของคุณ" />
+      <section className="panel">
+        <h2>{user?.name}</h2>
+        <p>{user?.email}</p>
+        <Badge status={user?.roleName || ""} />
+        <h3>เปลี่ยนรหัสผ่าน</h3>
+        <Form
+          noValidate
+          submit="เปลี่ยนรหัสผ่าน"
+          onSubmit={async (f) => {
+            await send("/auth/password", formObject(f));
+            await refresh();
+            notify("เปลี่ยนรหัสผ่านแล้ว กรุณาเข้าสู่ระบบอีกครั้ง");
+            navigate("/login");
+          }}
+        >
+          <Field
+            label="รหัสผ่านปัจจุบัน"
+            name="current"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+          <Field
+            label="รหัสผ่านใหม่"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            required
+            help="อย่างน้อย 12 ตัวอักษร"
+          />
+        </Form>
+        <hr />
+        <button
+          className="button secondary"
+          onClick={async () => {
+            await send("/auth/logout", {});
+            await refresh();
+            navigate("/login");
+          }}
+        >
+          ออกจากระบบ
+        </button>
+      </section>
+    </div>
+  );
+}

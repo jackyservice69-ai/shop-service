@@ -1,0 +1,441 @@
+import {
+  AppearancePage,
+  BannersPage,
+  PromotionsPage,
+  CommissionsPage,
+  BackToTop,
+  themeStyle,
+} from "./experience";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+  NavLink,
+  Link,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+import {
+  ShoppingBag,
+  Wallet,
+  Package,
+  Users,
+  LayoutDashboard,
+  Ticket,
+  Megaphone,
+  Receipt,
+  ShieldCheck,
+  Settings,
+  ScrollText,
+  ArrowUpRight,
+  LogOut,
+  Store,
+  UserRound,
+  ChevronRight,
+  Headphones,
+} from "lucide-react";
+import { AppProvider, useApp, can, send } from "./api";
+import { Brand, Loading } from "./ui";
+import {
+  StorePage,
+  AuthPage,
+  CartPage,
+  WalletPage,
+  OrdersPage,
+  ReferralPage,
+  AccountPage,
+  AnnouncementPopup,
+} from "./shop";
+import {
+  DashboardPage,
+  ResourcePage,
+  AdminOrders,
+  FinancePage,
+  MembersPage,
+  RolesPage,
+  SettingsPage,
+  AuditPage,
+} from "./admin";
+import "./styles.css";
+const nav = [
+  ["dashboard", "ภาพรวม", LayoutDashboard],
+  ["orders", "คำสั่งซื้อ", Package],
+  ["products", "จัดการสินค้า", ShoppingBag],
+  ["members", "สมาชิก", Users],
+  ["finance", "รายรับ–รายจ่าย", Receipt],
+  ["promotions", "โปรโมชั่น", Ticket],
+  ["announcements", "ประกาศ", Megaphone],
+  ["roles", "สิทธิ์การใช้งาน", ShieldCheck],
+  ["appearance", "สีและภาพลักษณ์", Settings],
+  ["banners", "แบนเนอร์", Megaphone],
+  ["commissions", "ค่าคอมมิชชั่น", Users],
+  ["settings", "ตั้งค่าระบบ", Settings],
+  ["audit", "บันทึก Audit", ScrollText],
+] as const;
+const navPermission = (p: string) =>
+  ({ appearance: "settings", banners: "settings", commissions: "finance" })[
+    p
+  ] || p;
+function Protected({ admin = false }: { admin?: boolean }) {
+  const { user, loading } = useApp();
+  const location = useLocation();
+  if (loading) return <Loading />;
+  if (!user)
+    return (
+      <Navigate
+        to={
+          "/login?next=" +
+          encodeURIComponent(location.pathname + location.search)
+        }
+        replace
+      />
+    );
+  if (admin && !user.permissions.length) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+function StoreLayout() {
+  const { user, cart, refresh, notify, publicData } = useApp();
+  const navigate = useNavigate();
+  return (
+    <div className="customer-shell" style={themeStyle(publicData?.theme)}>
+      <header className="store-header">
+        <Link to="/" aria-label="หิ้วลี่ หน้าร้าน">
+          <Brand />
+        </Link>
+        <nav>
+          <NavLink to="/" end>
+            เลือกซื้อสินค้า
+          </NavLink>
+          <NavLink to="/promotions">โปรโมชั่น</NavLink>
+          {user && (
+            <>
+              <NavLink to="/orders">คำสั่งซื้อ</NavLink>
+              <NavLink to="/wallet">กระเป๋าเงิน</NavLink>
+              <NavLink to="/referrals">ชวนเพื่อน</NavLink>
+              <NavLink to="/coupons">คูปอง</NavLink>
+            </>
+          )}
+        </nav>
+        <div className="store-tools">
+          {user?.permissions.length ? (
+            <Link to="/admin" className="text-button admin-link">
+              <LayoutDashboard size={16} /> หลังบ้าน
+            </Link>
+          ) : null}
+          <Link
+            to="/cart"
+            className="cart-button"
+            aria-label={
+              "ตะกร้า " + cart.reduce((s, i) => s + i.quantity, 0) + " ชิ้น"
+            }
+          >
+            <ShoppingBag size={20} />
+            <span>{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+          </Link>
+          {user ? (
+            <Link className="avatar" to="/account" aria-label="บัญชีของฉัน">
+              {user.name.slice(0, 1)}
+            </Link>
+          ) : (
+            <Link className="button primary small" to="/login">
+              เข้าสู่ระบบ
+            </Link>
+          )}
+        </div>
+      </header>
+      <main id="main-content" className="store-main" tabIndex={-1}>
+        <Outlet />
+      </main>
+      <footer className="store-footer">
+        <Brand />
+        <p>ของที่ชอบ ให้เราหิ้ว ดูแลตั้งแต่สั่งจนถึงมือคุณ</p>
+        <span>หิ้วลี่ · Personal shopping service</span>
+      </footer>
+      <AnnouncementPopup />
+      <BackToTop />
+    </div>
+  );
+}
+function AdminLayout() {
+  const { user, refresh } = useApp();
+  const navigate = useNavigate();
+  return (
+    <div className="admin-layout">
+      <aside className="sidebar">
+        <Link to="/admin" className="sidebar-brand">
+          <Brand />
+        </Link>
+        <div className="workspace-label">
+          พื้นที่จัดการร้านค้า <span>ADMIN</span>
+        </div>
+        <div className="nav-group-label">จัดการร้านค้า</div>
+        <nav>
+          {nav
+            .filter(([p]) => can(user, navPermission(p)))
+            .map(([path, label, Icon], i) => (
+              <NavLink
+                end={path === "dashboard"}
+                key={path}
+                to={"/admin/" + (path === "dashboard" ? "" : path)}
+              >
+                <Icon size={19} />
+                {label}
+                {path === "dashboard" && <span className="nav-dot" />}
+              </NavLink>
+            ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="help-card">
+            <Headphones size={22} />
+            <strong>ทุกอย่างอยู่ในที่เดียว</strong>
+            <p>
+              จัดการร้าน พร้อมดูแลลูกค้า
+              <br />
+              ในทุกขั้นตอน
+            </p>
+            <Link to="/" className="text-button">
+              ไปที่หน้าร้าน <ArrowUpRight size={16} />
+            </Link>
+          </div>
+          <button
+            className="sidebar-user"
+            onClick={async () => {
+              await send("/auth/logout", {});
+              await refresh();
+              navigate("/login");
+            }}
+          >
+            <span className="avatar">{user?.name.slice(0, 1)}</span>
+            <span>
+              <b>{user?.name}</b>
+              <small>{user?.roleName}</small>
+            </span>
+            <LogOut size={17} />
+          </button>
+        </div>
+      </aside>
+      <div className="admin-body">
+        <header className="admin-topbar">
+          <div>
+            ร้านของฉัน <ChevronRight size={14} /> <span>ระบบจัดการร้านค้า</span>
+          </div>
+          <div>
+            <span className="system-online">
+              <i /> ระบบพร้อมใช้งาน
+            </span>
+            <Link to="/" className="button secondary small">
+              <Store size={16} /> ดูหน้าร้าน <ArrowUpRight size={14} />
+            </Link>
+            <Link to="/account" className="avatar" aria-label="บัญชีของฉัน">
+              {user?.name.slice(0, 1)}
+            </Link>
+          </div>
+        </header>
+        <main id="main-content" className="admin-main">
+          <Outlet />
+        </main>
+        <footer className="admin-footer">
+          <span>หิ้วลี่ — ร้านที่ดี เริ่มจากการดูแลที่ดี</span>
+          <span>จัดเก็บข้อมูลในฐานข้อมูลของร้าน</span>
+        </footer>
+      </div>
+    </div>
+  );
+}
+function Permission({
+  name,
+  children,
+}: {
+  name: string;
+  children: React.ReactNode;
+}) {
+  const { user } = useApp();
+  return can(user, name) ? (
+    children
+  ) : (
+    <div className="panel">
+      <h1>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h1>
+      <Link to="/">กลับหน้าร้าน</Link>
+    </div>
+  );
+}
+function HomeAdmin() {
+  const { user } = useApp();
+  if (can(user, "dashboard")) return <DashboardPage />;
+  const first = nav.find(([p]) => can(user, navPermission(p)));
+  return first ? (
+    <Navigate to={"/admin/" + first[0]} replace />
+  ) : (
+    <Navigate to="/" replace />
+  );
+}
+function App() {
+  return (
+    <BrowserRouter>
+      <AppProvider>
+        <a href="#main-content" className="skip-link">
+          ข้ามไปยังเนื้อหา
+        </a>
+        <Routes>
+          <Route element={<StoreLayout />}>
+            <Route index element={<StorePage />} />
+            <Route path="login" element={<AuthPage />} />
+            <Route path="register" element={<AuthPage register />} />
+            <Route path="cart" element={<CartPage />} />
+            <Route path="promotions" element={<PromotionsPage />} />
+            <Route element={<Protected />}>
+              <Route path="wallet" element={<WalletPage />} />
+              <Route path="coupons" element={<PromotionsPage coupons />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="referrals" element={<ReferralPage />} />
+              <Route path="account" element={<AccountPage />} />
+            </Route>
+          </Route>
+          <Route element={<Protected admin />}>
+            <Route path="admin" element={<AdminLayout />}>
+              <Route index element={<HomeAdmin />} />
+              <Route
+                path="appearance"
+                element={
+                  <Permission name="settings">
+                    <AppearancePage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="banners"
+                element={
+                  <Permission name="settings">
+                    <BannersPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="commissions"
+                element={
+                  <Permission name="finance">
+                    <CommissionsPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="orders"
+                element={
+                  <Permission name="orders">
+                    <AdminOrders />
+                  </Permission>
+                }
+              />
+              <Route
+                path="products"
+                element={
+                  <Permission name="products">
+                    <ResourcePage resource="products" />
+                  </Permission>
+                }
+              />
+              <Route
+                path="promotions"
+                element={
+                  <Permission name="promotions">
+                    <ResourcePage resource="promotions" />
+                  </Permission>
+                }
+              />
+              <Route
+                path="announcements"
+                element={
+                  <Permission name="announcements">
+                    <ResourcePage resource="announcements" />
+                  </Permission>
+                }
+              />
+              <Route
+                path="finance"
+                element={
+                  <Permission name="finance">
+                    <FinancePage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="members"
+                element={
+                  <Permission name="members">
+                    <MembersPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="roles"
+                element={
+                  <Permission name="roles">
+                    <RolesPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <Permission name="settings">
+                    <SettingsPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="audit"
+                element={
+                  <Permission name="audit">
+                    <AuditPage />
+                  </Permission>
+                }
+              />
+            </Route>
+          </Route>
+          <Route
+            path="*"
+            element={
+              <div className="empty">
+                <h1>ไม่พบหน้านี้</h1>
+                <Link to="/">กลับหน้าร้าน</Link>
+              </div>
+            }
+          />
+        </Routes>
+      </AppProvider>
+    </BrowserRouter>
+  );
+}
+class AppBoundary extends React.Component<
+  { children: React.ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? (
+      <main className="initial-error" role="alert">
+        <h1>หน้านี้แสดงผลไม่สำเร็จ</h1>
+        <p>กรุณาโหลดหน้าใหม่ ข้อมูลธุรกรรมยังเก็บอยู่ในระบบ</p>
+        <button className="button primary" onClick={() => location.reload()}>
+          โหลดหน้าใหม่
+        </button>
+      </main>
+    ) : (
+      this.props.children
+    );
+  }
+}
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <AppBoundary>
+      <App />
+    </AppBoundary>
+  </React.StrictMode>,
+);
