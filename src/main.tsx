@@ -7,6 +7,7 @@ import {
   themeStyle,
 } from "./experience";
 import React from "react";
+import { GoogleCompletePage } from "./google-auth";
 import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
 import { AdminReviewsPage } from "./reviews";
 import { SocialLinks } from "./contacts";
@@ -101,25 +102,30 @@ function Protected({ admin = false }: { admin?: boolean }) {
         replace
       />
     );
+  if (user.mustChangePassword && location.pathname !== "/account")
+    return <Navigate to="/account" replace />;
   if (admin && !user.permissions.length) return <Navigate to="/" replace />;
   return <Outlet />;
 }
 function StoreLayout() {
   const { user, cart, refresh, notify, publicData } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loggingOut, setLoggingOut] = React.useState(false);
+  if (user?.mustChangePassword && location.pathname !== "/account")
+    return <Navigate to="/account" replace />;
   return (
     <div className="customer-shell" style={themeStyle(publicData?.theme)}>
       <header className="store-header">
-        <Link to="/" aria-label="Iya หิ้ว หน้าร้าน">
-          <Brand />
+        <Link to="/" title="หน้าร้าน">
+          <Brand variant="marble" />
         </Link>
         <nav>
           <NavLink to="/" end>
             เลือกซื้อสินค้า
           </NavLink>
           <NavLink to="/promotions">โปรโมชั่น</NavLink>
-          {user && (
+          {user && !user.mustChangePassword && (
             <>
               <NavLink to="/orders">คำสั่งซื้อ</NavLink>
               <NavLink to="/wallet">กระเป๋าเงิน</NavLink>
@@ -185,7 +191,7 @@ function StoreLayout() {
         <Outlet />
       </main>
       <footer className="store-footer">
-        <Brand />
+        <Brand variant="marble" />
         <p>ของที่ชอบ ให้เราหิ้ว ดูแลตั้งแต่สั่งจนถึงมือคุณ</p>
         <SocialLinks />
         <span>Iya หิ้ว · Personal shopping service</span>
@@ -320,6 +326,7 @@ function App() {
             <Route index element={<StorePage />} />
             <Route path="login" element={<AuthPage />} />
             <Route path="register" element={<AuthPage register />} />
+            <Route path="google/complete" element={<GoogleCompletePage />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="promotions" element={<PromotionsPage />} />
             <Route element={<Protected />}>

@@ -2150,6 +2150,19 @@ td small {
   gap: 25px;
   align-items: start;
 }
+.member-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+.members-panel th:last-child {
+  text-align: center;
+}
+.member-secret-actions {
+  flex-wrap: wrap;
+}
 .wallet-card {
   --wallet-gold: #c89c54;
   --wallet-ink: var(--palette-ink-heading);
@@ -2307,6 +2320,13 @@ td small {
   gap: 6px;
   flex-shrink: 0;
   font-size: 12px;
+}
+.topup-steps-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin-bottom: 20px;
 }
 .bank-details {
   position: relative;
@@ -3407,6 +3427,7 @@ td small {
 /* Customer palette: shared/customer-colors.json → themeStyle → this shell.
    The admin palette stays scoped to :root. */
 .customer-shell {
+  --marble-texture: url("/assets/textures/rose-marble-v1.webp");
   background:
     radial-gradient(
       ellipse at 0 0,
@@ -3432,6 +3453,51 @@ td small {
 }
 .customer-shell .store-header {
   border-color: var(--border);
+}
+.customer-shell .store-header,
+.customer-shell .store-footer,
+.customer-shell .store-hero {
+  isolation: isolate;
+}
+.customer-shell .store-footer {
+  position: relative;
+  max-width: none;
+  margin: 0;
+  padding: 27px max(22px, calc((100% - 1236px) / 2)) 30px;
+  background: var(--surface);
+}
+.customer-shell .store-header::before,
+.customer-shell .store-footer::before,
+.customer-shell .store-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  background-image: var(--marble-texture);
+  background-size: 1200px 600px;
+  background-position: center;
+  opacity: 0.72;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.customer-shell .store-footer::before {
+  background-position: 65% 72%;
+}
+@supports (background-image: image-set(url("x.avif") type("image/avif"))) {
+  .customer-shell {
+    --marble-texture: image-set(
+      url("/assets/textures/rose-marble-v1.avif") type("image/avif"),
+      url("/assets/textures/rose-marble-v1.webp") type("image/webp")
+    );
+  }
+}
+@media (forced-colors: active) {
+  .customer-shell .store-header::before,
+  .customer-shell .store-footer::before,
+  .customer-shell .store-hero::before {
+    display: none;
+  }
 }
 .customer-shell .store-header nav {
   min-width: 0;
@@ -3500,18 +3566,6 @@ td small {
 }
 .customer-shell .store-hero {
   background: var(--primary-soft);
-  background:
-    radial-gradient(ellipse at 12% 8%, #ffffffc2, transparent 48%),
-    radial-gradient(
-      ellipse at 100% 80%,
-      color-mix(in srgb, var(--accent-rose) 65%, transparent),
-      transparent 47%
-    ),
-    linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--primary) 45%, var(--surface)),
-      color-mix(in srgb, var(--secondary) 65%, var(--surface))
-    );
   border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--surface));
 }
 .customer-shell .product-card {
@@ -4484,4 +4538,60 @@ td small {
 .section-tabs button.active {
   background: var(--primary-soft);
   border-color: var(--primary);
+}
+/* Google branding uses the official multicolour G on its prescribed light button. */
+.google-auth {
+  margin-top: 24px;
+}
+.google-button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.google-button img {
+  flex: 0 0 20px;
+}
+.google-button:hover:not(:disabled) {
+  background: #f2f2f2;
+}
+.google-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.google-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+  color: var(--ink-subtle);
+  font-size: 0.85rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+.google-complete {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+.google-verified-email {
+  overflow-wrap: anywhere;
+  font-weight: 600;
 }

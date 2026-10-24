@@ -1,6 +1,9 @@
 node_modules
 .git
 .env*
+.secrets
+[Cc]redentials*.json
+client_secret*.json
 .local-admin.txt
 data
 test-results

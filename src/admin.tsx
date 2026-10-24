@@ -1,4 +1,5 @@
 import { ImageUpload } from "./experience";
+import { CustomerManagement } from "./member-management";
 import socialPlatforms from "../shared/socials.json";
 import brandColors from "../shared/customer-colors.json";
 import { useEffect, useState } from "react";
@@ -1334,14 +1335,18 @@ export function MembersPage() {
   );
   const { data: roles } = useData("/admin/roles");
   const [editing, setEditing] = useState<any>(null),
-    [confirmation, setConfirmation] = useState<any>(null);
+    [confirmation, setConfirmation] = useState<any>(null),
+    [customerAction, setCustomerAction] = useState<{
+      row: any;
+      mode: "profile" | "reset";
+    } | null>(null);
   return (
     <>
       <PageHeading
         title="สมาชิก"
         sub="ดูแลบัญชีลูกค้า ยอดเงิน และสิทธิ์การใช้งาน"
       />
-      <section className="panel">
+      <section className="panel members-panel">
         <div className="table-toolbar">
           <SearchBox
             value={list.q}
@@ -1395,14 +1400,39 @@ export function MembersPage() {
                   </td>
                   <td>{date(r.created_at)}</td>
                   <td>
-                    {user?.roleId === "admin" && (
-                      <button
-                        className="text-button"
-                        onClick={() => setEditing(r)}
-                      >
-                        <Pencil size={15} /> จัดการ
-                      </button>
-                    )}
+                    <div className="member-actions">
+                      {user?.roleId === "admin" && (
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() => setEditing(r)}
+                        >
+                          <Pencil size={15} /> จัดการ
+                        </button>
+                      )}
+                      {r.role_id === "customer" && can(user, "member_edit") && (
+                        <>
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={() =>
+                              setCustomerAction({ row: r, mode: "profile" })
+                            }
+                          >
+                            แก้ไขข้อมูล
+                          </button>
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={() =>
+                              setCustomerAction({ row: r, mode: "reset" })
+                            }
+                          >
+                            รีเซ็ตรหัสผ่าน
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1464,6 +1494,14 @@ export function MembersPage() {
           }}
         />
       )}
+      {customerAction && (
+        <CustomerManagement
+          row={customerAction.row}
+          mode={customerAction.mode}
+          onClose={() => setCustomerAction(null)}
+          changed={reload}
+        />
+      )}
     </>
   );
 }
@@ -1475,6 +1513,7 @@ const permissionLabels: Record<string, string> = {
   orders: "จัดการคำสั่งซื้อ",
   finance: "รายรับ–รายจ่าย",
   members: "ดูสมาชิก",
+  member_edit: "แก้ไขข้อมูลและรีเซ็ตรหัสผ่านลูกค้า",
   roles: "ดูบทบาท",
   promotions: "โปรโมชั่น",
   announcements: "ประกาศ",

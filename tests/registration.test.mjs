@@ -142,6 +142,13 @@ test("profile migration preserves old names, passwords and balances and can run 
       "line_id",
     ])
       db.exec(`ALTER TABLE users DROP COLUMN ${field}`);
+    for (const field of [
+      "member_version",
+      "must_change_password",
+      "password_reset_expires_at",
+      "has_password",
+    ])
+      db.exec(`ALTER TABLE users DROP COLUMN ${field}`);
     db.exec("PRAGMA user_version=2");
     db.close();
     db = undefined;
@@ -151,6 +158,10 @@ test("profile migration preserves old names, passwords and balances and can run 
       assert.equal(row.name, user.name);
       assert.equal(row.password, user.password);
       assert.equal(row.balance, 54321);
+      assert.equal(row.member_version, 1);
+      assert.equal(row.must_change_password, 0);
+      assert.equal(row.password_reset_expires_at, null);
+      assert.equal(row.has_password, 1);
       for (const field of [
         "first_name",
         "last_name",
@@ -159,7 +170,7 @@ test("profile migration preserves old names, passwords and balances and can run 
         "line_id",
       ])
         assert.equal(row[field], "");
-      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 5);
+      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 7);
       db.close();
       db = undefined;
     }

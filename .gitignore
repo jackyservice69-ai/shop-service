@@ -2,6 +2,9 @@ node_modules/
 dist/
 .env
 .env.local
+.secrets/
+[Cc]redentials*.json
+client_secret*.json
 .local-admin.txt
 data/
 test-results/

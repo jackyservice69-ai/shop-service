@@ -56,6 +56,11 @@ export function openDb(path) {
  CREATE TABLE IF NOT EXISTS roles(id TEXT PRIMARY KEY,name TEXT NOT NULL UNIQUE,permissions TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT NOT NULL UNIQUE,password TEXT NOT NULL,role_id TEXT NOT NULL REFERENCES roles(id),active INTEGER NOT NULL DEFAULT 1,balance INTEGER NOT NULL DEFAULT 0 CHECK(balance>=0),referral_code TEXT NOT NULL UNIQUE,referred_by TEXT REFERENCES users(id),created_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),csrf TEXT NOT NULL,expires_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS google_identities(subject TEXT PRIMARY KEY,user_id TEXT NOT NULL UNIQUE REFERENCES users(id),created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS google_auth_attempts(state_hash TEXT PRIMARY KEY,browser_hash TEXT NOT NULL UNIQUE,nonce TEXT NOT NULL,verifier TEXT NOT NULL,next TEXT NOT NULL,referral_code TEXT NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS google_pending(cookie_hash TEXT PRIMARY KEY,subject TEXT NOT NULL,email TEXT NOT NULL,first_name TEXT NOT NULL,last_name TEXT NOT NULL,next TEXT NOT NULL,referral_code TEXT NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0);
+ CREATE INDEX IF NOT EXISTS google_attempt_expiry ON google_auth_attempts(expires_at);
+ CREATE INDEX IF NOT EXISTS google_pending_expiry ON google_pending(expires_at);
  CREATE TABLE IF NOT EXISTS products(id TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL,category TEXT NOT NULL,price INTEGER NOT NULL CHECK(price>0),cost INTEGER NOT NULL DEFAULT 0 CHECK(cost>=0),stock INTEGER NOT NULL CHECK(stock>=0),image TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS promotions(id TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE,type TEXT NOT NULL CHECK(type IN ('percent','fixed')),value INTEGER NOT NULL CHECK(value>0),minimum INTEGER NOT NULL DEFAULT 0,limit_count INTEGER NOT NULL DEFAULT 100,per_user INTEGER NOT NULL DEFAULT 1,starts_at TEXT NOT NULL,ends_at TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,version INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),request_key TEXT NOT NULL,request_hash TEXT NOT NULL,subtotal INTEGER NOT NULL,discount INTEGER NOT NULL,total INTEGER NOT NULL CHECK(total>=0),paid INTEGER NOT NULL CHECK(paid>=0),deposit_percent INTEGER NOT NULL,status TEXT NOT NULL,promotion_id TEXT REFERENCES promotions(id),shipping TEXT NOT NULL,tracking TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,UNIQUE(user_id,request_key));
@@ -98,6 +103,10 @@ export function openDb(path) {
       ["users", "phone", "TEXT NOT NULL DEFAULT ''"],
       ["users", "discovery_source", "TEXT NOT NULL DEFAULT ''"],
       ["users", "line_id", "TEXT NOT NULL DEFAULT ''"],
+      ["users", "member_version", "INTEGER NOT NULL DEFAULT 1"],
+      ["users", "must_change_password", "INTEGER NOT NULL DEFAULT 0"],
+      ["users", "password_reset_expires_at", "TEXT"],
+      ["users", "has_password", "INTEGER NOT NULL DEFAULT 1"],
       ["promotions", "image", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "title", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "description", "TEXT NOT NULL DEFAULT ''"],
@@ -117,7 +126,7 @@ export function openDb(path) {
           .some((c) => c.name === column)
       )
         db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-    db.exec("PRAGMA user_version=5");
+    db.exec("PRAGMA user_version=7");
   });
   db.prepare("INSERT OR IGNORE INTO roles VALUES (?,?,?)").run(
     "admin",

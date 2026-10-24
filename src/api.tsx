@@ -19,6 +19,8 @@ export type User = {
   permissions: string[];
   balance: number;
   referralCode: string;
+  mustChangePassword: boolean;
+  hasPassword: boolean;
 };
 export type Product = {
   id: string;

@@ -6,10 +6,15 @@ import {
   currentPaymentQr,
 } from "./experience.mjs";
 import express from "express";
+import { attachGoogleAuth } from "./google-auth.mjs";
 import { attachAddresses } from "./addresses.mjs";
 import { attachConsignments } from "./consignments.mjs";
 import { settleConsignments } from "./consignment-ledger.mjs";
 import { attachReviews } from "./reviews.mjs";
+import {
+  attachMemberManagement,
+  memberProfileSchema,
+} from "./member-management.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import socialPlatforms from "../shared/socials.json" with { type: "json" };
 import helmet from "helmet";
@@ -60,6 +65,7 @@ export const PERMISSIONS = [
   "orders",
   "finance",
   "members",
+  "member_edit",
   "roles",
   "promotions",
   "announcements",
@@ -90,6 +96,8 @@ const safeUser = (u) =>
         balance: u.balance,
         referralCode: u.referral_code,
         createdAt: u.created_at,
+        mustChangePassword: !!u.must_change_password,
+        hasPassword: !!u.has_password,
       }
     : null;
 const keyOf = (req) =>
@@ -260,8 +268,36 @@ export function createApp(db, config) {
             "SELECT u.*,r.name role_name,r.permissions FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=? AND active=1",
           )
           .get(s.user_id);
+        if (
+          req.user?.must_change_password &&
+          req.user.password_reset_expires_at <= now()
+        ) {
+          db.prepare("DELETE FROM sessions WHERE user_id=?").run(req.user.id);
+          req.user = undefined;
+          req.session = undefined;
+          res.clearCookie("hiewly_session", { path: "/" });
+        }
       }
     }
+    next();
+  });
+  app.use("/api", (req, res, next) => {
+    const safe =
+      [
+        "/me",
+        "/public",
+        "/health",
+        "/auth/password",
+        "/auth/logout",
+        "/auth/login",
+      ].includes(req.path) ||
+      (req.method === "GET" &&
+        (req.path === "/products" || /^\/media\/[a-f0-9]{32}$/.test(req.path)));
+    if (req.user?.must_change_password && !safe)
+      return res.status(403).json({
+        error: "กรุณาเปลี่ยนรหัสผ่านชั่วคราวก่อนใช้งาน",
+        code: "PASSWORD_CHANGE_REQUIRED",
+      });
     next();
   });
   const permissionsAny =
@@ -292,7 +328,7 @@ export function createApp(db, config) {
     limit: config.production ? 20 : (config.authRateLimit ?? 20),
     message: { error: "เข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาที" },
   });
-  function session(req, res, user) {
+  function session(req, res, user, redirectTo = null, redirectAfter = null) {
     if (req.cookies.hiewly_session)
       db.prepare("DELETE FROM sessions WHERE token=?").run(
         hash(req.cookies.hiewly_session),
@@ -308,12 +344,14 @@ export function createApp(db, config) {
     );
     res.cookie("hiewly_session", token, {
       httpOnly: true,
-      secure: config.production,
+      secure: config.production || config.origin.startsWith("https:"),
       sameSite: "strict",
       maxAge: 8 * 3600000,
       path: "/",
     });
+    if (redirectTo) return res.redirect(303, config.origin + redirectTo);
     res.json({
+      ...(redirectAfter ? { redirectTo: redirectAfter } : {}),
       user: safeUser(
         db
           .prepare(
@@ -325,6 +363,7 @@ export function createApp(db, config) {
     });
   }
   app.get("/api/health", (req, res) => res.json({ ok: true }));
+  attachGoogleAuth(app, db, config, { session, authLimiter, asyncRoute });
   app.get("/api/me", (req, res) =>
     res.json({
       user: safeUser(req.user),
@@ -336,45 +375,7 @@ export function createApp(db, config) {
     authLimiter,
     asyncRoute((req, res) => {
       const input = parse(
-        z.object({
-          firstName: z
-            .string()
-            .trim()
-            .min(1, "กรุณากรอกชื่อหน้า")
-            .max(80, "ชื่อหน้ายาวเกิน 80 ตัวอักษร"),
-          lastName: z
-            .string()
-            .trim()
-            .min(1, "กรุณากรอกนามสกุล")
-            .max(80, "นามสกุลยาวเกิน 80 ตัวอักษร"),
-          phone: z
-            .string()
-            .trim()
-            .min(1, "กรุณากรอกเบอร์โทร")
-            .max(30, "เบอร์โทรยาวเกินไป")
-            .transform((value) => value.replace(/[\s()-]/g, ""))
-            .refine(
-              (value) => /^(?:0\d{8,9}|\+[1-9]\d{7,14})$/.test(value),
-              "ใช้เบอร์ไทย 9–10 หลัก หรือรหัสประเทศ เช่น +66812345678",
-            ),
-          discoverySource: z
-            .string()
-            .trim()
-            .max(120, "ระบุช่องทางไม่เกิน 120 ตัวอักษร")
-            .default(""),
-          lineId: z
-            .string()
-            .trim()
-            .max(100, "LINE ID ยาวเกิน 100 ตัวอักษร")
-            .regex(
-              /^[A-Za-z0-9_.@-]*$/,
-              "LINE ID ใช้ตัวอักษรอังกฤษ ตัวเลข จุด ขีดล่าง ขีดกลาง หรือ @",
-            )
-            .default(""),
-          email: z
-            .email()
-            .max(200)
-            .transform((v) => v.toLowerCase()),
+        memberProfileSchema.extend({
           password: z.string().min(12).max(128),
           referralCode: z.string().max(40).optional(),
         }),
@@ -431,7 +432,13 @@ export function createApp(db, config) {
         input.password,
         user?.password || dummyHash,
       );
-      if (!user || !valid || !user.active) {
+      if (
+        !user ||
+        !valid ||
+        !user.has_password ||
+        !user.active ||
+        (user.must_change_password && user.password_reset_expires_at <= now())
+      ) {
         audit(db, null, "auth.login_failed", "session");
         fail(401, "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       }
@@ -448,21 +455,26 @@ export function createApp(db, config) {
     "/api/auth/password",
     auth,
     csrf,
+    authLimiter,
     asyncRoute((req, res) => {
       const v = parse(
         z.object({
           current: z.string().min(1).max(128),
           password: z.string().min(12).max(128),
+          confirmPassword: z.string().optional(),
         }),
         req.body,
       );
       if (!passwordMatches(v.current, req.user.password))
         fail(400, "รหัสผ่านปัจจุบันไม่ถูกต้อง");
+      if (v.current === v.password)
+        fail(400, "กรุณาตั้งรหัสผ่านใหม่ที่ต่างจากรหัสเดิม");
+      if (req.user.must_change_password && v.confirmPassword !== v.password)
+        fail(400, "ยืนยันรหัสผ่านใหม่ไม่ตรงกัน");
       transaction(db, () => {
-        db.prepare("UPDATE users SET password=? WHERE id=?").run(
-          passwordHash(v.password),
-          req.user.id,
-        );
+        db.prepare(
+          "UPDATE users SET password=?,must_change_password=0,password_reset_expires_at=NULL,member_version=member_version+1 WHERE id=?",
+        ).run(passwordHash(v.password), req.user.id);
         db.prepare("DELETE FROM sessions WHERE user_id=?").run(req.user.id);
         audit(db, req.user.id, "auth.password_changed", req.user.id);
       });
@@ -1075,7 +1087,7 @@ export function createApp(db, config) {
       res.json(
         pageRows(
           db,
-          "SELECT u.id,u.name,u.first_name,u.last_name,u.phone,u.discovery_source,u.line_id,u.email,u.role_id,u.balance,u.active,u.created_at,r.name role_name FROM users u JOIN roles r ON r.id=u.role_id WHERE u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.line_id LIKE ? ORDER BY u.created_at DESC",
+          "SELECT u.id,u.name,u.first_name,u.last_name,u.phone,u.discovery_source,u.line_id,u.email,u.role_id,u.balance,u.active,u.created_at,u.member_version,u.must_change_password,r.name role_name FROM users u JOIN roles r ON r.id=u.role_id WHERE u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.line_id LIKE ? ORDER BY u.created_at DESC",
           Array(4).fill("%" + paging(req).q + "%"),
           req,
         ),
@@ -1180,11 +1192,9 @@ export function createApp(db, config) {
             .get().n <= 1
         )
           fail(409, "ต้องเหลือผู้ดูแลระบบอย่างน้อยหนึ่งคน");
-        db.prepare("UPDATE users SET role_id=?,active=? WHERE id=?").run(
-          v.role_id,
-          Number(v.active),
-          u.id,
-        );
+        db.prepare(
+          "UPDATE users SET role_id=?,active=?,member_version=member_version+1 WHERE id=?",
+        ).run(v.role_id, Number(v.active), u.id);
         db.prepare("DELETE FROM sessions WHERE user_id=?").run(u.id);
         audit(db, req.user.id, "member.permissions_changed", u.id, v);
       });
@@ -1386,6 +1396,7 @@ export function createApp(db, config) {
     ),
   );
   attachAddresses(app, db, { auth, csrf, asyncRoute });
+  attachMemberManagement(app, db, { permission, asyncRoute });
   attachConsignments(app, db, config, {
     auth,
     csrf,

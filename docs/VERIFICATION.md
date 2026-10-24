@@ -5,8 +5,8 @@
 | การตรวจ | ผล |
 |---|---|
 | `npm run build` | ผ่าน TypeScript และ Vite production build |
-| `npm test` | ผ่าน 98/98 กรณี ไม่มี skipped รวมการคิดค่าฝากขายด้วย BigInt และการแยกสิทธิ์ฝากขาย/รีวิว/ตั้งค่าธรรมเนียม |
-| `npx playwright test` | ผ่านรอบเต็ม 19/19 ชุด ใน Chromium รวมเส้นทางตัวแทนฝากขายและรีวิวรูป/วิดีโอจริง |
+| `npm test` | ผ่าน 110/110 กรณี ไม่มี skipped รวม Google OAuth/การเชื่อมบัญชีเดิม/การแก้ไขข้อมูลลูกค้า/รีเซ็ตรหัสผ่าน/สิทธิ์และการเพิกถอนเซสชัน |
+| `npx playwright test` | ผ่านรอบเต็ม 23/23 ชุด ใน Chromium รวม Google signup/login/link, ตัวแทนฝากขาย รีวิวรูป/วิดีโอ และการรีเซ็ตผ่านหลังบ้านจนลูกค้าตั้งรหัสใหม่ |
 | `npm audit --audit-level=low` | 0 vulnerabilities ที่ฐานข้อมูล npm รายงาน ณ เวลาตรวจ |
 | `npm run backup` | สร้าง SQLite snapshot สำเร็จ |
 | Premium static audit (strict) | 0 findings |
@@ -17,6 +17,16 @@
 | LINE `GET /v2/bot/info` | ตอบ 200 จริง |
 
 ## สิ่งที่ทดสอบ
+
+Google Login (24 ตุลาคม 2026): สำรอง SQLite ก่อน migration 7 ที่เพิ่ม has_password และตาราง Google identity/attempt/pending โดยคงบัญชีและยอดเดิม ใช้ google-auth-library 11.3.1 จริง ทดสอบด้วย RSA-signed JWT fixture และ provider transport แยกซึ่งไม่ติดต่อภายนอก ครอบคลุม signature/audience/issuer/expiry/nonce ผิด, email ไม่ verified, provider failure, state-cookie binding, OAuth denial/expiry/replay, S256 PKCE, บังคับ Origin, ค่าลับไม่อยู่ใน response, กรอก profile/เบอร์โทร, referral, role=customer/balance=0, ห้ามปลอมอีเมล/สิทธิ์, pending ใช้ซ้ำไม่ได้, returning subject แม้ Google เปลี่ยนอีเมล, ห้าม auto-link อีเมลเดิม, รหัสเดิมผิด/เพดานห้าครั้ง, คงบัญชีและ role เดิม, บัญชีระงับ/รหัสชั่วคราว/หมดอายุ, unlink หลัง admin เปลี่ยนอีเมล และ validation ของไฟล์ web credentials/callback ทดสอบเว็บจริงของ fixture รวมมือถือ 390px/axe, สมัครใหม่/กลับมา login, local login เดิม, existing-password link, error/retry/disabled states พบ accessible-name mismatch ของ fallback brand เดิมและแก้ header link ให้อิงชื่อที่แสดงแทน aria-label ที่ไม่ตรงกัน
+
+ตรวจโดเมนจริง https://app.ca77group.org: /api/auth/google/status ตอบ enabled=true; OAuth start ตอบ URL Google พร้อม callback ของโดเมนนี้ เปิดต่อไปถึง accounts.google.com/v3/signin/identifier (200) ไม่พบ OAuth error/redirect_uri_mismatch/invalid_client ที่จุดเข้าหน้า login และ cancellation กลับ /login?google=cancelled (303) ข้อจำกัด: ไม่ได้ลงชื่อเข้าใช้ด้วยบัญชี Google จริงหรือยินยอมแทนเจ้าของ จึงยังไม่อ้างว่ายืนยัน consent/token exchange กับบัญชีจริงแล้ว ต้องตรวจ Authorized redirect URIs/consent audience ใน Google Cloud หากยังไม่ได้ตั้ง โลโก้ใช้ SVG ต้นฉบับจาก https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg ไม่สร้างเลียนแบบ
+
+ไฟล์ Credentials.json ย้ายไป .secrets/google-oauth.json แล้วและจำกัด Windows ACL ให้ ADMIN กับ SYSTEM; ไม่มีไฟล์ต้นทางที่ root กัน .secrets/credentials filenames ออกจาก Git/Docker และ Vite fs.deny ตรวจ HTTP ทั้ง localhost:5174 และโดเมนจริงที่ /.secrets/google-oauth.json และ /@fs/.../.secrets/google-oauth.json ได้ 403 ทุกกรณี ไม่มีค่าลับใน response ตรวจ dist ทุกไฟล์แล้วไม่พบ client_secret จริง ไม่บันทึก provider access/id token ลงฐานข้อมูลหรือ audit; audit มีเพียง action/ID ไม่ส่ง email/LINE ในการทดสอบ
+
+จัดการข้อมูลลูกค้าและรหัสผ่าน (24 ตุลาคม 2026): สำรอง SQLite ก่อน migration version 6; migration เพิ่มคอลัมน์โดยไม่เปลี่ยนชื่อ รหัสผ่าน หรือยอดเงินเดิม และรันซ้ำได้ ทดสอบ API ใหม่ 4 กรณีครอบคลุม member_edit แยกจาก members, CSRF, รหัสผู้ดำเนินการผิด, ห้ามแก้ staff/admin, validation, อีเมลซ้ำ, version เก่า, invalidation ของทุกเซสชัน, hash แทน plaintext, รหัสชั่วคราวหมดอายุ, restricted login, ยืนยันรหัสใหม่และล้าง flag/expiry, audit ไม่มีรหัสหรือข้อมูลติดต่อ และ throttle รายการผิดพลาด ทดสอบผ่านเว็บทั้งเส้นทาง พร้อมปิดบัง/แสดง/คัดลอกแบบ clipboard จริง และตรวจ modal 390px ไม่ล้น รวม axe ที่หน้าบังคับเปลี่ยนรหัส ไม่มี violations ในการตรวจนั้น บัญชีทั้งหมดเป็น fixture แยก ไม่รีเซ็ตรหัสหรือแก้ข้อมูลลูกค้าจริง ไม่มีการส่ง email/LINE; ภาพ customer-reset-mobile.png เป็นข้อมูลทดสอบ
+
+ลายหินอ่อนชมพู (24 ตุลาคม 2026): เพิ่มเฉพาะ header, hero หน้าแรก และ footer แบบเต็มความกว้างของหน้าร้าน พร้อมโลโก้โปร่งใสสำหรับ source ปัจจุบัน สื่อ AVIF/WebP ประมาณ 50/59KB; Build ผ่าน และเบราว์เซอร์ 4/4 ชุดผ่าน (accessibility, appearance/custom dark surfaces, social contact links, mobile routes) ตรวจภาพเว็บจริงที่ 1440px/390px ไม่ล้น ไม่มีเงา และโหลดภาพ texture ได้ ภาพหลัก marble-store-desktop.png, marble-store-mobile.png, marble-store-footer.png ใน output/playwright ไม่เปลี่ยนการตั้งค่าธีม/ข้อมูล/ยอดเงินร้าน
 
 ปรับ wallet-card ให้กะทัดรัดตามคำขอล่าสุด: ภาพจริงที่ 1440px ได้การ์ด 448×237px (เดิม 448×310px) และที่หน้าจอ 390px ได้ 350×231px โลโก้กรอบกว้าง 126px พร้อม PNG alpha โปร่งใสจริงที่เก็บใน public/assets/brands/iya-wallet-transparent-v1.png ผูกกับ URL โลโก้ต้นฉบับและใช้เฉพาะ Brand variant wallet ตรวจว่าโลโก้หัวเว็บยังใช้ต้นฉบับ Build ผ่าน; เบราว์เซอร์เติมเงิน/ซื้อ/คืนเงิน, QR และ mobile routes ผ่าน 3/3; ตรวจชื่อยาว/ยอดจำลองในฐานข้อมูลแยกที่ 320/390/800/1440px ไม่ล้นและไม่มี box-shadow ภาพล่าสุด wallet-card-compact.png / wallet-card-compact-mobile.png
 

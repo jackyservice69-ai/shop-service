@@ -3,6 +3,7 @@ import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
 import { BankLogo } from "./contacts";
 import { ProductReviews, Stars } from "./reviews";
 import { WalletCard } from "./wallet-card";
+import { GoogleButton } from "./google-auth";
 import { useEffect, useRef, useState } from "react";
 import {
   Link,
@@ -380,6 +381,19 @@ export function AuthPage({ register = false }: { register?: boolean }) {
             ? "สร้างบัญชีของคุณ ใช้เวลาเพียงครู่เดียว"
             : "เข้าสู่ระบบเพื่อดูแลของโปรดของคุณ"}
         </p>
+        {params.get("google") === "failed" && (
+          <ErrorBox error="เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองอีกครั้ง หรือใช้อีเมลและรหัสผ่าน" />
+        )}
+        {params.get("google") === "cancelled" && (
+          <p role="status" className="info-box">
+            ยกเลิก Google Login แล้ว สามารถเริ่มใหม่ได้
+          </p>
+        )}
+        <GoogleButton
+          register={register}
+          next={safeNext}
+          referralCode={params.get("ref") || ""}
+        />
         <Form
           noValidate
           submit={register ? "สร้างบัญชี" : "เข้าสู่ระบบ"}
@@ -894,6 +908,16 @@ export function WalletPage() {
               <ShieldCheck size={13} /> EasySlip
             </span>
           </div>
+          {publicData?.topupReady && (
+            <img
+              className="topup-steps-image"
+              src="/assets/guides/topup-transfer-steps-th.png"
+              width={1774}
+              height={887}
+              decoding="async"
+              alt="ขั้นตอนเติมเงิน: 1. สแกน QR หรือใช้เลขบัญชีร้าน 2. โอนเงินผ่านแอปธนาคาร 3. กรอกยอดเงินแล้วแนบสลิป ยอดเงินจะเข้าเมื่อระบบตรวจสอบสลิปผ่าน"
+            />
+          )}
           <p className="muted">
             โอนเข้าบัญชีร้าน แล้วแนบสลิปเพื่อรับยอดอัตโนมัติ
           </p>
@@ -1265,33 +1289,72 @@ export function AccountPage() {
         <h2>{user?.name}</h2>
         <p>{user?.email}</p>
         <Badge status={user?.roleName || ""} />
-        <h3>เปลี่ยนรหัสผ่าน</h3>
-        <Form
-          noValidate
-          submit="เปลี่ยนรหัสผ่าน"
-          onSubmit={async (f) => {
-            await send("/auth/password", formObject(f));
-            await refresh();
-            notify("เปลี่ยนรหัสผ่านแล้ว กรุณาเข้าสู่ระบบอีกครั้ง");
-            navigate("/login");
-          }}
-        >
-          <Field
-            label="รหัสผ่านปัจจุบัน"
-            name="current"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-          <Field
-            label="รหัสผ่านใหม่"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            help="อย่างน้อย 12 ตัวอักษร"
-          />
-        </Form>
+        {!user?.hasPassword ? (
+          <p className="info-box">บัญชีนี้เข้าสู่ระบบด้วย Google</p>
+        ) : (
+          <>
+            <h3>
+              {user?.mustChangePassword
+                ? "ตั้งรหัสผ่านใหม่ก่อนใช้งาน"
+                : "เปลี่ยนรหัสผ่าน"}
+            </h3>
+            {user?.mustChangePassword && (
+              <p className="warning-box">
+                ผู้ดูแลรีเซ็ตรหัสผ่านให้แล้ว
+                กรุณาตั้งรหัสใหม่ที่คุณทราบเพียงคนเดียวก่อนใช้งานกระเป๋าเงินหรือสั่งซื้อ
+              </p>
+            )}
+            <Form
+              noValidate
+              submit="เปลี่ยนรหัสผ่าน"
+              onSubmit={async (f) => {
+                const values = formObject(f);
+                if (
+                  user?.mustChangePassword &&
+                  values.password !== values.confirmPassword
+                )
+                  throw Error("ยืนยันรหัสผ่านใหม่ไม่ตรงกัน");
+                await send("/auth/password", values);
+                await refresh();
+                notify("เปลี่ยนรหัสผ่านแล้ว กรุณาเข้าสู่ระบบอีกครั้ง");
+                navigate("/login");
+              }}
+            >
+              <Field
+                label={
+                  user?.mustChangePassword
+                    ? "รหัสผ่านชั่วคราว"
+                    : "รหัสผ่านปัจจุบัน"
+                }
+                name="current"
+                type="password"
+                autoComplete="current-password"
+                required
+              />
+              <Field
+                label="รหัสผ่านใหม่"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={12}
+                maxLength={128}
+                help="อย่างน้อย 12 ตัวอักษร"
+              />
+              {user?.mustChangePassword && (
+                <Field
+                  label="ยืนยันรหัสผ่านใหม่"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={12}
+                  maxLength={128}
+                />
+              )}
+            </Form>
+          </>
+        )}
         <hr />
         <button
           className="button secondary"
@@ -1304,7 +1367,7 @@ export function AccountPage() {
           <LogOut size={18} /> ออกจากระบบ
         </button>
       </section>
-      <AddressBook />
+      {!user?.mustChangePassword && <AddressBook />}
     </div>
   );
 }

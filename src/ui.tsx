@@ -22,11 +22,12 @@ import walletLogo from "../shared/wallet-logo.json";
 export function Brand({
   variant = "default",
 }: {
-  variant?: "default" | "wallet";
+  variant?: "default" | "wallet" | "marble";
 }) {
   const { publicData } = useApp();
   const logo =
-    variant === "wallet" && publicData?.logo === walletLogo.source
+    (variant === "wallet" || variant === "marble") &&
+    publicData?.logo === walletLogo.source
       ? walletLogo.image
       : publicData?.logo;
   if (logo)
@@ -261,6 +262,7 @@ type FieldProps = {
   spellCheck?: boolean;
   autoCapitalize?: string;
   disabled?: boolean;
+  readOnly?: boolean;
   defaultValue?: any;
   accept?: string;
   pattern?: string;
