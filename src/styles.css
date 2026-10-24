@@ -4595,3 +4595,35 @@ td small {
   overflow-wrap: anywhere;
   font-weight: 600;
 }
+.wallet-transaction-filters {
+  flex-wrap: wrap;
+  align-items: end;
+}
+.wallet-transaction-filters .field {
+  min-width: 180px;
+  margin-bottom: 0;
+}
+.wallet-customer-results {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  max-height: 240px;
+  overflow: auto;
+}
+.wallet-customer-choice {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.wallet-customer-choice[aria-pressed="true"] {
+  border-color: var(--brand-ink);
+  background: var(--primary-soft);
+}
+.transaction-detail {
+  overflow-wrap: anywhere;
+}

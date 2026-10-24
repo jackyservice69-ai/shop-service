@@ -1,0 +1,185 @@
+{
+  "permissions": [
+    {
+      "id": "dashboard",
+      "label": "ดูภาพรวมร้าน",
+      "group": "งานร้าน",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "products",
+      "label": "จัดการสินค้า",
+      "group": "งานร้าน",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "consignments",
+      "label": "จัดการตัวแทนและสินค้าฝากขาย",
+      "group": "งานร้าน",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "reviews",
+      "label": "จัดการรีวิวสินค้า",
+      "group": "งานร้าน",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "orders",
+      "label": "ดูคำสั่งซื้อและข้อมูลจัดส่ง",
+      "group": "คำสั่งซื้อ",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "orders_update",
+      "label": "อัปเดตสถานะและเลขพัสดุ",
+      "group": "คำสั่งซื้อ",
+      "requires": ["orders"],
+      "ownerOnly": false
+    },
+    {
+      "id": "orders_cancel",
+      "label": "ยกเลิกออร์เดอร์และคืนเงินที่จ่ายจริง",
+      "group": "คำสั่งซื้อ",
+      "requires": ["orders"],
+      "ownerOnly": false
+    },
+    {
+      "id": "finance",
+      "label": "ดูรายรับ–รายจ่ายและธุรกรรมกระเป๋าเงิน",
+      "group": "การเงิน",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "finance_write",
+      "label": "บันทึกรายรับ–รายจ่าย",
+      "group": "การเงิน",
+      "requires": ["finance"],
+      "ownerOnly": false
+    },
+    {
+      "id": "finance_export",
+      "label": "ส่งออกรายงานการเงิน",
+      "group": "การเงิน",
+      "requires": ["finance"],
+      "ownerOnly": false
+    },
+    {
+      "id": "wallet_topup",
+      "label": "เติมเงินกระเป๋าลูกค้าจากหลังบ้าน",
+      "group": "การเงิน",
+      "requires": ["finance"],
+      "ownerOnly": false
+    },
+    {
+      "id": "members",
+      "label": "ดูสมาชิกและข้อมูลติดต่อ",
+      "group": "สมาชิก",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "member_edit",
+      "label": "แก้ไขข้อมูลลูกค้า",
+      "group": "สมาชิก",
+      "requires": ["members"],
+      "ownerOnly": false
+    },
+    {
+      "id": "member_reset",
+      "label": "รีเซ็ตรหัสผ่านลูกค้า",
+      "group": "สมาชิก",
+      "requires": ["members"],
+      "ownerOnly": false
+    },
+    {
+      "id": "promotions",
+      "label": "จัดการโปรโมชั่นและคูปอง",
+      "group": "การตลาด",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "announcements",
+      "label": "จัดการประกาศ",
+      "group": "การตลาด",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "banners",
+      "label": "จัดการแบนเนอร์",
+      "group": "การตลาด",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "appearance",
+      "label": "แก้สี โลโก้ Favicon และระยะเวลาสไลด์",
+      "group": "การตลาด",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "roles",
+      "label": "ดูบทบาทและรายการสิทธิ์",
+      "group": "การตรวจสอบ",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "audit",
+      "label": "ดูบันทึก Audit",
+      "group": "การตรวจสอบ",
+      "requires": [],
+      "ownerOnly": false
+    },
+    {
+      "id": "settings",
+      "label": "ตั้งค่ารับเงิน ค่าธรรมเนียม และ API keys (เจ้าของร้าน)",
+      "group": "เจ้าของร้าน",
+      "requires": [],
+      "ownerOnly": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "manager",
+      "name": "ผู้จัดการร้าน",
+      "description": "ดูภาพรวม สินค้า ออร์เดอร์ ตัวแทนฝากขาย และรีวิว ไม่อนุญาตคืนเงินหรือเปลี่ยนค่ารับเงิน",
+      "permissions": [
+        "dashboard",
+        "products",
+        "orders",
+        "orders_update",
+        "members",
+        "consignments",
+        "reviews"
+      ]
+    },
+    {
+      "id": "support",
+      "name": "พนักงานบริการลูกค้า/จัดส่ง",
+      "description": "ดูออร์เดอร์และข้อมูลจัดส่ง อัปเดตสถานะและเลขพัสดุ",
+      "permissions": ["orders", "orders_update"]
+    },
+    {
+      "id": "accountant",
+      "name": "ฝ่ายการเงิน",
+      "description": "ดูธุรกรรม บันทึกรายรับ–รายจ่าย และส่งออกรายงาน ไม่มีสิทธิ์เพิ่มยอดกระเป๋าเงินด้วยตนเอง",
+      "permissions": ["finance", "finance_write", "finance_export"]
+    },
+    {
+      "id": "marketing",
+      "name": "ฝ่ายการตลาด",
+      "description": "ดูแลโปรโมชั่น คูปอง ประกาศ แบนเนอร์ และภาพลักษณ์ร้าน",
+      "permissions": ["promotions", "announcements", "banners", "appearance"]
+    }
+  ]
+}

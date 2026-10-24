@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { MapPin, LocateFixed, Plus, Pencil, Trash2 } from "lucide-react";
 import { send, useApp, useData } from "./api";
+import { useDeviceLocation } from "./use-device-location";
 import {
   Field,
   Form,
@@ -10,6 +11,7 @@ import {
   Loading,
   formObject,
   Empty,
+  PageHeading,
 } from "./ui";
 
 const MapDialog = lazy(() => import("./address-map"));
@@ -33,23 +35,18 @@ export function MapPicker({
   value: Point;
   onChange: (p: Point) => void;
 }) {
-  const [open, setOpen] = useState(false),
-    [error, setError] = useState(""),
-    [locating, setLocating] = useState(false);
-  const locationRequest = useRef(0);
-  useEffect(
-    () => () => {
-      locationRequest.current++;
-    },
-    [],
-  );
+  const [open, setOpen] = useState(false);
+  const { locating, error, locate, cancel } = useDeviceLocation(onChange);
   return (
     <div className="map-picker">
       <div className="map-actions">
         <button
           type="button"
           className="button secondary small"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            cancel();
+            setOpen(true);
+          }}
         >
           <MapPin size={17} />
           {value.latitude == null ? "ปักหมุดบนแผนที่" : "แก้ไขหมุดบนแผนที่"}
@@ -58,35 +55,7 @@ export function MapPicker({
           type="button"
           className="text-button"
           disabled={locating}
-          onClick={() => {
-            setError("");
-            if (!navigator.geolocation) {
-              setError(
-                "อุปกรณ์นี้ไม่รองรับตำแหน่ง กรุณาปักหมุดหรือกรอกพิกัดเอง",
-              );
-              return;
-            }
-            setLocating(true);
-            const request = ++locationRequest.current;
-            navigator.geolocation.getCurrentPosition(
-              (p) => {
-                if (request !== locationRequest.current) return;
-                onChange({
-                  latitude: +p.coords.latitude.toFixed(6),
-                  longitude: +p.coords.longitude.toFixed(6),
-                });
-                setLocating(false);
-              },
-              () => {
-                if (request !== locationRequest.current) return;
-                setLocating(false);
-                setError(
-                  "เข้าถึงตำแหน่งไม่ได้ กรุณาอนุญาตตำแหน่งหรือปักหมุดเอง",
-                );
-              },
-              { timeout: 10000, maximumAge: 60000 },
-            );
-          }}
+          onClick={locate}
         >
           <LocateFixed size={16} />
           {locating ? "กำลังหาตำแหน่ง…" : "ใช้ตำแหน่งปัจจุบัน"}
@@ -104,12 +73,13 @@ export function MapPicker({
           max={90}
           step="any"
           value={value.latitude ?? ""}
-          onChange={(e) =>
+          onChange={(e) => {
+            cancel();
             onChange({
               ...value,
               latitude: e.target.value === "" ? null : Number(e.target.value),
-            })
-          }
+            });
+          }}
         />
         <Field
           label="ลองจิจูด"
@@ -119,19 +89,23 @@ export function MapPicker({
           max={180}
           step="any"
           value={value.longitude ?? ""}
-          onChange={(e) =>
+          onChange={(e) => {
+            cancel();
             onChange({
               ...value,
               longitude: e.target.value === "" ? null : Number(e.target.value),
-            })
-          }
+            });
+          }}
         />
       </div>
       {value.latitude != null && (
         <button
           type="button"
           className="text-button"
-          onClick={() => onChange({ latitude: null, longitude: null })}
+          onClick={() => {
+            cancel();
+            onChange({ latitude: null, longitude: null });
+          }}
         >
           ลบหมุด
         </button>
@@ -149,6 +123,17 @@ export function MapPicker({
           />
         </Suspense>
       )}
+    </div>
+  );
+}
+export function AddressesPage() {
+  return (
+    <div className="contained narrow">
+      <PageHeading
+        title="ที่อยู่และแผนที่"
+        sub="บันทึกที่อยู่ ปักหมุดจัดส่ง และเลือกที่อยู่หลักสำหรับสั่งซื้อ"
+      />
+      <AddressBook />
     </div>
   );
 }
@@ -178,6 +163,7 @@ export function AddressBook() {
         </button>
       </div>
       <p className="muted">
+        เพิ่มที่อยู่แล้วกด “ปักหมุดบนแผนที่” เพื่อระบุตำแหน่งจัดส่ง
         บันทึกได้สูงสุด 20 ที่อยู่ และเลือกที่อยู่หลักสำหรับการสั่งซื้อ
       </p>
       {loading ? (

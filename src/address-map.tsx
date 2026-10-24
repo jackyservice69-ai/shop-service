@@ -3,6 +3,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Modal, ErrorBox } from "./ui";
 import type { Point } from "./address-book";
+import { useDeviceLocation } from "./use-device-location";
+import { LocateFixed, MapPin } from "lucide-react";
 
 export default function MapDialog({
   value,
@@ -17,6 +19,12 @@ export default function MapDialog({
     mapRef = useRef<L.Map | null>(null),
     [point, setPoint] = useState<Point>(value),
     [tileError, setTileError] = useState(false);
+  const chooseRef = useRef<((latlng: L.LatLng) => void) | null>(null);
+  const location = useDeviceLocation((p) => {
+    const latlng = L.latLng(p.latitude, p.longitude);
+    chooseRef.current?.(latlng);
+    mapRef.current?.setView(latlng, 16);
+  });
   useEffect(() => {
     if (!ref.current) return;
     const initial: L.LatLngTuple =
@@ -46,6 +54,7 @@ export default function MapDialog({
     });
     let marker: L.Marker | null = null;
     const choose = (latlng: L.LatLng) => {
+      location.cancel();
       const p = {
         latitude: +Math.max(-90, Math.min(90, latlng.lat)).toFixed(6),
         longitude: +latlng.wrap().lng.toFixed(6),
@@ -62,6 +71,7 @@ export default function MapDialog({
         marker.on("dragend", () => choose(marker!.getLatLng()));
       } else marker.setLatLng([p.latitude, p.longitude]);
     };
+    chooseRef.current = choose;
     map.on("click", (e) => choose(e.latlng));
     const keyboard = (e: KeyboardEvent) => {
       if (e.key === "Enter" && e.target === ref.current) {
@@ -83,6 +93,7 @@ export default function MapDialog({
       node.removeEventListener("keydown", keyboard);
       map.remove();
       mapRef.current = null;
+      chooseRef.current = null;
     };
   }, []);
   return (
@@ -91,6 +102,29 @@ export default function MapDialog({
         คลิกแผนที่เพื่อปักหมุด หรือลากหมุดไปยังตำแหน่งที่ต้องการ
         ใช้แป้นลูกศรเลื่อนแผนที่และกด Enter เพื่อเลือกจุดกึ่งกลาง
       </p>
+      <div className="map-actions">
+        <button
+          type="button"
+          className="button secondary small"
+          disabled={location.locating}
+          onClick={location.locate}
+        >
+          <LocateFixed size={16} />
+          {location.locating ? "กำลังหาตำแหน่ง…" : "ใช้ตำแหน่งปัจจุบัน"}
+        </button>
+        <button
+          type="button"
+          className="button secondary small"
+          onClick={() => {
+            const center = mapRef.current?.getCenter();
+            if (center) chooseRef.current?.(center);
+          }}
+        >
+          <MapPin size={16} />
+          ปักหมุดตรงกลางแผนที่
+        </button>
+      </div>
+      {location.error && <ErrorBox error={location.error} />}
       <div ref={ref} className="address-map" role="region" />
       {tileError && (
         <ErrorBox

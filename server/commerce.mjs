@@ -8,6 +8,7 @@ import {
   audit,
   wallet,
   getSettings,
+  bankTransferKey,
 } from "./db.mjs";
 export const fail = (status, message) => {
   throw Object.assign(new Error(message), { status });
@@ -346,11 +347,23 @@ export function creditTopup(
   return transaction(db, () => {
     if (
       db
+        .prepare("SELECT reference FROM funding_receipts WHERE bank_ref=?")
+        .get(bankTransferKey(bankRef))
+    )
+      fail(409, "รายการโอนในสลิปนี้ถูกเติมเงินแล้วจากสลิปหรือหลังบ้าน");
+    if (
+      db
         .prepare("SELECT id FROM topups WHERE bank_ref=? OR image_hash=?")
         .get(bankRef, imageHash)
     )
       fail(409, "สลิปนี้ถูกเติมเงินแล้ว");
     const tid = id();
+    db.prepare("INSERT INTO funding_receipts VALUES(?,?,?,?)").run(
+      bankTransferKey(bankRef),
+      "slip",
+      tid,
+      now(),
+    );
     db.prepare("INSERT INTO topups VALUES(?,?,?,?,?,?,?)").run(
       tid,
       userId,

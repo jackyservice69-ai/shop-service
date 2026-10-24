@@ -114,6 +114,7 @@ test("partial deposit uses upward satang rounding and refund is limited to money
 });
 test("insufficient funds rolls back order, stock, ledger and audit together", () => {
   const f = fixture();
+  const auditBefore = f.db.prepare("SELECT COUNT(*) n FROM audit").get().n;
   assert.throws(
     () => createOrder(f.db, f.customer.id, orderInput(f.product), id()),
     /ยอดเงิน/,
@@ -124,7 +125,10 @@ test("insufficient funds rolls back order, stock, ledger and audit together", ()
       .stock,
     10,
   );
-  assert.equal(f.db.prepare("SELECT COUNT(*) n FROM audit").get().n, 0);
+  assert.equal(
+    f.db.prepare("SELECT COUNT(*) n FROM audit").get().n,
+    auditBefore,
+  );
   f.db.close();
 });
 test("order replay is idempotent; same request key with different payload is rejected", () => {

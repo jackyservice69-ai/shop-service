@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { hasPermission } from "../shared/authorization.mjs";
 export type User = {
   id: string;
   name: string;
@@ -95,8 +96,7 @@ export const date = (value: string) =>
     timeStyle: "short",
     timeZone: "Asia/Bangkok",
   }).format(new Date(value));
-export const can = (u: User | null, p: string) =>
-  !!u && (u.permissions.includes("*") || u.permissions.includes(p));
+export const can = hasPermission;
 export type CartItem = { product: Product; quantity: number };
 type AppState = {
   user: User | null;

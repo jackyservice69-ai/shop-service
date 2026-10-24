@@ -13,6 +13,7 @@ import {
 import { fail } from "./commerce.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import { secret } from "./integrations.mjs";
+import { hasPermission } from "../shared/authorization.mjs";
 
 export const IMAGE_GUIDES = {
   paymentQr: {
@@ -25,7 +26,7 @@ export const IMAGE_GUIDES = {
     width: 1600,
     height: 600,
     label: "แบนเนอร์",
-    permission: "settings",
+    permission: "banners",
   },
   announcement: {
     width: 1080,
@@ -39,12 +40,12 @@ export const IMAGE_GUIDES = {
     label: "โปรโมชั่น",
     permission: "promotions",
   },
-  logo: { width: 640, height: 240, label: "โลโก้", permission: "settings" },
+  logo: { width: 640, height: 240, label: "โลโก้", permission: "appearance" },
   favicon: {
     width: 256,
     height: 256,
     label: "Favicon",
-    permission: "settings",
+    permission: "appearance",
   },
   product: {
     width: 1200,
@@ -89,20 +90,22 @@ export function checkMedia(db, url, kind) {
 const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "ใช้รหัสสี HEX 6 หลัก เช่น #C4B5FD");
-export const appearanceSchema = z.object({
-  theme: z.object({
-    primary: color,
-    ink: color,
-    muted: color,
-    background: color,
-    surface: color,
-    positive: color,
-  }),
-  logo: z.string().default(""),
-  favicon: z.string().default(""),
-  slideSeconds: z.number().int().min(3).max(30),
-  commissionPercent: z.number().min(0).max(100).multipleOf(0.01),
-});
+export const appearanceSchema = z
+  .object({
+    theme: z.object({
+      primary: color,
+      ink: color,
+      muted: color,
+      background: color,
+      surface: color,
+      positive: color,
+    }),
+    logo: z.string().default(""),
+    favicon: z.string().default(""),
+    slideSeconds: z.number().int().min(3).max(30),
+    commissionPercent: z.number().min(0).max(100).multipleOf(0.01).optional(),
+  })
+  .strict();
 const bannerSchema = z
   .object({
     title: z.string().trim().min(1).max(200),
@@ -310,7 +313,7 @@ export function attachExperience(
   app.get(
     "/api/admin/appearance",
     auth,
-    permission("settings"),
+    permission("appearance"),
     asyncRoute((req, res) => {
       const s = getSettings(db);
       res.json({
@@ -318,7 +321,9 @@ export function attachExperience(
         logo: s.logo,
         favicon: s.favicon,
         slideSeconds: s.slideSeconds,
-        commissionPercent: s.commissionPercent,
+        ...(hasPermission(req.user, "settings")
+          ? { commissionPercent: s.commissionPercent }
+          : {}),
         imageGuides: IMAGE_GUIDES,
       });
     }),
@@ -327,9 +332,19 @@ export function attachExperience(
     "/api/admin/appearance",
     auth,
     csrf,
-    permission("settings"),
+    permission("appearance"),
     asyncRoute((req, res) => {
-      const v = appearanceSchema.parse(req.body);
+      // Allow the read-only guide metadata returned by GET for existing clients;
+      // it is never a writable setting. Reject every other unknown field.
+      const v = appearanceSchema
+        .extend({ imageGuides: z.unknown().optional() })
+        .parse(req.body);
+      delete v.imageGuides;
+      if (
+        v.commissionPercent !== undefined &&
+        !hasPermission(req.user, "settings")
+      )
+        fail(403, "เจ้าของร้านเท่านั้นที่เปลี่ยนค่าคอมมิชชั่นได้");
       checkMedia(db, v.logo, "logo");
       checkMedia(db, v.favicon, "favicon");
       transaction(db, () => {
@@ -346,7 +361,7 @@ export function attachExperience(
   app.get(
     "/api/admin/banners",
     auth,
-    permission("settings"),
+    permission("banners"),
     asyncRoute((req, res) =>
       res.json(
         pageRows(
@@ -363,7 +378,7 @@ export function attachExperience(
       "/api/admin/banners" + (method === "put" ? "/:id" : ""),
       auth,
       csrf,
-      permission("settings"),
+      permission("banners"),
       asyncRoute((req, res) => {
         const v = bannerSchema.parse(req.body);
         checkMedia(db, v.image, "banner");

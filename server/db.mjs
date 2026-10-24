@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import customerColors from "../shared/customer-colors.json" with { type: "json" };
+import authorization from "../shared/authorization.json" with { type: "json" };
 import {
   createHash,
   randomBytes,
@@ -14,6 +15,8 @@ import {
 export const id = () => randomBytes(16).toString("hex");
 export const hash = (s) => createHash("sha256").update(s).digest("hex");
 export const now = () => new Date().toISOString();
+export const bankTransferKey = (reference) =>
+  String(reference).normalize("NFKC").trim().toUpperCase();
 export function passwordHash(value) {
   const salt = randomBytes(16).toString("hex");
   return `${salt}:${scryptSync(value, salt, 64).toString("hex")}`;
@@ -67,6 +70,13 @@ export function openDb(path) {
  CREATE TABLE IF NOT EXISTS order_items(order_id TEXT NOT NULL REFERENCES orders(id),product_id TEXT NOT NULL REFERENCES products(id),name TEXT NOT NULL,price INTEGER NOT NULL,cost INTEGER NOT NULL,quantity INTEGER NOT NULL CHECK(quantity>0),PRIMARY KEY(order_id,product_id));
  CREATE TABLE IF NOT EXISTS ledger(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),amount INTEGER NOT NULL,balance_after INTEGER NOT NULL CHECK(balance_after>=0),kind TEXT NOT NULL,reference TEXT NOT NULL,created_at TEXT NOT NULL,UNIQUE(kind,reference));
  CREATE TABLE IF NOT EXISTS topups(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),request_key TEXT NOT NULL,image_hash TEXT NOT NULL UNIQUE,bank_ref TEXT NOT NULL UNIQUE,amount INTEGER NOT NULL CHECK(amount>0),created_at TEXT NOT NULL,UNIQUE(user_id,request_key));
+ CREATE TABLE IF NOT EXISTS funding_receipts(bank_ref TEXT PRIMARY KEY,source TEXT NOT NULL CHECK(source IN ('slip','manual')),reference TEXT NOT NULL UNIQUE,created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS manual_topups(id TEXT PRIMARY KEY,actor_id TEXT NOT NULL REFERENCES users(id),user_id TEXT NOT NULL REFERENCES users(id),request_key TEXT NOT NULL,request_hash TEXT NOT NULL,source TEXT NOT NULL CHECK(source IN ('bank_transfer','cash','adjustment')),reference TEXT NOT NULL,reference_key TEXT NOT NULL UNIQUE,bank_ref TEXT,reason TEXT NOT NULL,amount INTEGER NOT NULL CHECK(amount>0),balance_before INTEGER NOT NULL CHECK(balance_before>=0),balance_after INTEGER NOT NULL CHECK(balance_after=balance_before+amount),created_at TEXT NOT NULL,UNIQUE(actor_id,request_key));
+ CREATE INDEX IF NOT EXISTS manual_topups_customer ON manual_topups(user_id,created_at);
+ CREATE TRIGGER IF NOT EXISTS manual_topups_immutable_update BEFORE UPDATE ON manual_topups BEGIN SELECT RAISE(ABORT,'manual topups are immutable'); END;
+ CREATE TRIGGER IF NOT EXISTS manual_topups_immutable_delete BEFORE DELETE ON manual_topups BEGIN SELECT RAISE(ABORT,'manual topups are immutable'); END;
+ CREATE TRIGGER IF NOT EXISTS funding_receipts_immutable_update BEFORE UPDATE ON funding_receipts BEGIN SELECT RAISE(ABORT,'funding receipts are immutable'); END;
+ CREATE TRIGGER IF NOT EXISTS funding_receipts_immutable_delete BEFORE DELETE ON funding_receipts BEGIN SELECT RAISE(ABORT,'funding receipts are immutable'); END;
  CREATE TABLE IF NOT EXISTS announcements(id TEXT PRIMARY KEY,title TEXT NOT NULL,body TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,starts_at TEXT NOT NULL,ends_at TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS expenses(id TEXT PRIMARY KEY,type TEXT NOT NULL CHECK(type IN ('income','expense')),category TEXT NOT NULL,description TEXT NOT NULL,amount INTEGER NOT NULL CHECK(amount>0),request_key TEXT NOT NULL UNIQUE,created_at TEXT NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id));
  CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -95,6 +105,7 @@ export function openDb(path) {
  CREATE TABLE IF NOT EXISTS review_media(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),product_id TEXT NOT NULL REFERENCES products(id),review_id TEXT REFERENCES reviews(id),mime TEXT NOT NULL,width INTEGER NOT NULL,height INTEGER NOT NULL,duration REAL NOT NULL DEFAULT 0,bytes INTEGER NOT NULL,body BLOB NOT NULL,created_at TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS review_media_owner ON review_media(user_id,created_at);
  `);
+  const schemaVersion = db.prepare("PRAGMA user_version").get().user_version;
   // Additive, repeatable migration: preserve existing products, orders and balances.
   transaction(db, () => {
     for (const [table, column, type] of [
@@ -126,11 +137,10 @@ export function openDb(path) {
           .some((c) => c.name === column)
       )
         db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-    db.exec("PRAGMA user_version=7");
   });
   db.prepare("INSERT OR IGNORE INTO roles VALUES (?,?,?)").run(
     "admin",
-    "ผู้ดูแลระบบ",
+    "เจ้าของร้าน",
     JSON.stringify(["*"]),
   );
   db.prepare("INSERT OR IGNORE INTO roles VALUES (?,?,?)").run(
@@ -138,6 +148,75 @@ export function openDb(path) {
     "ลูกค้า",
     "[]",
   );
+  transaction(db, () => {
+    if (schemaVersion < 8) {
+      // Legacy broad grants become view-only. New mutation privileges need the
+      // owner's explicit choice; never silently grant refund/reset/export rights.
+      for (const role of db
+        .prepare("SELECT * FROM roles WHERE id NOT IN ('admin','customer')")
+        .all()) {
+        const before = JSON.parse(role.permissions);
+        const permissions = before.includes("*")
+          ? authorization.permissions
+              .filter((p) => !p.ownerOnly && !p.requires.length)
+              .map((p) => p.id)
+          : [
+              ...new Set(
+                before.flatMap((p) =>
+                  p === "settings"
+                    ? ["appearance", "banners"]
+                    : p === "member_edit"
+                      ? ["members", "member_edit"]
+                      : [p],
+                ),
+              ),
+            ].filter((p) =>
+              authorization.permissions.some(
+                (rule) => rule.id === p && !rule.ownerOnly,
+              ),
+            );
+        db.prepare("UPDATE roles SET permissions=? WHERE id=?").run(
+          JSON.stringify(permissions),
+          role.id,
+        );
+        db.prepare(
+          "DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE role_id=?)",
+        ).run(role.id);
+        audit(db, null, "role.permissions_migrated", role.id, {
+          before,
+          permissions,
+          sessionsRevoked: true,
+        });
+      }
+      db.prepare(
+        "UPDATE roles SET name='เจ้าของร้าน' WHERE id='admin' AND name='ผู้ดูแลระบบ'",
+      ).run();
+      // Do not recreate presets deleted/edited later or overwrite existing custom roles.
+      for (const role of authorization.roles) {
+        const result = db
+          .prepare("INSERT OR IGNORE INTO roles VALUES(?,?,?)")
+          .run(role.id, role.name, JSON.stringify(role.permissions));
+        if (result.changes)
+          audit(db, null, "role.preset_created", role.id, {
+            permissions: role.permissions,
+          });
+      }
+      db.exec("PRAGMA user_version=8");
+    }
+    if (schemaVersion < 9) {
+      for (const row of db
+        .prepare("SELECT id,bank_ref,created_at FROM topups")
+        .all())
+        db.prepare(
+          "INSERT OR IGNORE INTO funding_receipts VALUES(?,?,?,?)",
+        ).run(bankTransferKey(row.bank_ref), "slip", row.id, row.created_at);
+      audit(db, null, "wallet.manual_topup_enabled", "system", {
+        permission: "wallet_topup",
+        defaultStaffGranted: false,
+      });
+      db.exec("PRAGMA user_version=9");
+    }
+  });
   const defaults = {
     shopName: "หิ้วลี่",
     depositPercent: 0,

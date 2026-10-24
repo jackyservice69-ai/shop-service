@@ -118,6 +118,7 @@ export function Badge({ status, label }: { status: string; label?: string }) {
     completed: "สำเร็จ",
     cancelled: "ยกเลิก",
     topup: "เติมเงิน",
+    admin_topup: "เติมเงินโดยผู้ดูแล",
     purchase: "ซื้อสินค้า",
     settlement: "ชำระส่วนที่เหลือ",
     refund: "คืนเงิน",

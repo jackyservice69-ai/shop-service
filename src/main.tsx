@@ -8,6 +8,8 @@ import {
 } from "./experience";
 import React from "react";
 import { GoogleCompletePage } from "./google-auth";
+import { AdminWalletPage } from "./admin-wallet";
+import { AddressesPage } from "./address-book";
 import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
 import { AdminReviewsPage } from "./reviews";
 import { SocialLinks } from "./contacts";
@@ -75,6 +77,7 @@ const nav = [
   ["reviews", "รีวิวสินค้า", Star],
   ["members", "สมาชิก", Users],
   ["finance", "รายรับ–รายจ่าย", Receipt],
+  ["wallet", "ธุรกรรมกระเป๋าเงิน", Wallet],
   ["promotions", "โปรโมชั่น", Ticket],
   ["announcements", "ประกาศ", Megaphone],
   ["roles", "สิทธิ์การใช้งาน", ShieldCheck],
@@ -85,9 +88,7 @@ const nav = [
   ["audit", "บันทึก Audit", ScrollText],
 ] as const;
 const navPermission = (p: string) =>
-  ({ appearance: "settings", banners: "settings", commissions: "finance" })[
-    p
-  ] || p;
+  ({ commissions: "finance", wallet: "finance" })[p] || p;
 function Protected({ admin = false }: { admin?: boolean }) {
   const { user, loading } = useApp();
   const location = useLocation();
@@ -132,6 +133,7 @@ function StoreLayout() {
               <NavLink to="/referrals">ชวนเพื่อน</NavLink>
               <NavLink to="/coupons">คูปอง</NavLink>
               <NavLink to="/consignment">ฝากขาย</NavLink>
+              <NavLink to="/addresses">ที่อยู่จัดส่ง</NavLink>
             </>
           )}
         </nav>
@@ -335,6 +337,7 @@ function App() {
               <Route path="orders" element={<OrdersPage />} />
               <Route path="referrals" element={<ReferralPage />} />
               <Route path="account" element={<AccountPage />} />
+              <Route path="addresses" element={<AddressesPage />} />
               <Route path="consignment" element={<ConsignmentPage />} />
             </Route>
           </Route>
@@ -360,7 +363,7 @@ function App() {
               <Route
                 path="appearance"
                 element={
-                  <Permission name="settings">
+                  <Permission name="appearance">
                     <AppearancePage />
                   </Permission>
                 }
@@ -368,7 +371,7 @@ function App() {
               <Route
                 path="banners"
                 element={
-                  <Permission name="settings">
+                  <Permission name="banners">
                     <BannersPage />
                   </Permission>
                 }
@@ -418,6 +421,14 @@ function App() {
                 element={
                   <Permission name="finance">
                     <FinancePage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="wallet"
+                element={
+                  <Permission name="finance">
+                    <AdminWalletPage />
                   </Permission>
                 }
               />

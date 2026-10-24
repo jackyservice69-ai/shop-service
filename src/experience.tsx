@@ -24,7 +24,16 @@ import {
   Plus,
   Pencil,
 } from "lucide-react";
-import { api, send, useApp, useData, money, date, type PageData } from "./api";
+import {
+  api,
+  send,
+  useApp,
+  useData,
+  can,
+  money,
+  date,
+  type PageData,
+} from "./api";
 import {
   Field,
   Form,
@@ -619,7 +628,7 @@ export function AppearancePage() {
     <>
       <PageHeading
         title="สีและภาพลักษณ์ร้าน"
-        sub="เลือกสีพาสเทล โลโก้ และไอคอนร้าน พร้อมตั้งค่าคอมมิชชั่น"
+        sub="เลือกสีพาสเทล โลโก้ ไอคอนร้าน และระยะเวลาเปลี่ยนสไลด์"
       />
       {error ? (
         <ErrorBox error={error} retry={reload} />
@@ -636,7 +645,7 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
     [logo, setLogo] = useState(s.logo),
     [favicon, setFavicon] = useState(s.favicon),
     [uploads, setUploads] = useState(0);
-  const { notify, refresh } = useApp();
+  const { notify, refresh, user } = useApp();
   const busy = (value: boolean) => setUploads((n) => n + (value ? 1 : -1));
   return (
     <Form
@@ -651,7 +660,9 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
             logo,
             favicon,
             slideSeconds: Number(v.slideSeconds),
-            commissionPercent: Number(v.commissionPercent),
+            ...(can(user, "settings")
+              ? { commissionPercent: Number(v.commissionPercent) }
+              : {}),
           },
           "PUT",
         );
@@ -746,7 +757,7 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
             />
           </section>
           <section className="panel section-space">
-            <h2>สไลด์และค่าคอมมิชชั่น</h2>
+            <h2>ระยะเวลาสไลด์</h2>
             <Field
               label="ระยะเวลาเปลี่ยนสไลด์ (วินาที)"
               name="slideSeconds"
@@ -756,24 +767,28 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
               required
               defaultValue={s.slideSeconds}
             />
-            <Field
-              label="ค่าคอมมิชชั่นแนะนำเพื่อน (% ต่อบิล)"
-              name="commissionPercent"
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              required
-              defaultValue={s.commissionPercent}
-            />
-            <div className="info-box">
-              <p>
-                คิดจากยอดบิลหลังหักส่วนลด
-                จ่ายเข้ากระเป๋าเงินผู้แนะนำเมื่อออร์เดอร์สำเร็จ ล็อก %
-                ตอนสร้างบิล ปัดลงเป็นสตางค์ และไม่จ่ายบิลยกเลิก ค่า 0%
-                คือปิดค่าคอมสำหรับบิลใหม่
-              </p>
-            </div>
+            {can(user, "settings") && (
+              <>
+                <Field
+                  label="ค่าคอมมิชชั่นแนะนำเพื่อน (% ต่อบิล)"
+                  name="commissionPercent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  required
+                  defaultValue={s.commissionPercent}
+                />
+                <div className="info-box">
+                  <p>
+                    คิดจากยอดบิลหลังหักส่วนลด
+                    จ่ายเข้ากระเป๋าเงินผู้แนะนำเมื่อออร์เดอร์สำเร็จ ล็อก %
+                    ตอนสร้างบิล ปัดลงเป็นสตางค์ และไม่จ่ายบิลยกเลิก ค่า 0%
+                    คือปิดค่าคอมสำหรับบิลใหม่
+                  </p>
+                </div>
+              </>
+            )}
           </section>
         </div>
       </div>

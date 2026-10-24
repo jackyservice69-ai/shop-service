@@ -2,6 +2,7 @@ import { ImageUpload } from "./experience";
 import { CustomerManagement } from "./member-management";
 import socialPlatforms from "../shared/socials.json";
 import brandColors from "../shared/customer-colors.json";
+import authorization from "../shared/authorization.json";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -952,7 +953,7 @@ function ResourceEditor({
 }
 export function AdminOrders() {
   const list = useListQuery(),
-    { notify } = useApp();
+    { notify, user } = useApp();
   const { data, error, loading, reload } = useData<PageData>(
     "/admin/orders?" + list.query,
   );
@@ -1074,57 +1075,59 @@ export function AdminOrders() {
               เลขพัสดุ <b>{view.tracking}</b>
             </p>
           )}
-          {["paid", "processing", "shipped"].includes(view.status) && (
-            <Form
-              noValidate
-              submit="อัปเดตสถานะ"
-              onSubmit={async (f) => {
-                await send("/admin/orders/" + view.id, formObject(f), "PUT");
-                setView(null);
-                reload();
-                notify("อัปเดตสถานะแล้ว");
-              }}
-            >
-              <Field label="สถานะถัดไป" name="status">
-                <option
-                  value={
+          {can(user, "orders_update") &&
+            ["paid", "processing", "shipped"].includes(view.status) && (
+              <Form
+                noValidate
+                submit="อัปเดตสถานะ"
+                onSubmit={async (f) => {
+                  await send("/admin/orders/" + view.id, formObject(f), "PUT");
+                  setView(null);
+                  reload();
+                  notify("อัปเดตสถานะแล้ว");
+                }}
+              >
+                <Field label="สถานะถัดไป" name="status">
+                  <option
+                    value={
+                      {
+                        paid: "processing",
+                        processing: "shipped",
+                        shipped: "completed",
+                      }[view.status as string]
+                    }
+                  >
                     {
-                      paid: "processing",
-                      processing: "shipped",
-                      shipped: "completed",
-                    }[view.status as string]
-                  }
-                >
-                  {
-                    {
-                      paid: "กำลังเตรียมสินค้า",
-                      processing: "จัดส่งแล้ว",
-                      shipped: "สำเร็จ",
-                    }[view.status as string]
-                  }
-                </option>
-              </Field>
-              {view.status === "processing" && (
-                <Field
-                  label="เลขพัสดุและบริษัทขนส่ง"
-                  name="tracking"
-                  required
-                  placeholder="เช่น ไปรษณีย์ไทย TH123456789"
-                />
-              )}
-            </Form>
-          )}
-          {!["shipped", "completed", "cancelled"].includes(view.status) && (
-            <button
-              className="text-button negative"
-              onClick={() => {
-                setCancel(view);
-                setView(null);
-              }}
-            >
-              ยกเลิกและคืนเงิน
-            </button>
-          )}
+                      {
+                        paid: "กำลังเตรียมสินค้า",
+                        processing: "จัดส่งแล้ว",
+                        shipped: "สำเร็จ",
+                      }[view.status as string]
+                    }
+                  </option>
+                </Field>
+                {view.status === "processing" && (
+                  <Field
+                    label="เลขพัสดุและบริษัทขนส่ง"
+                    name="tracking"
+                    required
+                    placeholder="เช่น ไปรษณีย์ไทย TH123456789"
+                  />
+                )}
+              </Form>
+            )}
+          {can(user, "orders_cancel") &&
+            !["shipped", "completed", "cancelled"].includes(view.status) && (
+              <button
+                className="text-button negative"
+                onClick={() => {
+                  setCancel(view);
+                  setView(null);
+                }}
+              >
+                ยกเลิกและคืนเงิน
+              </button>
+            )}
         </Modal>
       )}
       {cancel && (
@@ -1151,7 +1154,7 @@ export function FinancePage() {
     setFinanceParams(p, { replace: true });
   };
   const list = useListQuery(),
-    { notify } = useApp();
+    { notify, user } = useApp();
   const { data, error, loading, reload } = useData(
     "/admin/finance?" + financeParams.toString(),
   );
@@ -1163,18 +1166,25 @@ export function FinancePage() {
         title="รายรับ–รายจ่าย"
         sub="แยกเงินเติมกระเป๋าออกจากรายได้ร้าน และติดตามกระแสเงินสด"
       >
-        <a href="/api/admin/finance/export" className="button secondary small">
-          <ArrowDownToLine size={16} /> ส่งออก CSV
-        </a>
-        <button
-          className="button primary"
-          onClick={() => {
-            setRequestKey(crypto.randomUUID());
-            setAdd(true);
-          }}
-        >
-          <Plus size={17} /> บันทึกรายการ
-        </button>
+        {can(user, "finance_export") && (
+          <a
+            href="/api/admin/finance/export"
+            className="button secondary small"
+          >
+            <ArrowDownToLine size={16} /> ส่งออก CSV
+          </a>
+        )}
+        {can(user, "finance_write") && (
+          <button
+            className="button primary"
+            onClick={() => {
+              setRequestKey(crypto.randomUUID());
+              setAdd(true);
+            }}
+          >
+            <Plus size={17} /> บันทึกรายการ
+          </button>
+        )}
       </PageHeading>
       <div className="info-box">
         <Receipt size={21} />
@@ -1387,7 +1397,7 @@ export function MembersPage() {
                   </td>
                   <td>{r.discovery_source || "—"}</td>
                   <td>{r.role_name}</td>
-                  <td>{money(r.balance)}</td>
+                  <td>{can(user, "finance") ? money(r.balance) : "—"}</td>
                   <td>
                     <span
                       className={
@@ -1411,16 +1421,18 @@ export function MembersPage() {
                         </button>
                       )}
                       {r.role_id === "customer" && can(user, "member_edit") && (
-                        <>
-                          <button
-                            type="button"
-                            className="text-button"
-                            onClick={() =>
-                              setCustomerAction({ row: r, mode: "profile" })
-                            }
-                          >
-                            แก้ไขข้อมูล
-                          </button>
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() =>
+                            setCustomerAction({ row: r, mode: "profile" })
+                          }
+                        >
+                          แก้ไขข้อมูล
+                        </button>
+                      )}
+                      {r.role_id === "customer" &&
+                        can(user, "member_reset") && (
                           <button
                             type="button"
                             className="text-button"
@@ -1430,8 +1442,7 @@ export function MembersPage() {
                           >
                             รีเซ็ตรหัสผ่าน
                           </button>
-                        </>
-                      )}
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -1506,19 +1517,7 @@ export function MembersPage() {
   );
 }
 const permissionLabels: Record<string, string> = {
-  dashboard: "ภาพรวมร้าน",
-  products: "จัดการสินค้า",
-  consignments: "จัดการตัวแทนฝากขาย",
-  reviews: "จัดการรีวิวสินค้า",
-  orders: "จัดการคำสั่งซื้อ",
-  finance: "รายรับ–รายจ่าย",
-  members: "ดูสมาชิก",
-  member_edit: "แก้ไขข้อมูลและรีเซ็ตรหัสผ่านลูกค้า",
-  roles: "ดูบทบาท",
-  promotions: "โปรโมชั่น",
-  announcements: "ประกาศ",
-  settings: "ตั้งค่าระบบและกุญแจเชื่อมต่อ",
-  audit: "ตรวจสอบ Audit",
+  ...Object.fromEntries(authorization.permissions.map((p) => [p.id, p.label])),
 };
 export function RolesPage() {
   const { data, error, loading, reload } = useData("/admin/roles"),
@@ -1543,8 +1542,10 @@ export function RolesPage() {
       <div className="info-box">
         <ShieldCheck size={22} />
         <p>
-          การสร้างบทบาทและเปลี่ยนสิทธิ์ทำได้เฉพาะผู้ดูแลระบบ
-          บทบาทผู้ดูแลและลูกค้าเป็นบทบาทหลักที่แก้ไขไม่ได้
+          เจ้าของร้านเท่านั้นที่สร้างบทบาทและมอบสิทธิ์ได้
+          บทบาททีมงานเริ่มต้นปรับสิทธิ์ได้ บัญชีรับเงิน API keys
+          และอัตราค่าคอมมิชชั่นสงวนให้เจ้าของร้าน
+          ตัวแทนฝากขายเป็นสถานะเสริมของลูกค้า ไม่ได้สิทธิ์ทีมงาน
         </p>
       </div>
       {error ? (
@@ -1561,10 +1562,10 @@ export function RolesPage() {
               </div>
               <p className="muted">
                 {r.id === "admin"
-                  ? "เข้าถึงทุกส่วนของระบบ"
+                  ? "เข้าถึงทุกส่วน รวมการรับเงิน API keys และการมอบสิทธิ์ทีมงาน"
                   : r.id === "customer"
                     ? "หน้าร้านและข้อมูลของตนเองเท่านั้น"
-                    : r.permissions.length + " ส่วนที่เข้าถึงได้"}
+                    : r.permissions.length + " สิทธิ์ที่เข้าถึงได้"}
               </p>
               <div className="permission-tags">
                 {r.permissions.map((p: string) => (
@@ -1616,13 +1617,38 @@ export function RolesPage() {
                     type="checkbox"
                     name="permissions"
                     value={p}
-                    defaultChecked={editing.permissions.includes(p)}
+                    checked={editing.permissions.includes(p)}
+                    onChange={(e) => {
+                      const rule = authorization.permissions.find(
+                        (r) => r.id === p,
+                      )!;
+                      const selected = e.target.checked
+                        ? [
+                            ...new Set([
+                              ...editing.permissions,
+                              p,
+                              ...rule.requires,
+                            ]),
+                          ]
+                        : editing.permissions.filter(
+                            (id: string) =>
+                              id !== p &&
+                              !authorization.permissions
+                                .find((r) => r.id === id)
+                                ?.requires.includes(p),
+                          );
+                      setEditing({ ...editing, permissions: selected });
+                    }}
                   />
                   {permissionLabels[p]}
                 </label>
               ))}
             </fieldset>
           </Form>
+          <p className="muted">
+            สิทธิ์อัปเดตต้องมีสิทธิ์ดูรายการด้วย ระบบจะเลือกสิทธิ์ที่จำเป็นให้
+            บทบาทที่แก้ไขจะออกจากระบบทุกอุปกรณ์
+          </p>
         </Modal>
       )}
       {confirm && (
@@ -1633,7 +1659,7 @@ export function RolesPage() {
           onConfirm={async () => {
             await send(
               "/admin/roles" + (confirm.id ? "/" + confirm.id : ""),
-              confirm,
+              { name: confirm.name, permissions: confirm.permissions },
               confirm.id ? "PUT" : "POST",
             );
             reload();

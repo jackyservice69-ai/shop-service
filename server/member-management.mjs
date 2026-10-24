@@ -55,9 +55,9 @@ export function attachMemberManagement(app, db, { permission, asyncRoute }) {
     legacyHeaders: false,
     message: { error: "ยืนยันรายการหลายครั้งเกินไป กรุณารอ 15 นาที" },
   });
-  const authorize = [
+  const authorize = (action) => [
     permission("members"),
-    permission("member_edit"),
+    permission(action),
     sensitiveLimiter,
   ];
   const customer = (req, version) => {
@@ -77,7 +77,7 @@ export function attachMemberManagement(app, db, { permission, asyncRoute }) {
   };
   app.put(
     "/api/admin/members/:id/profile",
-    ...authorize,
+    ...authorize("member_edit"),
     asyncRoute((req, res) => {
       const v = memberProfileSchema.extend(approval).strict().parse(req.body);
       reauthenticate(req, v.actorPassword);
@@ -138,7 +138,7 @@ export function attachMemberManagement(app, db, { permission, asyncRoute }) {
   );
   app.post(
     "/api/admin/members/:id/reset-password",
-    ...authorize,
+    ...authorize("member_reset"),
     asyncRoute((req, res) => {
       const v = z.object(approval).strict().parse(req.body);
       reauthenticate(req, v.actorPassword);

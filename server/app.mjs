@@ -7,6 +7,7 @@ import {
 } from "./experience.mjs";
 import express from "express";
 import { attachGoogleAuth } from "./google-auth.mjs";
+import { attachAdminWallet } from "./admin-wallet.mjs";
 import { attachAddresses } from "./addresses.mjs";
 import { attachConsignments } from "./consignments.mjs";
 import { settleConsignments } from "./consignment-ledger.mjs";
@@ -17,6 +18,10 @@ import {
 } from "./member-management.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import socialPlatforms from "../shared/socials.json" with { type: "json" };
+import {
+  catalog as authorization,
+  hasPermission,
+} from "../shared/authorization.mjs";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
@@ -59,21 +64,30 @@ import {
   queueWebhook,
 } from "./integrations.mjs";
 
-export const PERMISSIONS = [
-  "dashboard",
-  "products",
-  "orders",
-  "finance",
-  "members",
-  "member_edit",
-  "roles",
-  "promotions",
-  "announcements",
-  "settings",
-  "audit",
-  "consignments",
-  "reviews",
-];
+export const PERMISSIONS = authorization.permissions.map((p) => p.id);
+const assignablePermissions = authorization.permissions.filter(
+  (p) => !p.ownerOnly,
+);
+const roleSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    permissions: z
+      .array(z.enum(assignablePermissions.map((p) => p.id)))
+      .max(assignablePermissions.length),
+  })
+  .strict()
+  .superRefine((v, ctx) => {
+    for (const p of assignablePermissions.filter((p) =>
+      v.permissions.includes(p.id),
+    ))
+      for (const needed of p.requires)
+        if (!v.permissions.includes(needed))
+          ctx.addIssue({
+            code: "custom",
+            path: ["permissions"],
+            message: `${p.label} ต้องมีสิทธิ์ ${assignablePermissions.find((r) => r.id === needed).label} ด้วย`,
+          });
+  });
 const asyncRoute = (fn) => (req, res, next) =>
   Promise.resolve()
     .then(() => fn(req, res, next))
@@ -303,9 +317,7 @@ export function createApp(db, config) {
   const permissionsAny =
     (...ps) =>
     (req, res, next) => {
-      const actual = JSON.parse(req.user?.permissions || "[]");
-      if (actual.includes("*") || ps.some((p) => actual.includes(p)))
-        return next();
+      if (ps.some((p) => hasPermission(req.user, p))) return next();
       return res
         .status(req.user ? 403 : 401)
         .json({ error: "คุณไม่มีสิทธิ์ใช้งานส่วนนี้" });
@@ -318,8 +330,7 @@ export function createApp(db, config) {
       : res.status(403).json({ error: "เซสชันไม่ถูกต้อง กรุณาโหลดหน้าใหม่" });
   const permission = (p) => (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบ" });
-    const ps = JSON.parse(req.user.permissions);
-    return ps.includes("*") || ps.includes(p)
+    return hasPermission(req.user, p)
       ? next()
       : res.status(403).json({ error: "คุณไม่มีสิทธิ์ใช้งานส่วนนี้" });
   };
@@ -713,6 +724,7 @@ export function createApp(db, config) {
   app.use("/api/admin", auth, (req, res, next) =>
     ["GET", "HEAD"].includes(req.method) ? next() : csrf(req, res, next),
   );
+  attachAdminWallet(app, db, { permission, asyncRoute, pageRows });
   app.get(
     "/api/admin/dashboard",
     permission("dashboard"),
@@ -727,7 +739,7 @@ export function createApp(db, config) {
         .get();
       const flows = db
         .prepare(
-          "SELECT COALESCE(SUM(CASE WHEN kind IN ('purchase','settlement') THEN -amount WHEN kind='refund' THEN -amount ELSE 0 END),0) received,COALESCE(SUM(CASE WHEN kind='topup' THEN amount ELSE 0 END),0) topups FROM ledger",
+          "SELECT COALESCE(SUM(CASE WHEN kind IN ('purchase','settlement') THEN -amount WHEN kind='refund' THEN -amount ELSE 0 END),0) received,COALESCE(SUM(CASE WHEN kind IN ('topup','admin_topup') THEN amount ELSE 0 END),0) topups FROM ledger",
         )
         .get();
       const manual = db
@@ -928,21 +940,27 @@ export function createApp(db, config) {
         shipping: JSON.parse(o.shipping),
         items: db
           .prepare("SELECT * FROM order_items WHERE order_id=?")
-          .all(o.id),
+          .all(o.id)
+          .map((item) =>
+            hasPermission(req.user, "finance") ||
+            hasPermission(req.user, "products")
+              ? item
+              : (({ cost, ...safe }) => safe)(item),
+          ),
       }));
       res.json(rows);
     }),
   );
   app.post(
     "/api/admin/orders/:id/cancel",
-    permission("orders"),
+    permission("orders_cancel"),
     asyncRoute((req, res) =>
       res.json(cancelOrder(db, req.user.id, req.params.id, true)),
     ),
   );
   app.put(
     "/api/admin/orders/:id",
-    permission("orders"),
+    permission("orders_update"),
     asyncRoute((req, res) => {
       const v = parse(
         z.object({
@@ -1000,7 +1018,7 @@ export function createApp(db, config) {
   );
   app.post(
     "/api/admin/finance",
-    permission("finance"),
+    permission("finance_write"),
     asyncRoute((req, res) => {
       const v = parse(
           z.object({
@@ -1045,7 +1063,7 @@ export function createApp(db, config) {
   );
   app.get(
     "/api/admin/finance/export",
-    permission("finance"),
+    permission("finance_export"),
     asyncRoute((req, res) => {
       const rows = db
         .prepare(
@@ -1083,16 +1101,17 @@ export function createApp(db, config) {
   app.get(
     "/api/admin/members",
     permission("members"),
-    asyncRoute((req, res) =>
-      res.json(
-        pageRows(
-          db,
-          "SELECT u.id,u.name,u.first_name,u.last_name,u.phone,u.discovery_source,u.line_id,u.email,u.role_id,u.balance,u.active,u.created_at,u.member_version,u.must_change_password,r.name role_name FROM users u JOIN roles r ON r.id=u.role_id WHERE u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.line_id LIKE ? ORDER BY u.created_at DESC",
-          Array(4).fill("%" + paging(req).q + "%"),
-          req,
-        ),
-      ),
-    ),
+    asyncRoute((req, res) => {
+      const data = pageRows(
+        db,
+        "SELECT u.id,u.name,u.first_name,u.last_name,u.phone,u.discovery_source,u.line_id,u.email,u.role_id,u.balance,u.active,u.created_at,u.member_version,u.must_change_password,r.name role_name FROM users u JOIN roles r ON r.id=u.role_id WHERE u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.line_id LIKE ? ORDER BY u.created_at DESC",
+        Array(4).fill("%" + paging(req).q + "%"),
+        req,
+      );
+      if (!hasPermission(req.user, "finance"))
+        data.items = data.items.map(({ balance, ...row }) => row);
+      res.json(data);
+    }),
   );
   app.get(
     "/api/admin/roles",
@@ -1103,7 +1122,10 @@ export function createApp(db, config) {
           .prepare("SELECT * FROM roles")
           .all()
           .map((r) => ({ ...r, permissions: JSON.parse(r.permissions) })),
-        permissions: PERMISSIONS,
+        permissions: assignablePermissions.map((p) => p.id),
+        permissionCatalog: assignablePermissions,
+        presets: authorization.roles,
+        ownerOnly: authorization.permissions.filter((p) => p.ownerOnly),
       }),
     ),
   );
@@ -1111,15 +1133,9 @@ export function createApp(db, config) {
     "/api/admin/roles",
     permission("roles"),
     asyncRoute((req, res) => {
-      const v = parse(
-        z.object({
-          name: boundedText,
-          permissions: z.array(z.enum(PERMISSIONS)).max(PERMISSIONS.length),
-        }),
-        req.body,
-      );
       if (req.user.role_id !== "admin")
         fail(403, "ผู้ดูแลระบบเท่านั้นที่จัดการสิทธิ์ได้");
+      const v = parse(roleSchema, req.body);
       const rid = id();
       transaction(db, () => {
         db.prepare("INSERT INTO roles VALUES(?,?,?)").run(
@@ -1136,18 +1152,12 @@ export function createApp(db, config) {
     "/api/admin/roles/:id",
     permission("roles"),
     asyncRoute((req, res) => {
-      const v = parse(
-        z.object({
-          name: boundedText,
-          permissions: z.array(z.enum(PERMISSIONS)).max(PERMISSIONS.length),
-        }),
-        req.body,
-      );
       if (
         req.user.role_id !== "admin" ||
         ["admin", "customer"].includes(req.params.id)
       )
         fail(403, "แก้ไขบทบาทระบบไม่ได้");
+      const v = parse(roleSchema, req.body);
       transaction(db, () => {
         const result = db
           .prepare("UPDATE roles SET name=?,permissions=? WHERE id=?")
