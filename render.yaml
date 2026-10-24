@@ -3,7 +3,7 @@ services:
     name: iyawarin-api
     runtime: docker
     region: singapore
-    plan: standard
+    plan: 1c-2g
     numInstances: 1
     autoDeployTrigger: off
     dockerfilePath: ./Dockerfile
