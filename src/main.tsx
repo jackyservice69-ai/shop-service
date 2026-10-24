@@ -47,6 +47,8 @@ import {
   Star,
   ChevronRight,
   Headphones,
+  Search,
+  X,
 } from "lucide-react";
 import { AppProvider, useApp, can, send } from "./api";
 import { Brand, Loading } from "./ui";
@@ -72,6 +74,7 @@ import {
 } from "./admin";
 import "./brand.generated.css";
 import "./styles.css";
+import "./storefront-shell.css";
 const nav = [
   ["dashboard", "ภาพรวม", LayoutDashboard],
   ["orders", "คำสั่งซื้อ", Package],
@@ -116,19 +119,78 @@ function StoreLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [loggingOut, setLoggingOut] = React.useState(false);
+  const currentSearch = new URLSearchParams(location.search).get("q") || "";
+  const [search, setSearch] = React.useState(currentSearch);
+  const searchInput = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    setSearch(currentSearch);
+  }, [currentSearch, location.pathname]);
+  React.useEffect(() => {
+    if (location.pathname !== "/" || search === currentSearch) return;
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(location.search);
+      const query = search.trim();
+      query ? params.set("q", query) : params.delete("q");
+      params.delete("page");
+      navigate({ pathname: "/", search: params.toString() }, { replace: true });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search, currentSearch, location.pathname, location.search, navigate]);
   if (user?.mustChangePassword && location.pathname !== "/account")
     return <Navigate to="/account" replace />;
   return (
     <div className="customer-shell" style={themeStyle(publicData?.theme)}>
       <header className="store-header">
-        <Link to="/" title="หน้าร้าน">
+        <Link to="/" title="หน้าร้าน" className="store-header-brand">
           <Brand variant="marble" />
         </Link>
-        <nav>
+        <form
+          className="store-header-search"
+          role="search"
+          aria-label="ค้นหาสินค้าในร้าน"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            const query = search.trim();
+            const params = new URLSearchParams();
+            if (query) params.set("q", query);
+            setSearch(query);
+            navigate({ pathname: "/", search: params.toString() });
+          }}
+        >
+          <Search size={20} aria-hidden="true" />
+          <input
+            ref={searchInput}
+            type="search"
+            aria-label="ค้นหาสินค้า"
+            placeholder="ค้นหาสินค้าที่อยากให้หิ้ว…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          {search && (
+            <button
+              type="button"
+              className="store-search-clear"
+              aria-label="ล้างคำค้นหา"
+              onClick={() => {
+                setSearch("");
+                navigate("/");
+                searchInput.current?.focus();
+              }}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          )}
+          <button className="button primary store-search-submit" type="submit">
+            ค้นหา
+          </button>
+        </form>
+        <nav aria-label="เมนูหน้าร้าน">
           <NavLink to="/" end>
             เลือกซื้อสินค้า
           </NavLink>
           <NavLink to="/promotions">โปรโมชั่น</NavLink>
+          <a href="#store-contact">ติดต่อเรา</a>
           {user && !user.mustChangePassword && (
             <>
               <NavLink to="/orders">คำสั่งซื้อ</NavLink>
@@ -142,8 +204,12 @@ function StoreLayout() {
         </nav>
         <div className="store-tools">
           {user?.permissions.length ? (
-            <Link to="/admin" className="text-button admin-link">
-              <LayoutDashboard size={16} /> หลังบ้าน
+            <Link
+              to="/admin"
+              className="text-button admin-link"
+              aria-label="หลังบ้าน"
+            >
+              <LayoutDashboard size={18} /> <span>หลังบ้าน</span>
             </Link>
           ) : null}
           <Link
@@ -195,14 +261,26 @@ function StoreLayout() {
       <main id="main-content" className="store-main" tabIndex={-1}>
         <Outlet />
       </main>
-      <footer className="store-footer">
+      <footer id="store-contact" className="store-footer">
         <Brand variant="marble" />
         <p>ของที่ชอบ ให้เราหิ้ว ดูแลตั้งแต่สั่งจนถึงมือคุณ</p>
         <SocialLinks />
         <span>Iya หิ้ว · Personal shopping service</span>
       </footer>
       <AnnouncementPopup />
-      <BackToTop />
+      <nav aria-label="เครื่องมือช่วยเหลือหน้าร้าน">
+        <BackToTop />
+        <a
+          className="floating-line-contact"
+          href="https://lin.ee/rwcULIh"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
+          title="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
+        >
+          <img src="/assets/brands/line.svg" alt="" width={36} height={36} />
+        </a>
+      </nav>
     </div>
   );
 }

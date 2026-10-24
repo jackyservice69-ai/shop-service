@@ -3990,6 +3990,25 @@ td small {
   background: var(--primary);
   color: var(--on-primary, #fff);
 }
+.floating-line-contact {
+  position: fixed;
+  right: max(22px, env(safe-area-inset-right, 0px));
+  bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  z-index: 15;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #00c300;
+  border-radius: 50%;
+}
+.floating-line-contact img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  filter: brightness(0) invert(1);
+}
 .theme-presets {
   display: flex;
   gap: 8px;
@@ -4246,6 +4265,12 @@ td small {
     width: 44px;
     height: 44px;
     border-radius: 13px;
+  }
+  .floating-line-contact {
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: max(17px, env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
   }
   .announcement-slide img {
     max-height: 42dvh;

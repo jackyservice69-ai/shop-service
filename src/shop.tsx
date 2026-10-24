@@ -1,4 +1,5 @@
 import { StoreBanners, Carousel } from "./experience";
+import "./storefront-home.css";
 import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
 import { BankDetailsPanel } from "./bank-details";
 import { ProductReviews, Stars } from "./reviews";
@@ -73,6 +74,33 @@ export function StorePage() {
     "/products?" + list.query + "&category=" + encodeURIComponent(category),
   );
   const [selected, setSelected] = useState<Product | null>(null);
+  const quickCategories = [
+    { label: "กระเป๋า", match: /กระเป๋า|bag/i, art: "bag" },
+    { label: "น้ำหอม", match: /น้ำหอม|perfume|fragrance/i, art: "perfume" },
+    {
+      label: "เครื่องประดับ",
+      match: /เครื่องประดับ|จิวเวล|jewel|accessor/i,
+      art: "jewelry",
+    },
+    {
+      label: "เสื้อผ้า",
+      match: /เสื้อ|แฟชั่น|cloth|fashion/i,
+      art: "clothing",
+    },
+  ];
+  const categories: string[] = publicData?.categories || [];
+  const browseCategories = categories.slice(0, 4).map((name) => ({
+    name,
+    art: quickCategories.find((item) => item.match.test(name))?.art,
+  }));
+  const chooseCategory = (value: string, scroll = false) => {
+    const next = new URLSearchParams(params);
+    value ? next.set("category", value) : next.delete("category");
+    next.delete("page");
+    setParams(next);
+    if (scroll)
+      document.getElementById("catalog")?.scrollIntoView({ block: "start" });
+  };
   const add = (p: Product) => {
     const old = cart.find((i) => i.product.id === p.id);
     if ((old?.quantity || 0) >= p.stock) {
@@ -91,106 +119,241 @@ export function StorePage() {
     notify("เพิ่ม " + p.name + " ในตะกร้าแล้ว");
   };
   return (
-    <>
+    <div className="pastel-storefront">
       <StoreBanners />
-      <section className="store-hero">
-        <div className="hero-copy">
-          <span className="eyebrow">
-            <span /> YOUR EVERYDAY PERSONAL SHOPPER
+      <section className="store-hero reference-hero">
+        <img
+          className="pastel-hero-illustration"
+          src="/assets/storefront/reference-hero.webp"
+          alt=""
+          width="455"
+          height="378"
+          fetchPriority="high"
+        />
+        <h1 className="sr-only">ของที่ชอบ ให้เราหิ้วมาให้</h1>
+        <p className="sr-only">
+          รวมของน่ารัก ของน่าใช้ และของที่คุณเล็งไว้ สั่งง่าย จ่ายสะดวก
+          ติดตามได้ทุกขั้นตอน ตรวจสลิปอัตโนมัติ จ่ายได้หลายช่องทาง จัดส่งทั่วไทย
+        </p>
+        <a className="button primary reference-hero-cta" href="#catalog">
+          เลือกช้อปของที่ชอบ <ArrowRight aria-hidden="true" size={18} />
+        </a>
+      </section>
+      <nav className="pastel-quick-categories" aria-label="เลือกหมวดหมู่สินค้า">
+        {quickCategories.map((item) => {
+          const value =
+            categories.find((name) => item.match.test(name)) || item.label;
+          return (
+            <button
+              key={item.art}
+              type="button"
+              onClick={() => chooseCategory(value, true)}
+            >
+              <span
+                className={"pastel-category-art art-" + item.art}
+                aria-hidden="true"
+              />
+              <span>
+                {item.label} <ArrowRight size={15} aria-hidden="true" />
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+      <section
+        className="pastel-promotion reference-promotion"
+        aria-labelledby="pastel-promotion-title"
+      >
+        <img
+          src="/assets/storefront/reference-promotion.webp"
+          alt=""
+          width="447"
+          height="141"
+          loading="lazy"
+        />
+        <h2 className="sr-only" id="pastel-promotion-title">
+          โปรโมชั่นสุดพิเศษ
+        </h2>
+        <Link
+          to="/promotions"
+          className="button primary reference-promotion-cta"
+        >
+          ดูโปรโมชั่นทั้งหมด <ArrowRight aria-hidden="true" size={16} />
+        </Link>
+      </section>
+      <section className="service-strip" aria-label="บริการของเรา">
+        <div>
+          <span className="pastel-benefit-icon">
+            <ShoppingBag size={25} aria-hidden="true" />
           </span>
-          <h1>
-            ของที่ชอบ
-            <br />
-            ให้เรา<span>หิ้ว</span>มาให้
-          </h1>
-          <p>
-            รวมของน่ารัก ของน่าใช้ และของที่คุณเล็งไว้
-            <br />
-            สั่งง่าย จ่ายสะดวก ติดตามได้ทุกขั้นตอน
-          </p>
-          <a className="button primary" href="#catalog">
-            เลือกช้อปของที่ชอบ <ArrowRight size={18} />
-          </a>
-          <div className="hero-trust">
-            <span>
-              <ShieldCheck size={17} /> ตรวจสลิปอัตโนมัติ
-            </span>
-            <span>
-              <Wallet size={17} /> จองเริ่ม {publicData?.depositPercent ?? 0}%
-            </span>
-          </div>
+          <span>
+            <b>รับหิ้วของที่ชอบ</b>
+            <small>เลือกจากรายการในร้าน</small>
+          </span>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="orbit orbit-one" />
-          <div className="orbit orbit-two" />
-          <span className="floating-tag tag-one">
-            <Check size={15} /> เจอของที่ใช่แล้ว!
+        <div>
+          <span className="pastel-benefit-icon">
+            <ShieldCheck size={25} aria-hidden="true" />
           </span>
-          <div className="parcel">
-            <span className="parcel-tape" />
-            <span className="parcel-label">
-              <ShoppingBag size={30} />
-              <b>Iya hiew</b>
-              <i>WITH A LITTLE EXTRA CARE</i>
-              <span className="barcode" />
-            </span>
-          </div>
-          <span className="floating-tag tag-two">
-            <Truck size={18} />
-            <span>
-              <b>หิ้วให้ด้วยใจ</b>
-              <small>ส่งความสุขถึงมือคุณ</small>
-            </span>
+          <span>
+            <b>ตรวจสลิปอัตโนมัติ</b>
+            <small>ตรวจสอบก่อนเติมเงิน</small>
           </span>
-          <div className="spark spark-one">✦</div>
-          <div className="spark spark-two">✦</div>
+        </div>
+        <div>
+          <span className="pastel-benefit-icon">
+            <Wallet size={25} aria-hidden="true" />
+          </span>
+          <span>
+            <b>ชำระผ่านกระเป๋าเงิน</b>
+            <small>รวมไว้ในบัญชีของคุณ</small>
+          </span>
+        </div>
+        <div>
+          <span className="pastel-benefit-icon">
+            <Truck size={25} aria-hidden="true" />
+          </span>
+          <span>
+            <b>ติดตามคำสั่งซื้อ</b>
+            <small>ดูสถานะและเลขพัสดุ</small>
+          </span>
         </div>
       </section>
-      <div className="service-strip">
-        <div>
-          <Package size={23} />
-          <span>
-            <b>คัดของดีมาให้แล้ว</b>
-            <small>เลือกสินค้าที่คุณชอบได้เลย</small>
-          </span>
+      <section className="pastel-browse" aria-labelledby="pastel-browse-title">
+        <div className="pastel-section-heading">
+          <h2 id="pastel-browse-title">
+            <span aria-hidden="true" />
+            หมวดหมู่ที่น่าช้อป
+          </h2>
+          <button
+            type="button"
+            className="pastel-text-link"
+            onClick={() => chooseCategory("", true)}
+          >
+            ดูทั้งหมด <ArrowRight size={16} />
+          </button>
         </div>
-        <div>
-          <CreditCard size={23} />
-          <span>
-            <b>จ่ายง่ายในกระเป๋าเดียว</b>
-            <small>เติมเงินด้วยสลิปธนาคาร</small>
-          </span>
+        {browseCategories.length ? (
+          <div className="pastel-browse-grid">
+            {browseCategories.map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                className="pastel-browse-card"
+                onClick={() => chooseCategory(item.name, true)}
+              >
+                <span
+                  className={
+                    "pastel-category-art art-" + (item.art || "generic")
+                  }
+                  aria-hidden="true"
+                >
+                  {!item.art && <Package size={64} strokeWidth={1.2} />}
+                </span>
+                <span className="pastel-browse-label">
+                  <span>
+                    <b>{item.name}</b>
+                    <small>เลือกดูสินค้า</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="pastel-section-help">
+            เลือกดูสินค้าที่มีได้จากรายการด้านล่าง
+          </p>
+        )}
+      </section>
+      <section className="pastel-steps" aria-labelledby="pastel-steps-title">
+        <div className="pastel-section-heading">
+          <h2 id="pastel-steps-title">
+            <ShoppingBag size={23} aria-hidden="true" />
+            หิ้วง่าย ๆ ใน 4 ขั้นตอน
+          </h2>
+          <a href="#catalog" className="pastel-text-link">
+            เริ่มเลือกสินค้า <ArrowRight size={16} />
+          </a>
         </div>
-        <div>
-          <Truck size={23} />
-          <span>
-            <b>ติดตามได้ทุกขั้นตอน</b>
-            <small>ดูสถานะและเลขพัสดุในระบบ</small>
-          </span>
-        </div>
-      </div>
+        <ol>
+          <li>
+            <span className="pastel-step-icon">
+              <Link2 size={27} aria-hidden="true" />
+            </span>
+            <b>
+              <span>1</span> เลือกของที่ชอบ
+            </b>
+            <p>เลือกรายการ หรือส่งลิงก์ทาง LINE</p>
+          </li>
+          <li>
+            <span className="pastel-step-icon">
+              <ShoppingBag size={27} aria-hidden="true" />
+            </span>
+            <b>
+              <span>2</span> รอตรวจสอบ
+            </b>
+            <p>เช็กรายละเอียดและยอดที่ต้องชำระ</p>
+          </li>
+          <li>
+            <span className="pastel-step-icon">
+              <CreditCard size={27} aria-hidden="true" />
+            </span>
+            <b>
+              <span>3</span> ชำระเงิน
+            </b>
+            <p>จองเริ่ม {publicData?.depositPercent ?? 0}% ตามเงื่อนไขร้าน</p>
+          </li>
+          <li>
+            <span className="pastel-step-icon">
+              <Truck size={27} aria-hidden="true" />
+            </span>
+            <b>
+              <span>4</span> ติดตามจัดส่ง
+            </b>
+            <p>ชำระครบ แล้วรอรับของที่ชอบ</p>
+          </li>
+        </ol>
+      </section>
+      <section className="pastel-contact reference-contact">
+        <img
+          src="/assets/storefront/reference-contact.webp"
+          width={449}
+          height={72}
+          alt=""
+          loading="lazy"
+        />
+        <h2 className="sr-only">IYA HIEW · Your everyday personal shopper</h2>
+        <p className="sr-only">ให้ทุกความชอบของคุณอยู่ใกล้ขึ้น</p>
+        <a
+          href="https://lin.ee/rwcULIh"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="button primary reference-contact-cta"
+        >
+          ติดต่อเรา <ArrowUpRight size={17} aria-hidden="true" />
+        </a>
+        <Link
+          to="/referrals"
+          className="pastel-text-link reference-referral-link"
+        >
+          ชวนเพื่อนมาช้อปด้วยกัน <ArrowRight size={16} />
+        </Link>
+      </section>
       <section id="catalog" className="catalog">
         <PageHeading
           title="เลือกของที่ใช่ สำหรับคุณ"
           sub="ของโปรดชิ้นต่อไป อาจอยู่ตรงนี้"
-        >
-          <SearchBox
-            value={list.q}
-            onChange={list.setQ}
-            placeholder="ค้นหาสินค้าที่อยากได้…"
-          />
-        </PageHeading>
+          level={2}
+        />
         <div className="category-tabs">
           {["", ...(publicData?.categories || [])].map((c) => (
             <button
               key={c}
+              type="button"
               className={category === c ? "selected" : ""}
-              onClick={() => {
-                const p = new URLSearchParams(params);
-                c ? p.set("category", c) : p.delete("category");
-                p.delete("page");
-                setParams(p);
-              }}
+              aria-pressed={category === c}
+              onClick={() => chooseCategory(c)}
             >
               {c || "สินค้าทั้งหมด"}
             </button>
@@ -266,18 +429,6 @@ export function StorePage() {
           />
         )}
       </section>
-      <section className="referral-banner">
-        <span className="gift-tile">
-          <Gift size={30} />
-        </span>
-        <div>
-          <h2>ของดี บอกต่อเพื่อนได้</h2>
-          <p>ส่งลิงก์ชวนเพื่อน แล้วช้อปไปด้วยกัน</p>
-        </div>
-        <Link to="/referrals" className="button secondary">
-          ชวนเพื่อนเลย <ArrowUpRight size={17} />
-        </Link>
-      </section>
       {selected && (
         <Modal title={selected.name} onClose={() => setSelected(null)}>
           <img
@@ -302,7 +453,7 @@ export function StorePage() {
           <ProductReviews productId={selected.id} onChanged={reload} />
         </Modal>
       )}
-    </>
+    </div>
   );
 }
 export function AnnouncementPopup() {
@@ -1367,24 +1518,6 @@ export function AccountPage() {
         </button>
       </section>
       {!user?.mustChangePassword && <SocialConnections />}
-      {!user?.mustChangePassword && (
-        <div className="section-space">
-          <a
-            href="https://lin.ee/rwcULIh"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
-            style={{ display: "inline-block" }}
-          >
-            <img
-              src="https://scdn.line-apps.com/n/line_add_friends/btn/th.png"
-              alt="เพิ่มเพื่อน"
-              height={36}
-              style={{ display: "block", width: "auto", height: 36, border: 0 }}
-            />
-          </a>
-        </div>
-      )}
       {!user?.mustChangePassword && <AddressBook />}
     </div>
   );

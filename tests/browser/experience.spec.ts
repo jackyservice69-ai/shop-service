@@ -150,7 +150,15 @@ test("appearance editor persists six pastel colors, uploaded logo/favicon and co
     const mobileScan = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
       .analyze();
-    expect(mobileScan.violations.map((v) => v.id)).toEqual([]);
+    expect(
+      mobileScan.violations.map((v) => ({
+        id: v.id,
+        nodes: v.nodes.map((n) => ({
+          target: n.target,
+          summary: n.failureSummary,
+        })),
+      })),
+    ).toEqual([]);
     await page.screenshot({
       path: "output/playwright/pink-sky-mobile.png",
       fullPage: true,
