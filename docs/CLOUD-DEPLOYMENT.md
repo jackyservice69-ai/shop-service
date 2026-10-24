@@ -56,5 +56,24 @@ never resume a stale source database or run two independent wallets and LINE wor
 
 ## Status
 
-This document is a runbook, not a claim that the service, data migration, domain or provider callbacks are live.
-Record actual deployment IDs and verification results when those steps complete.
+Deployed on 2026-10-24:
+
+- Vercel project `iyawarin`, team `jojo-7133`; apex domain verified and live;
+  `www.iyawarin.com` redirects to the apex with 308.
+- Render service `srv-dbecgn29lscs73an153g` at `https://iyawarin-api.onrender.com`,
+  compute `1c-2g`, Singapore, persistent data mounted at `/app/data`.
+- The final source SQLite snapshot was copied over verified SSH/SFTP before activation.
+  All 35 table manifests and the file SHA-256 matched. A second check after activation
+  confirmed that 19 business, financial and media tables were unchanged and the audit chain remained valid.
+- Original local development processes were stopped before the final snapshot. Do not restart that old database for production writes.
+- Google and LINE Login callback URIs now include the apex domain, preserving their previous callback URIs.
+  Messaging API webhook points to the apex domain and LINE's live verification returned Success.
+- API tests passed 164/164. Public catalog/assets, existing administrator login, secure cookies,
+  authorization and administrator dashboard/member/audit reads passed through the final HTTPS domain.
+- Chromium produced the actual bank-details panel on Render; Sharp and FFmpeg video sanitization ran successfully.
+- This migration did not create a real customer topup, payment or order for testing. Mobile OAuth consent and a real slip
+  should be checked by the owner using their own device and a legitimate transfer.
+- Backups were taken before migration and after activation. Configure ongoing off-service SQLite backups and retention;
+  a one-time migration backup and Render's disk snapshots do not provide ongoing application-consistent off-service backup.
+- The catalog still contains demo products and a demo announcement inherited from the source installation.
+  The owner must review products, prices, stock and customer-facing copy before accepting real sales.
