@@ -2,7 +2,11 @@ import sharp from "sharp";
 import jsQR from "jsqr";
 import { easyRequest, secret } from "./integrations.mjs";
 import { fail } from "./commerce.mjs";
-import { hash, now } from "./db.mjs";
+import { getSettings, hash, now } from "./db.mjs";
+import {
+  authorizePromptpayResponse,
+  currentPaymentQr,
+} from "./receiving-policy.mjs";
 
 export function crc16(text) {
   let crc = 0xffff;
@@ -190,9 +194,59 @@ export async function verifyPaymentQr(db, config, buffer, settings) {
     version: 1,
     bankAccountId: bank.id,
     promptpayAccountId: promptpay.id,
+    promptpayIdentifier: decoded.identifier,
     payloadHash: decoded.payloadHash,
     frame: decoded.frame,
     credentialHash,
     checkedAt: now(),
   };
+}
+
+export async function authorizeSlipPromptpay(db, config, data) {
+  if (data?.matchedAccount?.bank?.code !== "PROMPTPAY") return;
+  const settings = getSettings(db),
+    credentialHash = hash(secret(db, "easyslipApiKey", config));
+  const qr = currentPaymentQr(settings, credentialHash);
+  if (!qr)
+    fail(
+      422,
+      "สลิปโอนเข้าพร้อมเพย์ แต่ร้านยังไม่มี QR รับเงินที่ผ่านการตรวจบัญชีและ Branch กรุณาติดต่อร้าน",
+    );
+  const media = db
+    .prepare("SELECT body FROM media WHERE id=? AND kind='paymentQr'")
+    .get(qr.split("/").at(-1));
+  if (!media) fail(422, "ไม่พบ QR พร้อมเพย์ที่ร้านยืนยันไว้");
+  // Recheck the uploaded QR's exact identifier and both account registrations
+  // against the current API key's Branch, including legacy QR verification data.
+  const proof = await verifyPaymentQr(
+    db,
+    config,
+    Buffer.from(media.body),
+    settings,
+  );
+  if (digits(data.matchedAccount.bankNumber) !== proof.promptpayIdentifier)
+    fail(422, "เลขพร้อมเพย์ผู้รับไม่ตรงกับ QR รับเงินของร้าน");
+  const live = getSettings(db);
+  if (
+    JSON.stringify([
+      live.bankCode,
+      live.bankNumber,
+      live.accountName,
+      live.accountNameEn,
+      live.paymentQr,
+      live.paymentQrReceiver,
+      live.paymentQrVerification,
+    ]) !==
+    JSON.stringify([
+      settings.bankCode,
+      settings.bankNumber,
+      settings.accountName,
+      settings.accountNameEn,
+      settings.paymentQr,
+      settings.paymentQrReceiver,
+      settings.paymentQrVerification,
+    ])
+  )
+    fail(409, "บัญชีรับเงินหรือ QR เปลี่ยนระหว่างตรวจสอบ กรุณาลองใหม่");
+  authorizePromptpayResponse(data, settings, proof.promptpayIdentifier);
 }

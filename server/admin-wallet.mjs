@@ -88,7 +88,7 @@ export function attachAdminWallet(
       res.json(
         pageRows(
           db,
-          `SELECT l.*,l.balance_after-l.amount balance_before,u.name customer_name,u.email customer_email,m.actor_id,a.name actor_name,m.source,m.reference document_reference,m.reason,t.bank_ref slip_bank_reference FROM ledger l JOIN users u ON u.id=l.user_id LEFT JOIN manual_topups m ON l.kind='admin_topup' AND l.reference=m.id LEFT JOIN users a ON a.id=m.actor_id LEFT JOIN topups t ON l.kind='topup' AND l.reference=t.id WHERE (?='' OR l.kind=?) AND (u.name LIKE ? OR u.email LIKE ? OR l.id LIKE ? OR l.reference LIKE ? OR COALESCE(m.reference,'') LIKE ? OR COALESCE(a.name,'') LIKE ?) ORDER BY l.created_at DESC,l.rowid DESC`,
+          `SELECT l.*,l.balance_after-l.amount balance_before,u.name customer_name,u.email customer_email,m.actor_id,a.name actor_name,m.source,m.reference document_reference,m.reason,t.bank_ref slip_bank_reference,x.event_id line_event_id FROM ledger l JOIN users u ON u.id=l.user_id LEFT JOIN manual_topups m ON l.kind='admin_topup' AND l.reference=m.id LEFT JOIN users a ON a.id=m.actor_id LEFT JOIN topups t ON l.kind='topup' AND l.reference=t.id LEFT JOIN line_topups x ON x.topup_id=t.id WHERE (?='' OR l.kind=?) AND (u.name LIKE ? OR u.email LIKE ? OR l.id LIKE ? OR l.reference LIKE ? OR COALESCE(m.reference,'') LIKE ? OR COALESCE(a.name,'') LIKE ?) ORDER BY l.created_at DESC,l.rowid DESC`,
           [kind, kind, ...Array(6).fill(pattern)],
           req,
         ),

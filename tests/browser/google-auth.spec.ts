@@ -61,6 +61,12 @@ test("Google signup and returning login preserve member and referral; buttons ha
     .click();
   await expect(page.getByLabel("เบอร์โทร")).toBeFocused();
   await page.getByLabel("เบอร์โทร").fill("081-234-5678");
+  await page.getByLabel("รู้จักเราจากที่ไหน").selectOption("อื่นๆ");
+  await page
+    .getByRole("button", { name: "สร้างบัญชีด้วย Google", exact: true })
+    .click();
+  await expect(page.getByLabel("ระบุช่องทางอื่นๆ")).toBeFocused();
+  await page.getByLabel("ระบุช่องทางอื่นๆ").fill("  เพื่อนร่วมงานบอกต่อ  ");
   const axe = await new AxeBuilder({ page }).analyze();
   expect(axe.violations).toEqual([]);
   await page
@@ -71,6 +77,7 @@ test("Google signup and returning login preserve member and referral; buttons ha
   expect(first.email).toBe(email);
   expect(first.roleId).toBe("customer");
   expect(first.balance).toBe(0);
+  expect(first.discoverySource).toBe("เพื่อนร่วมงานบอกต่อ");
   await page.goto("/account");
   await expect(
     page.getByText("บัญชีนี้เข้าสู่ระบบด้วย Google", { exact: true }),

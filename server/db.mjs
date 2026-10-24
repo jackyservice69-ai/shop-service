@@ -64,6 +64,10 @@ export function openDb(path) {
  CREATE TABLE IF NOT EXISTS google_pending(cookie_hash TEXT PRIMARY KEY,subject TEXT NOT NULL,email TEXT NOT NULL,first_name TEXT NOT NULL,last_name TEXT NOT NULL,next TEXT NOT NULL,referral_code TEXT NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0);
  CREATE INDEX IF NOT EXISTS google_attempt_expiry ON google_auth_attempts(expires_at);
  CREATE INDEX IF NOT EXISTS google_pending_expiry ON google_pending(expires_at);
+ CREATE TABLE IF NOT EXISTS social_link_flows(state_hash TEXT PRIMARY KEY,provider TEXT NOT NULL CHECK(provider IN ('google','line')),user_id TEXT NOT NULL REFERENCES users(id),session_token TEXT NOT NULL,expires_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS line_identities(subject TEXT PRIMARY KEY,user_id TEXT NOT NULL UNIQUE REFERENCES users(id),channel_id TEXT NOT NULL,display_name TEXT NOT NULL,binding_id TEXT NOT NULL UNIQUE,created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS line_auth_attempts(state_hash TEXT PRIMARY KEY,browser_hash TEXT NOT NULL UNIQUE,nonce TEXT NOT NULL,verifier TEXT NOT NULL,next TEXT NOT NULL,referral_code TEXT NOT NULL,config_hash TEXT NOT NULL,expires_at TEXT NOT NULL,created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS line_pending(cookie_hash TEXT PRIMARY KEY,subject TEXT NOT NULL,display_name TEXT NOT NULL,channel_id TEXT NOT NULL,next TEXT NOT NULL,referral_code TEXT NOT NULL,config_hash TEXT NOT NULL,expires_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS products(id TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL,category TEXT NOT NULL,price INTEGER NOT NULL CHECK(price>0),cost INTEGER NOT NULL DEFAULT 0 CHECK(cost>=0),stock INTEGER NOT NULL CHECK(stock>=0),image TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS promotions(id TEXT PRIMARY KEY,code TEXT NOT NULL UNIQUE,type TEXT NOT NULL CHECK(type IN ('percent','fixed')),value INTEGER NOT NULL CHECK(value>0),minimum INTEGER NOT NULL DEFAULT 0,limit_count INTEGER NOT NULL DEFAULT 100,per_user INTEGER NOT NULL DEFAULT 1,starts_at TEXT NOT NULL,ends_at TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,version INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),request_key TEXT NOT NULL,request_hash TEXT NOT NULL,subtotal INTEGER NOT NULL,discount INTEGER NOT NULL,total INTEGER NOT NULL CHECK(total>=0),paid INTEGER NOT NULL CHECK(paid>=0),deposit_percent INTEGER NOT NULL,status TEXT NOT NULL,promotion_id TEXT REFERENCES promotions(id),shipping TEXT NOT NULL,tracking TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,UNIQUE(user_id,request_key));
@@ -86,6 +90,10 @@ export function openDb(path) {
  CREATE TRIGGER IF NOT EXISTS ledger_immutable_update BEFORE UPDATE ON ledger BEGIN SELECT RAISE(ABORT,'ledger is immutable'); END;
  CREATE TRIGGER IF NOT EXISTS ledger_immutable_delete BEFORE DELETE ON ledger BEGIN SELECT RAISE(ABORT,'ledger is immutable'); END;
  CREATE TABLE IF NOT EXISTS webhook_events(id TEXT PRIMARY KEY,payload TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',attempts INTEGER NOT NULL DEFAULT 0,error TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS line_topups(event_id TEXT PRIMARY KEY REFERENCES webhook_events(id),topup_id TEXT NOT NULL UNIQUE REFERENCES topups(id),created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS line_slip_limits(subject_hash TEXT PRIMARY KEY,window_start INTEGER NOT NULL,requests INTEGER NOT NULL);
+ CREATE TRIGGER IF NOT EXISTS line_topups_immutable_update BEFORE UPDATE ON line_topups BEGIN SELECT RAISE(ABORT,'line topups are immutable'); END;
+ CREATE TRIGGER IF NOT EXISTS line_topups_immutable_delete BEFORE DELETE ON line_topups BEGIN SELECT RAISE(ABORT,'line topups are immutable'); END;
  CREATE INDEX IF NOT EXISTS order_user_date ON orders(user_id,created_at);
  CREATE INDEX IF NOT EXISTS ledger_user_date ON ledger(user_id,created_at);
  CREATE INDEX IF NOT EXISTS audit_date ON audit(created_at);
@@ -118,6 +126,13 @@ export function openDb(path) {
       ["users", "must_change_password", "INTEGER NOT NULL DEFAULT 0"],
       ["users", "password_reset_expires_at", "TEXT"],
       ["users", "has_password", "INTEGER NOT NULL DEFAULT 1"],
+      ["line_auth_attempts", "origin_browser", "TEXT NOT NULL DEFAULT 'same'"],
+      [
+        "google_auth_attempts",
+        "origin_browser",
+        "TEXT NOT NULL DEFAULT 'same'",
+      ],
+      ["webhook_events", "reply_text", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "image", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "title", "TEXT NOT NULL DEFAULT ''"],
       ["promotions", "description", "TEXT NOT NULL DEFAULT ''"],
@@ -216,6 +231,10 @@ export function openDb(path) {
       });
       db.exec("PRAGMA user_version=9");
     }
+    if (schemaVersion < 10) {
+      audit(db, null, "auth.line_enabled_schema", "system");
+      db.exec("PRAGMA user_version=10");
+    }
   });
   const defaults = {
     shopName: "หิ้วลี่",
@@ -238,6 +257,9 @@ export function openDb(path) {
     accountName: "",
     accountNameEn: "",
     botEnabled: false,
+    lineLoginEnabled: false,
+    lineLoginChannelId: "",
+    lineTopupEnabled: false,
     aiEnabled: false,
     aiModel: "gpt-4.1-mini",
     botGreeting:

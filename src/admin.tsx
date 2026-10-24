@@ -1700,6 +1700,8 @@ export function SettingsPage() {
               const v: any = formObject(f);
               v.depositPercent = Number(v.depositPercent);
               v.botEnabled = v.botEnabled === "on";
+              v.lineLoginEnabled = v.lineLoginEnabled === "on";
+              v.lineTopupEnabled = v.lineTopupEnabled === "on";
               v.aiEnabled = v.aiEnabled === "on";
               v.paymentQr = paymentQr ?? s.paymentQr ?? "";
               v.socials = Object.fromEntries(
@@ -1900,7 +1902,7 @@ export function SettingsPage() {
                       name="botEnabled"
                       defaultChecked={s.botEnabled}
                     />{" "}
-                    เปิดใช้บอทตอบข้อความ
+                    เปิดใช้ LINE Chatbot
                   </label>
                   <Field
                     label="Channel Access Token"
@@ -1938,6 +1940,61 @@ export function SettingsPage() {
                     required
                     defaultValue={s.botGreeting}
                   />
+                  <h3>LINE Login และผูกบัญชีสมาชิก</h3>
+                  <p className="muted">
+                    สร้าง LINE Login Channel ภายใต้ Provider เดียวกับ Messaging
+                    API และเชื่อมกับ LINE Official Account ของร้าน ใช้ ID/Secret
+                    คนละชุดกับ Chatbot
+                  </p>
+                  <label className="checkbox-field">
+                    <input
+                      type="checkbox"
+                      name="lineLoginEnabled"
+                      defaultChecked={s.lineLoginEnabled}
+                    />{" "}
+                    เปิดใช้ LINE Login
+                  </label>
+                  <Field
+                    label="LINE Login Channel ID"
+                    name="lineLoginChannelId"
+                    defaultValue={s.lineLoginChannelId || ""}
+                    maxLength={20}
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                  />
+                  <Field
+                    label="LINE Login Channel Secret"
+                    name="lineLoginChannelSecret"
+                    type="password"
+                    autoComplete="off"
+                    maxLength={500}
+                    placeholder={
+                      s.lineLoginChannelSecretConfigured
+                        ? "ตั้งค่าแล้ว · เว้นว่างเพื่อใช้ค่าเดิม"
+                        : "ใส่ Channel Secret ของ LINE Login"
+                    }
+                  />
+                  <Field
+                    label="LINE Login Callback URL"
+                    name="lineCallbackDisplay"
+                    value={s.lineLoginCallback}
+                    readOnly
+                    help="นำ URL นี้ไปตั้งค่า Callback URL ใน LINE Developers Console"
+                  />
+                  <label className="checkbox-field">
+                    <input
+                      type="checkbox"
+                      name="lineTopupEnabled"
+                      defaultChecked={s.lineTopupEnabled}
+                    />{" "}
+                    เปิดเติมเงินจากสลิปใน LINE
+                  </label>
+                  <p className="info-box">
+                    รับรูป JPEG, PNG หรือ WebP ไม่เกิน 4 MB ในแชทส่วนตัว
+                    เฉพาะลูกค้าที่ผูก LINE แล้ว
+                    ตรวจยอดจากสลิปจริงและจับคู่บัญชีรับเงินใน EasySlip
+                    ก่อนเติมยอด ป้องกันสลิปซ้ำร่วมกับเว็บและหลังบ้าน
+                  </p>
                 </section>
                 <section className="panel section-space">
                   <div className="panel-title">

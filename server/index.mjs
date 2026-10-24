@@ -6,9 +6,10 @@ const config = configuration(),
   db = openDb(config.databasePath),
   app = createApp(db, config),
   worker = startBotWorker(db, config);
-const server = app.listen(config.port, config.host, () =>
-  console.log(`Hiewly API ready on http://127.0.0.1:${config.port}`),
-);
+const server = app.listen(config.port, config.host, () => {
+  config.bankCardRenderOrigin = `http://127.0.0.1:${server.address().port}`;
+  console.log(`Hiewly API ready on http://127.0.0.1:${config.port}`);
+});
 for (const signal of ["SIGTERM", "SIGINT"])
   process.on(signal, () => {
     worker.stop();

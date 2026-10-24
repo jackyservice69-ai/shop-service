@@ -12,6 +12,13 @@ import {
 } from "./db.mjs";
 import { fail } from "./commerce.mjs";
 import { memberProfileSchema } from "./member-management.mjs";
+import { returnCallbackToBrowser } from "./auth-browser.mjs";
+import { detectBrowser } from "../shared/auth-browser.mjs";
+import {
+  beginSocialLink,
+  consumeSocialLink,
+  finishSocialLink,
+} from "./social-accounts.mjs";
 
 const opaque = () => randomBytes(32).toString("base64url");
 const expires = () => new Date(Date.now() + 10 * 60000).toISOString();
@@ -22,7 +29,7 @@ export function safeGoogleNext(value) {
     value.length <= 500 &&
     /^\/(?!\/)/.test(value) &&
     !/[\\\r\n\u0000-\u001f]/.test(value) &&
-    !/^\/(?:login|register|google)(?:[/?#]|$)/.test(value)
+    !/^\/(?:login|register|google|line)(?:[/?#]|$)/.test(value)
     ? value
     : "/";
 }
@@ -111,6 +118,8 @@ export function attachGoogleAuth(
         .object({
           next: z.string().max(500).default("/"),
           referralCode: z.string().max(40).default(""),
+          intent: z.enum(["login", "link"]).default("login"),
+          password: z.string().max(128).optional(),
         })
         .strict()
         .parse(req.body);
@@ -128,8 +137,10 @@ export function attachGoogleAuth(
           hash(req.cookies[pendingName]),
         );
       clear(res, pendingName);
+      if (v.intent === "link")
+        beginSocialLink(db, req, "google", hash(state), v.password);
       db.prepare(
-        "INSERT INTO google_auth_attempts VALUES(?,?,?,?,?,?,?,?)",
+        "INSERT INTO google_auth_attempts VALUES(?,?,?,?,?,?,?,?,?)",
       ).run(
         hash(state),
         hash(browser),
@@ -139,6 +150,7 @@ export function attachGoogleAuth(
         v.referralCode,
         expires(),
         now(),
+        detectBrowser(req.get("user-agent")),
       );
       res.cookie(cookieName, browser, cookies);
       res.json({
@@ -164,6 +176,8 @@ export function attachGoogleAuth(
       cleanup();
       const { state, code, error } = req.query,
         browser = req.cookies[cookieName];
+      if (returnCallbackToBrowser(req, res, db, config, "google", cookieName))
+        return;
       if (
         typeof state !== "string" ||
         state.length !== 43 ||
@@ -177,8 +191,11 @@ export function attachGoogleAuth(
         )
         .get(hash(state), hash(browser), now());
       if (!attempt) return failed();
+      const link = consumeSocialLink(db, hash(state));
+      const linkFailed = () =>
+        res.redirect(303, `${config.origin}/account?google=link_failed`);
       clear(res, cookieName);
-      if (error) return failed("cancelled");
+      if (error) return link ? linkFailed() : failed("cancelled");
       if (typeof code !== "string" || !code || code.length > 4096)
         return failed();
       try {
@@ -201,6 +218,10 @@ export function attachGoogleAuth(
           !z.email().max(200).safeParse(p.email).success
         )
           throw new Error("Invalid Google identity");
+        if (link) {
+          finishSocialLink(db, link, "google", p.sub);
+          return res.redirect(303, `${config.origin}/account?google=linked`);
+        }
         const identity = db
           .prepare(
             "SELECT u.* FROM google_identities g JOIN users u ON u.id=g.user_id WHERE g.subject=?",
@@ -235,7 +256,7 @@ export function attachGoogleAuth(
       } catch {
         // Never log OAuth codes, token responses, provider errors or credentials.
         audit(db, null, "auth.google_failed", "session");
-        return failed();
+        return link ? linkFailed() : failed();
       }
     }),
   );

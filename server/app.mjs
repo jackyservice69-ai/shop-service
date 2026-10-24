@@ -7,6 +7,9 @@ import {
 } from "./experience.mjs";
 import express from "express";
 import { attachGoogleAuth } from "./google-auth.mjs";
+import { attachSocialDisconnect } from "./social-accounts.mjs";
+import { attachLineAuth, lineConfiguration } from "./line-auth.mjs";
+import { getBankCard } from "./line-bank-card.mjs";
 import { attachAdminWallet } from "./admin-wallet.mjs";
 import { attachAddresses } from "./addresses.mjs";
 import { attachConsignments } from "./consignments.mjs";
@@ -375,6 +378,29 @@ export function createApp(db, config) {
   }
   app.get("/api/health", (req, res) => res.json({ ok: true }));
   attachGoogleAuth(app, db, config, { session, authLimiter, asyncRoute });
+  attachSocialDisconnect(app, db, config, { authLimiter, asyncRoute });
+  attachLineAuth(app, db, config, { session, authLimiter, asyncRoute });
+  app.get(
+    "/api/line/bank-card/:fingerprint/:size",
+    rateLimit({ windowMs: 60000, limit: 30 }),
+    asyncRoute(async (req, res) => {
+      if (
+        !/^[a-f0-9]{64}$/.test(req.params.fingerprint) ||
+        !["original.png", "preview.png"].includes(req.params.size)
+      )
+        fail(404, "ไม่พบรูปบัญชีรับเงิน");
+      const card = await getBankCard(db, config, req.params.fingerprint);
+      res
+        .set({
+          "Content-Type": "image/png",
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        })
+        .send(
+          req.params.size === "original.png" ? card.original : card.preview,
+        );
+    }),
+  );
   app.get("/api/me", (req, res) =>
     res.json({
       user: safeUser(req.user),
@@ -554,7 +580,7 @@ export function createApp(db, config) {
         balance: req.user.balance,
         ...pageRows(
           db,
-          "SELECT * FROM ledger WHERE user_id=? ORDER BY created_at DESC",
+          "SELECT l.*,CASE WHEN x.event_id IS NOT NULL THEN 'LINE' ELSE '' END topup_channel FROM ledger l LEFT JOIN line_topups x ON l.kind='topup' AND x.topup_id=l.reference WHERE l.user_id=? ORDER BY l.created_at DESC",
           [req.user.id],
           req,
         ),
@@ -1227,6 +1253,8 @@ export function createApp(db, config) {
           hash(secret(db, "easyslipApiKey", config)),
         ),
         webhookUrl: `${config.origin}/api/line/webhook`,
+        lineLoginCallback: `${config.origin}/api/auth/line/callback`,
+        lineLoginReady: !!lineConfiguration(db, config),
         botEvents: db
           .prepare(
             "SELECT id,status,attempts,error,created_at FROM webhook_events ORDER BY created_at DESC LIMIT 10",
@@ -1282,6 +1310,13 @@ export function createApp(db, config) {
     easyslipApiKey: z.string().max(500).optional(),
     lineChannelSecret: z.string().max(500).optional(),
     lineChannelAccessToken: z.string().max(1000).optional(),
+    lineLoginChannelId: z
+      .string()
+      .regex(/^(?:\d{5,20})?$/)
+      .optional(),
+    lineLoginChannelSecret: z.string().trim().max(500).optional(),
+    lineLoginEnabled: z.boolean().optional(),
+    lineTopupEnabled: z.boolean().optional(),
     openaiApiKey: z.string().max(500).optional(),
   });
   app.put(
@@ -1289,6 +1324,27 @@ export function createApp(db, config) {
     permission("settings"),
     asyncRoute(async (req, res) => {
       const v = parse(settingsSchema, req.body);
+      const lineBefore = getSettings(db);
+      const lineEnabled = v.lineLoginEnabled ?? lineBefore.lineLoginEnabled;
+      if (
+        lineEnabled &&
+        (!(v.lineLoginChannelId ?? lineBefore.lineLoginChannelId) ||
+          !(
+            v.lineLoginChannelSecret ||
+            secret(db, "lineLoginChannelSecret", config)
+          ))
+      )
+        fail(400, "กรุณาใส่ LINE Login Channel ID และ Channel Secret ให้ครบ");
+      if (
+        (v.lineTopupEnabled ?? lineBefore.lineTopupEnabled) &&
+        (!lineEnabled ||
+          !v.botEnabled ||
+          !(v.easyslipApiKey || secret(db, "easyslipApiKey", config)))
+      )
+        fail(
+          400,
+          "เติมเงินผ่าน LINE ต้องเปิด LINE Login, LINE Chatbot และตั้งค่า EasySlip ก่อน",
+        );
       if (v.paymentQr) checkMedia(db, v.paymentQr, "paymentQr");
       if (v.aiEnabled && !v.openaiApiKey && !secret(db, "openaiApiKey", config))
         fail(400, "กรุณาใส่ OpenAI API key ก่อนเปิด AI");

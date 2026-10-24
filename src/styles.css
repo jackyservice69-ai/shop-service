@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap");
+@import url("/fonts/noto-sans-thai.css");
 :root {
   --primary: var(--palette-primary);
   --primary-hover: var(--palette-primary-hover);
@@ -453,7 +453,7 @@ summary {
   margin-bottom: 4px;
 }
 .empty p {
-  color: var(--muted);
+  color: var(--muted-text, var(--ink-subtle));
   font-size: 13px;
 }
 .loading {
@@ -2331,6 +2331,14 @@ td small {
 .bank-details {
   position: relative;
   container-type: inline-size;
+}
+.bank-card-export {
+  width: 540px;
+  padding: 0;
+  margin: 0;
+}
+.bank-card-export .bank-details {
+  margin: 0;
 }
 .bank-receiver {
   display: grid;
@@ -4626,4 +4634,26 @@ td small {
 }
 .transaction-detail {
   overflow-wrap: anywhere;
+}
+.line-auth {
+  margin-top: 12px;
+}
+.social-connection-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.social-connection-row > div {
+  flex: 1;
+  min-width: 140px;
+  overflow-wrap: anywhere;
+}
+.social-connection-row p {
+  margin: 4px 0 0;
+}
+.social-connections > .info-box {
+  margin-top: 16px;
 }

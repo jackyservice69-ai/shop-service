@@ -1,9 +1,11 @@
-import { StoreBanners, Carousel, StorePaymentQr } from "./experience";
+import { StoreBanners, Carousel } from "./experience";
 import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
-import { BankLogo } from "./contacts";
+import { BankDetailsPanel } from "./bank-details";
 import { ProductReviews, Stars } from "./reviews";
 import { WalletCard } from "./wallet-card";
 import { GoogleButton } from "./google-auth";
+import { LineButton, SocialConnections } from "./line-auth";
+import { DiscoverySourceField, registrationValues } from "./discovery-source";
 import { useEffect, useRef, useState } from "react";
 import {
   Link,
@@ -349,6 +351,21 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const [params] = useSearchParams();
   const next = params.get("next") || "/";
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const socialButtons = (
+    <>
+      <GoogleButton
+        divider={false}
+        register={register}
+        next={safeNext}
+        referralCode={params.get("ref") || ""}
+      />
+      <LineButton
+        register={register}
+        next={safeNext}
+        referralCode={params.get("ref") || ""}
+      />
+    </>
+  );
   useEffect(() => {
     if (user)
       navigate(user.roleId === "customer" ? "/" : safeNext, { replace: true });
@@ -389,16 +406,19 @@ export function AuthPage({ register = false }: { register?: boolean }) {
             ยกเลิก Google Login แล้ว สามารถเริ่มใหม่ได้
           </p>
         )}
-        <GoogleButton
-          register={register}
-          next={safeNext}
-          referralCode={params.get("ref") || ""}
-        />
+        {params.get("line") === "failed" && (
+          <ErrorBox error="เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองอีกครั้ง หรือใช้ช่องทางอื่น" />
+        )}
+        {params.get("line") === "cancelled" && (
+          <p role="status" className="info-box">
+            ยกเลิก LINE Login แล้ว สามารถเริ่มใหม่ได้
+          </p>
+        )}
         <Form
           noValidate
           submit={register ? "สร้างบัญชี" : "เข้าสู่ระบบ"}
           onSubmit={async (f) => {
-            const v = formObject(f);
+            const v = register ? registrationValues(f) : formObject(f);
             const result = await send(
               register ? "/auth/register" : "/auth/login",
               v,
@@ -462,14 +482,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           />
           {register && (
             <>
-              <Field
-                label="รู้จักเราจากที่ไหน"
-                name="discoverySource"
-                maxLength={120}
-                autoComplete="off"
-                placeholder="เช่น Facebook, TikTok หรือเพื่อนแนะนำ"
-                help="ไม่บังคับ"
-              />
+              <DiscoverySourceField />
               <Field
                 label="Line ID Add"
                 name="lineId"
@@ -488,6 +501,12 @@ export function AuthPage({ register = false }: { register?: boolean }) {
             </>
           )}
         </Form>
+        <div className="auth-divider">
+          <span>
+            {register ? "หรือสมัครสมาชิกด้วย" : "หรือเข้าสู่ระบบด้วย"}
+          </span>
+        </div>
+        {socialButtons}
         <p className="auth-switch">
           {register ? "มีบัญชีแล้ว?" : "ยังไม่มีบัญชี?"}{" "}
           <Link
@@ -872,34 +891,7 @@ export function WalletPage() {
       <div className="wallet-layout">
         <section>
           <WalletCard balance={user?.balance ?? 0} holder={user?.name || ""} />
-          <div className="panel bank-details">
-            <h2>บัญชีรับเงินของร้าน</h2>
-            <div className="bank-receiver">
-              <div className="bank-account-info">
-                <BankLogo
-                  code={publicData?.bankCode}
-                  name={publicData?.bankName}
-                />
-                <strong>
-                  {publicData?.bankName || "ยังไม่ได้ตั้งค่าธนาคาร"}
-                </strong>
-                <h2 className="bank-number">{publicData?.bankNumber || "—"}</h2>
-                <p>{publicData?.accountName}</p>
-                <p className="muted">{publicData?.accountNameEn}</p>
-              </div>
-              {publicData?.topupReady && publicData?.paymentQr && (
-                <StorePaymentQr
-                  image={publicData.paymentQr}
-                  frame={publicData.paymentQrFrame}
-                  shopName={publicData.shopName}
-                />
-              )}
-            </div>
-            <p className="warning-note">
-              ตรวจสอบชื่อและเลขบัญชีให้ตรงก่อนโอนทุกครั้ง
-              สลิปต้องเป็นรายการภายใน 24 ชั่วโมง
-            </p>
-          </div>
+          <BankDetailsPanel data={publicData} />
         </section>
         <section className="panel">
           <div className="panel-title">
@@ -993,7 +985,14 @@ export function WalletPage() {
                 <tr key={r.id}>
                   <td>{date(r.created_at)}</td>
                   <td>
-                    <Badge status={r.kind} />
+                    <Badge
+                      status={r.kind}
+                      label={
+                        r.topup_channel === "LINE"
+                          ? "เติมเงินผ่าน LINE"
+                          : undefined
+                      }
+                    />
                   </td>
                   <td className={r.amount >= 0 ? "positive" : "negative"}>
                     {r.amount >= 0 ? "+" : ""}
@@ -1367,6 +1366,7 @@ export function AccountPage() {
           <LogOut size={18} /> ออกจากระบบ
         </button>
       </section>
+      {!user?.mustChangePassword && <SocialConnections />}
       {!user?.mustChangePassword && <AddressBook />}
     </div>
   );

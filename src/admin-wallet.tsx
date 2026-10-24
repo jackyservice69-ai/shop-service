@@ -113,7 +113,12 @@ export function AdminWalletPage() {
                     <small className="block muted">{row.customer_email}</small>
                   </td>
                   <td>
-                    <Badge status={row.kind} />
+                    <Badge
+                      status={row.kind}
+                      label={
+                        row.line_event_id ? "เติมเงินผ่าน LINE" : undefined
+                      }
+                    />
                   </td>
                   <td className={row.amount >= 0 ? "positive" : "negative"}>
                     {row.amount >= 0 ? "+" : ""}
@@ -157,7 +162,10 @@ export function AdminWalletPage() {
           onClose={() => setView(null)}
         >
           <div className="transaction-detail">
-            <Badge status={view.kind} />
+            <Badge
+              status={view.kind}
+              label={view.line_event_id ? "เติมเงินผ่าน LINE" : undefined}
+            />
             <p>
               <b>เลขรายการ</b>
               <br />
@@ -184,6 +192,9 @@ export function AdminWalletPage() {
                 view.reference}
             </p>
             {view.source && <p>ที่มา: {sources[view.source]}</p>}
+            {view.line_event_id && (
+              <p>ช่องทาง LINE · เลขเหตุการณ์ {view.line_event_id}</p>
+            )}
             {view.reason && (
               <p className="address-copy">เหตุผล: {view.reason}</p>
             )}

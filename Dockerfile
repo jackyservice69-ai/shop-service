@@ -20,6 +20,8 @@ COPY --chown=node:node package*.json ./
 COPY --chown=node:node server ./server
 COPY --chown=node:node shared ./shared
 COPY --chown=node:node scripts ./scripts
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN npx playwright install --with-deps chromium && apt-get update && apt-get install -y --no-install-recommends fonts-noto-core && rm -rf /var/lib/apt/lists/* && chmod -R a+rX /ms-playwright
 RUN mkdir data && chown node:node /app data
 USER node
 EXPOSE 3002

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { snapshotConsignments } from "./consignment-ledger.mjs";
+import { isAuthorizedPromptpayResponse } from "./receiving-policy.mjs";
 import {
   id,
   now,
@@ -289,15 +290,22 @@ export function settleCommission(db, orderId) {
     rateBps: c.rate_bps,
   });
 }
-export function validateSlip(data, expected, settings, at = Date.now()) {
+export function validateSlip(
+  data,
+  expected,
+  settings,
+  at = Date.now(),
+  amountFromSlip = false,
+) {
   if (!data || data.isDuplicate !== false)
     fail(409, "สลิปนี้ถูกใช้งานแล้วหรือไม่ยืนยันสถานะซ้ำ");
   const matched = data.matchedAccount;
   const digits = (s) => String(s || "").replace(/[^0-9]/g, "");
   if (
     !matched ||
-    matched.bank?.code !== settings.bankCode ||
-    digits(matched.bankNumber) !== digits(settings.bankNumber)
+    ((matched.bank?.code !== settings.bankCode ||
+      digits(matched.bankNumber) !== digits(settings.bankNumber)) &&
+      !isAuthorizedPromptpayResponse(data, settings))
   )
     fail(422, "บัญชีผู้รับไม่ตรงกับบัญชีของร้าน");
   const name = (s) =>
@@ -316,7 +324,11 @@ export function validateSlip(data, expected, settings, at = Date.now()) {
   )
     fail(422, "ชื่อบัญชีผู้รับไม่ตรงกับที่ร้านกำหนด");
   if (
-    data.isAmountMatched !== true ||
+    (!amountFromSlip && data.isAmountMatched !== true) ||
+    (amountFromSlip && data.isAmountMatched === false) ||
+    !Number.isSafeInteger(expected) ||
+    expected <= 0 ||
+    expected > 100000000 ||
     Math.round(Number(data.amountInSlip) * 100) !== expected ||
     Math.round(Number(data.rawSlip?.amount?.amount) * 100) !== expected
   )
@@ -342,9 +354,37 @@ export function creditTopup(
   amount,
   verified,
   settings,
+  lineContext = null,
 ) {
-  const bankRef = validateSlip(verified, amount, settings);
+  const bankRef = validateSlip(
+    verified,
+    amount,
+    settings,
+    Date.now(),
+    !!lineContext,
+  );
   return transaction(db, () => {
+    validateSlip(verified, amount, getSettings(db), Date.now(), !!lineContext);
+    if (lineContext) {
+      const live = getSettings(db);
+      const binding = db
+        .prepare(
+          "SELECT l.*,u.active,u.role_id,u.must_change_password FROM line_identities l JOIN users u ON u.id=l.user_id WHERE l.user_id=? AND l.binding_id=?",
+        )
+        .get(userId, lineContext.bindingId);
+      if (
+        !binding ||
+        !binding.active ||
+        binding.role_id !== "customer" ||
+        binding.must_change_password ||
+        !live.botEnabled ||
+        !live.lineTopupEnabled ||
+        !live.lineLoginEnabled ||
+        binding.channel_id !== live.lineLoginChannelId
+      )
+        fail(409, "การเชื่อมต่อ LINE เปลี่ยนแล้ว กรุณาเชื่อมต่ออีกครั้ง");
+      validateSlip(verified, amount, live, Date.now(), true);
+    }
     if (
       db
         .prepare("SELECT reference FROM funding_receipts WHERE bank_ref=?")
@@ -375,6 +415,30 @@ export function creditTopup(
     );
     wallet(db, userId, amount, "topup", tid);
     audit(db, userId, "wallet.topup", tid, { amount, bankRef });
+    if (lineContext) {
+      db.prepare("INSERT INTO line_topups VALUES(?,?,?)").run(
+        lineContext.eventId,
+        tid,
+        now(),
+      );
+      const balance = db
+        .prepare("SELECT balance FROM users WHERE id=?")
+        .get(userId).balance;
+      const baht = (value) =>
+        (value / 100).toLocaleString("th-TH", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      const reply = `เติมเงินสำเร็จ ${baht(amount)} บาท ยอดกระเป๋าเงิน ${baht(balance)} บาท เลขรายการ ${tid} ตรวจสอบประวัติได้ในเว็บไซต์ของร้าน`;
+      db.prepare("UPDATE webhook_events SET reply_text=? WHERE id=?").run(
+        reply,
+        lineContext.eventId,
+      );
+      audit(db, userId, "wallet.line_topup", tid, {
+        amount,
+        eventId: lineContext.eventId,
+      });
+    }
     return { id: tid, amount };
   });
 }

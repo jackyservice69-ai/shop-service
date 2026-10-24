@@ -1,17 +1,32 @@
 // Isolated in-memory environment. Never loads .env or contacts external providers.
 import { fixture, slip, PASSWORD } from "../tests/helpers.mjs";
+import sharp from "sharp";
 import { bank } from "../tests/helpers.mjs";
-import { branchAccounts, accountResponse } from "../tests/payment-data.mjs";
+import {
+  branchAccounts,
+  accountResponse,
+  promptpayNumber,
+} from "../tests/payment-data.mjs";
 import {
   googleTestOptions,
   googleTestProvider,
 } from "../tests/google-provider.mjs";
-import { hash } from "../server/db.mjs";
+import { hash, setSetting } from "../server/db.mjs";
+import { lineTestProvider, LINE_CHANNEL } from "../tests/line-provider.mjs";
+import { startBotWorker } from "../server/integrations.mjs";
+import { currentBankCard } from "../server/line-bank-card.mjs";
 const google = googleTestProvider(() => f.db);
+const line = lineTestProvider(() => f.db);
+let nextPromptpaySlip = false;
+const lineImage = await sharp({
+  create: { width: 2, height: 2, channels: 3, background: "#f6c2c2" },
+})
+  .png()
+  .toBuffer();
 const f = fixture({
   // In-memory functional tests generate more traffic than one real browser session.
   apiRateLimit: 3000,
-  authRateLimit: 100,
+  authRateLimit: 500,
   origin: "http://127.0.0.1:4319",
   google: {
     ...googleTestOptions,
@@ -21,13 +36,61 @@ const f = fixture({
   fetch: async (url, options) => {
     if (url.includes("/bank-accounts?"))
       return accountResponse(branchAccounts(bank));
-    if (url.includes("/verify/bank"))
-      return Response.json({
-        success: true,
-        data: slip(Number(options.body.get("matchAmount"))),
+    if (url.includes("/verify/bank")) {
+      const verified = slip(
+        options.body.has("matchAmount")
+          ? Number(options.body.get("matchAmount"))
+          : 250,
+      );
+      if (nextPromptpaySlip) {
+        nextPromptpaySlip = false;
+        verified.matchedAccount = {
+          ...verified.matchedAccount,
+          bank: { code: "PROMPTPAY" },
+          bankNumber: promptpayNumber,
+        };
+      }
+      return Response.json({ success: true, data: verified });
+    }
+    if (url.includes("api-data.line.me/"))
+      return new Response(lineImage, {
+        headers: { "content-type": "image/png" },
       });
+    if (url.includes("api.line.me/v2/bot/message/reply"))
+      return Response.json({});
+    if (url.includes("api.line.me/oauth2/")) return line.fetch(url, options);
     throw new Error("External network disabled in browser tests");
   },
+});
+f.config.secrets.lineLoginChannelSecret = "isolated-line-login-secret";
+setSetting(f.db, "lineLoginChannelId", LINE_CHANNEL);
+setSetting(f.db, "lineLoginEnabled", true);
+const bot = startBotWorker(f.db, f.config);
+bot.stop();
+f.app.post("/__test/bank-card", (req, res) => {
+  res.json({ fingerprint: currentBankCard(f.db, f.config).fingerprint });
+});
+f.app.post("/__test/line-code", (req, res) => {
+  const attempt = f.db
+    .prepare("SELECT state_hash FROM line_auth_attempts WHERE state_hash=?")
+    .get(hash(req.body.state || ""));
+  if (!attempt) return res.sendStatus(404);
+  res.json({ code: line.code(req.body.state, req.body.claims) });
+});
+f.app.post("/__test/promptpay-slip", (req, res) => {
+  nextPromptpaySlip = true;
+  res.json({ ok: true });
+});
+f.app.post("/__test/bot-tick", async (req, res) => {
+  setSetting(f.db, "botEnabled", true);
+  setSetting(f.db, "lineTopupEnabled", true);
+  f.db
+    .prepare(
+      "UPDATE webhook_events SET updated_at='2000-01-01' WHERE status IN ('pending','retry')",
+    )
+    .run();
+  await bot.tick();
+  res.json({ ok: true });
 });
 // In-memory E2E only: the browser calls this after intercepting the Google
 // authorization navigation. No testing endpoints exist in the real application.
@@ -46,9 +109,10 @@ f.app.post("/__test/google-code", (req, res) => {
 f.db
   .prepare("UPDATE users SET email='admin@e2e.test' WHERE id=?")
   .run(f.admin.id);
-const server = f.app.listen(4319, "127.0.0.1", () =>
-  console.log("E2E isolated server ready"),
-);
+const server = f.app.listen(4319, "127.0.0.1", () => {
+  f.config.bankCardRenderOrigin = "http://127.0.0.1:4319";
+  console.log("E2E isolated server ready");
+});
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, () =>
     server.close(() => {

@@ -14,6 +14,8 @@ import { fail } from "./commerce.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import { secret } from "./integrations.mjs";
 import { hasPermission } from "../shared/authorization.mjs";
+import { receivingAccountKey, currentPaymentQr } from "./receiving-policy.mjs";
+export { receivingAccountKey, currentPaymentQr } from "./receiving-policy.mjs";
 
 export const IMAGE_GUIDES = {
   paymentQr: {
@@ -54,29 +56,6 @@ export const IMAGE_GUIDES = {
     permission: "products",
   },
 };
-export function receivingAccountKey(s) {
-  return hash(
-    JSON.stringify(
-      [s.bankCode, s.bankNumber, s.accountName, s.accountNameEn].map((value) =>
-        String(value || "")
-          .normalize("NFKC")
-          .trim()
-          .replace(/\s+/g, " ")
-          .toLowerCase(),
-      ),
-    ),
-  );
-}
-export function currentPaymentQr(s, credentialHash) {
-  return s.paymentQr &&
-    s.paymentQrVerification?.version === 1 &&
-    s.paymentQrVerification?.url === s.paymentQr &&
-    s.paymentQrReceiver === receivingAccountKey(s) &&
-    (credentialHash === undefined ||
-      s.paymentQrVerification.credentialHash === credentialHash)
-    ? s.paymentQr
-    : "";
-}
 export function checkMedia(db, url, kind) {
   if (!url) return;
   if (

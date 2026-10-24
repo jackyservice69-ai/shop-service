@@ -2,15 +2,18 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, send, useApp } from "./api";
 import { ErrorBox, Field, Form, Loading, formObject } from "./ui";
+import { DiscoverySourceField, registrationValues } from "./discovery-source";
 
 export function GoogleButton({
   register = false,
   next = "/",
   referralCode = "",
+  divider = true,
 }: {
   register?: boolean;
   next?: string;
   referralCode?: string;
+  divider?: boolean;
 }) {
   const [enabled, setEnabled] = useState<boolean | null>(null),
     [busy, setBusy] = useState(false),
@@ -61,9 +64,11 @@ export function GoogleButton({
       {error && (
         <ErrorBox error={error} retry={enabled === null ? load : undefined} />
       )}
-      <div className="auth-divider">
-        <span>หรือใช้อีเมล</span>
-      </div>
+      {divider && (
+        <div className="auth-divider">
+          <span>หรือใช้อีเมล</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -127,7 +132,9 @@ export function GoogleCompletePage() {
               }
               onSubmit={async (f) => {
                 const d = await send("/auth/google/complete", {
-                  ...formObject(f),
+                  ...(pending.existingAccount
+                    ? formObject(f)
+                    : registrationValues(f)),
                   action: pending.existingAccount ? "link" : "register",
                 });
                 await refresh();
@@ -174,12 +181,7 @@ export function GoogleCompletePage() {
                     required
                     help="เบอร์ไทย หรือเบอร์พร้อมรหัสประเทศ เช่น +66812345678"
                   />
-                  <Field
-                    label="รู้จักเราจากที่ไหน"
-                    name="discoverySource"
-                    maxLength={120}
-                    help="ไม่บังคับ"
-                  />
+                  <DiscoverySourceField />
                   <Field
                     label="Line ID Add"
                     name="lineId"

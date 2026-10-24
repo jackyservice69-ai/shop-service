@@ -334,6 +334,7 @@ export function StorePaymentQr({
   image,
   frame,
   shopName,
+  exportMode = false,
 }: {
   image: string;
   frame?: {
@@ -348,6 +349,7 @@ export function StorePaymentQr({
     codeBottom: number;
   } | null;
   shopName: string;
+  exportMode?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -398,16 +400,22 @@ export function StorePaymentQr({
               />
             </span>
           </button>
-          <p className="muted">สแกน QR หรือคลิกที่รูปเพื่อขยาย</p>
-          <div className="payment-qr-actions">
-            <a
-              className="button secondary small"
-              href={image}
-              download="shop-payment-qr.png"
-            >
-              บันทึก QR
-            </a>
-          </div>
+          <p className="muted">
+            {exportMode
+              ? "สแกน QR เพื่อโอนเงิน"
+              : "สแกน QR หรือคลิกที่รูปเพื่อขยาย"}
+          </p>
+          {!exportMode && (
+            <div className="payment-qr-actions">
+              <a
+                className="button secondary small"
+                href={image}
+                download="shop-payment-qr.png"
+              >
+                บันทึก QR
+              </a>
+            </div>
+          )}
         </>
       )}
       {open && (

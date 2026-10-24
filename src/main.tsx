@@ -8,6 +8,9 @@ import {
 } from "./experience";
 import React from "react";
 import { GoogleCompletePage } from "./google-auth";
+import { LineCompletePage } from "./line-auth";
+import { BrowserRecoveryPage } from "./auth-browser";
+import { BankDetailsExportPage } from "./bank-details";
 import { AdminWalletPage } from "./admin-wallet";
 import { AddressesPage } from "./address-book";
 import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
@@ -324,11 +327,17 @@ function App() {
           ข้ามไปยังเนื้อหา
         </a>
         <Routes>
+          <Route path="bank-details-card" element={<BankDetailsExportPage />} />
           <Route element={<StoreLayout />}>
             <Route index element={<StorePage />} />
             <Route path="login" element={<AuthPage />} />
             <Route path="register" element={<AuthPage register />} />
             <Route path="google/complete" element={<GoogleCompletePage />} />
+            <Route path="line/complete" element={<LineCompletePage />} />
+            <Route
+              path="auth/browser-return"
+              element={<BrowserRecoveryPage />}
+            />
             <Route path="cart" element={<CartPage />} />
             <Route path="promotions" element={<PromotionsPage />} />
             <Route element={<Protected />}>

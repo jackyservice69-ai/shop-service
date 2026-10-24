@@ -104,7 +104,10 @@ test("registration validates phone, persists split profile and exposes contacts 
     .getByLabel("อีเมล")
     .fill("profile-" + crypto.randomUUID() + "@example.test");
   await page.getByLabel("รหัสผ่าน").fill(PASSWORD);
-  await page.getByLabel("รู้จักเราจากที่ไหน").fill("TikTok");
+  await page.getByLabel("รู้จักเราจากที่ไหน").selectOption("อื่นๆ");
+  await page.getByLabel("ระบุช่องทางอื่นๆ").fill("ข้อความเก่าที่ไม่ควรถูกส่ง");
+  await page.getByLabel("รู้จักเราจากที่ไหน").selectOption("Facebook");
+  await expect(page.getByLabel("ระบุช่องทางอื่นๆ")).toHaveCount(0);
   await page.getByLabel("Line ID Add").fill("@profile.member");
   await page.getByRole("button", { name: "สร้างบัญชี", exact: true }).click();
   await expect(
@@ -127,7 +130,7 @@ test("registration validates phone, persists split profile and exposes contacts 
     lastName: "แสงใส",
     name: "อรุณ แสงใส",
     phone: "0812345678",
-    discoverySource: "TikTok",
+    discoverySource: "Facebook",
     lineId: "@profile.member",
   });
   expect((await page.request.get("/api/admin/members")).status()).toBe(403);
@@ -142,11 +145,72 @@ test("registration validates phone, persists split profile and exposes contacts 
     const row = adminPage.getByRole("row").filter({ hasText: "อรุณ แสงใส" });
     await expect(row).toContainText("0812345678");
     await expect(row).toContainText("LINE: @profile.member");
-    await expect(row).toContainText("TikTok");
+    await expect(row).toContainText("Facebook");
   } finally {
     await context.close();
   }
 });
+test("registration discovery dropdown requires a meaningful Other detail and supports keyboard/mobile", async ({
+  page,
+}) => {
+  await page.goto("/register");
+  await page.setViewportSize({ width: 390, height: 844 });
+  const source = page.getByRole("combobox", { name: "รู้จักเราจากที่ไหน" });
+  await expect(source).toHaveValue("");
+  await expect(page.getByLabel("ระบุช่องทางอื่นๆ")).toHaveCount(0);
+  await expect(source.locator("option")).toHaveText([
+    "เลือกช่องทาง",
+    "Line",
+    "Facebook",
+    "โฆษณา",
+    "Google",
+    "Youtube",
+    "อื่นๆ",
+  ]);
+  await source.focus();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Tab");
+  const detail = page.getByLabel("ระบุช่องทางอื่นๆ");
+  await expect(detail).toBeFocused();
+  await expect(detail).toHaveAttribute("maxlength", "120");
+  await page.getByLabel("ชื่อหน้า").fill("ลูกค้า");
+  await page.getByLabel("นามสกุล").fill("ทดสอบช่องทาง");
+  await page
+    .getByRole("textbox", { name: "เบอร์โทร", exact: true })
+    .fill("0812345678");
+  await page.getByLabel("อีเมล").fill(crypto.randomUUID() + "@example.test");
+  await page.getByLabel("รหัสผ่าน").fill(PASSWORD);
+  const submit = page.getByRole("button", { name: "สร้างบัญชี", exact: true });
+  await detail.fill("เจอร้านในงานแสดงสินค้า");
+  await page.screenshot({
+    path: "output/playwright/register-discovery-other-mobile.png",
+    fullPage: true,
+  });
+  await detail.clear();
+  await submit.click();
+  await expect(detail).toBeFocused();
+  await expect(detail).toHaveAttribute("aria-invalid", "true");
+  await detail.fill("   ");
+  await submit.click();
+  await expect(detail).toBeFocused();
+  expect((await (await page.request.get("/api/me")).json()).user).toBeNull();
+  await source.selectOption("");
+  await expect(detail).toHaveCount(0);
+  await source.selectOption("อื่นๆ");
+  await expect(detail).toHaveValue("");
+  await detail.fill("  เจอร้านในงานแสดงสินค้า  ");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await submit.click();
+  await expect(page).toHaveURL("/");
+  expect(
+    (await (await page.request.get("/api/me")).json()).user.discoverySource,
+  ).toBe("เจอร้านในงานแสดงสินค้า");
+});
+
 async function addAndCheckout(page: Page, payment = "deposit") {
   await page.goto("/");
   await page

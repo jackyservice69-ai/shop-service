@@ -23,6 +23,7 @@ export function configuration() {
       easyslipApiKey: process.env.EASYSLIP_API_KEY || "",
       lineChannelSecret: process.env.LINE_CHANNEL_SECRET || "",
       lineChannelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || "",
+      lineLoginChannelSecret: process.env.LINE_LOGIN_CHANNEL_SECRET || "",
       openaiApiKey: process.env.OPENAI_API_KEY || "",
     },
   };
