@@ -1367,6 +1367,24 @@ export function AccountPage() {
         </button>
       </section>
       {!user?.mustChangePassword && <SocialConnections />}
+      {!user?.mustChangePassword && (
+        <div className="section-space">
+          <a
+            href="https://lin.ee/rwcULIh"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
+            style={{ display: "inline-block" }}
+          >
+            <img
+              src="https://scdn.line-apps.com/n/line_add_friends/btn/th.png"
+              alt="เพิ่มเพื่อน"
+              height={36}
+              style={{ display: "block", width: "auto", height: 36, border: 0 }}
+            />
+          </a>
+        </div>
+      )}
       {!user?.mustChangePassword && <AddressBook />}
     </div>
   );
