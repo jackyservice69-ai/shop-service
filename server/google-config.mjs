@@ -3,19 +3,26 @@ import { resolve } from "node:path";
 
 // The downloaded web-client JSON stays outside public/ and dist/.
 export function googleConfiguration(origin, env = process.env) {
-  const path = resolve(
-    env.GOOGLE_CREDENTIALS_FILE || "./.secrets/google-oauth.json",
-  );
-  if (!existsSync(path)) {
-    if (env.GOOGLE_CREDENTIALS_FILE)
-      throw new Error("Google credentials file was not found");
-    return null;
-  }
   let web;
-  try {
-    web = JSON.parse(readFileSync(path, "utf8")).web;
-  } catch {
-    throw new Error("Google credentials must be valid web-client JSON");
+  if (env.GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_SECRET) {
+    web = {
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+    };
+  } else {
+    const path = resolve(
+      env.GOOGLE_CREDENTIALS_FILE || "./.secrets/google-oauth.json",
+    );
+    if (!existsSync(path)) {
+      if (env.GOOGLE_CREDENTIALS_FILE)
+        throw new Error("Google credentials file was not found");
+      return null;
+    }
+    try {
+      web = JSON.parse(readFileSync(path, "utf8")).web;
+    } catch {
+      throw new Error("Google credentials must be valid web-client JSON");
+    }
   }
   if (
     !web ||

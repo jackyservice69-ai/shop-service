@@ -4,6 +4,35 @@ import { mkdtempSync, writeFileSync, rmSync, rmdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { googleConfiguration } from "../server/google-config.mjs";
+
+test("cloud Google credentials use server env without a file and reject partial credentials", () => {
+  const env = {
+    GOOGLE_CLIENT_ID: "cloud-test.apps.googleusercontent.com",
+    GOOGLE_CLIENT_SECRET: "private-cloud-test",
+    GOOGLE_CREDENTIALS_FILE: "/missing/credentials.json",
+  };
+  assert.deepEqual(googleConfiguration("https://iyawarin.com", env), {
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    redirectUri: "https://iyawarin.com/api/auth/google/callback",
+  });
+  for (const partial of [
+    { GOOGLE_CLIENT_ID: env.GOOGLE_CLIENT_ID },
+    { GOOGLE_CLIENT_SECRET: env.GOOGLE_CLIENT_SECRET },
+  ])
+    assert.throws(
+      () => googleConfiguration("https://iyawarin.com", partial),
+      /web client/,
+    );
+  assert.throws(
+    () =>
+      googleConfiguration("https://iyawarin.com", {
+        ...env,
+        GOOGLE_REDIRECT_URI: "https://evil.test/api/auth/google/callback",
+      }),
+    /must match/,
+  );
+});
 test("server-only Google web credentials require valid HTTPS/local origin and exact registered callback, without reflecting secrets in errors", () => {
   const dir = mkdtempSync(join(tmpdir(), "hiewly-google-")),
     path = join(dir, "credentials.json");

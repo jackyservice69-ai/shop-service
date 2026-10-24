@@ -2,8 +2,14 @@ import { configuration } from "./config.mjs";
 import { openDb } from "./db.mjs";
 import { createApp } from "./app.mjs";
 import { startBotWorker } from "./integrations.mjs";
-const config = configuration(),
-  db = openDb(config.databasePath),
+import { existsSync } from "node:fs";
+const config = configuration();
+if (
+  process.env.REQUIRE_EXISTING_DATABASE === "1" &&
+  !existsSync(config.databasePath)
+)
+  throw new Error("Database must be restored before starting this deployment");
+const db = openDb(config.databasePath),
   app = createApp(db, config),
   worker = startBotWorker(db, config);
 const server = app.listen(config.port, config.host, () => {
