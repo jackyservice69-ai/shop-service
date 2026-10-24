@@ -2151,54 +2151,182 @@ td small {
   align-items: start;
 }
 .wallet-card {
-  background: var(--primary);
-  color: var(--ink);
+  --wallet-gold: #c89c54;
+  --wallet-ink: var(--palette-ink-heading);
+  --wallet-chip-size: 40px;
+  --wallet-caption-width: 80px;
+  background: var(--palette-primary-light);
+  background:
+    radial-gradient(ellipse at 24% 8%, #fffffff0, transparent 65%),
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--primary) 28%, white),
+      color-mix(in srgb, var(--primary) 54%, white)
+    );
+  color: var(--wallet-ink);
+  border: 1px solid color-mix(in srgb, var(--primary) 65%, white);
   border-radius: 20px;
-  padding: 27px 30px 22px;
+  padding: 18px 22px;
+  min-height: 210px;
   margin-bottom: 25px;
   position: relative;
+  isolation: isolate;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.wallet-card:after {
-  content: "";
+.wallet-card-art {
   position: absolute;
-  width: 220px;
-  height: 220px;
-  border: 30px solid #ffffff08;
-  border-radius: 50%;
-  right: -70px;
-  top: 30px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
   pointer-events: none;
 }
-.wallet-card > div {
+.wallet-card-ribbon {
+  fill: #ffffff42;
+}
+.wallet-card-thread {
+  fill: none;
+  stroke: var(--wallet-gold);
+  stroke-width: 1;
+  opacity: 0.65;
+}
+.wallet-card-flower {
+  fill: none;
+  stroke: var(--primary-active);
+  stroke-width: 0.9;
+  opacity: 0.65;
+}
+.wallet-card-header,
+.wallet-card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
-.wallet-card > div:first-child {
-  color: var(--brand-ink);
-  font-size: 10px;
-  letter-spacing: 2px;
-  margin-bottom: 25px;
+.wallet-card-brand {
+  min-width: 0;
+  max-width: 62%;
 }
-.wallet-card > small {
-  font-size: 11px;
-  color: var(--brand-ink);
+.wallet-card .brand {
+  font-size: 22px;
+  gap: 9px;
+  color: var(--wallet-ink);
 }
-.wallet-card > strong {
+.wallet-card .brand-en {
+  font-size: 8px;
+}
+.wallet-card .custom-brand {
   display: block;
-  font-size: 39px;
+  width: 126px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 3;
+}
+.wallet-card .custom-brand img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.wallet-card-caption {
+  display: block;
+  width: var(--wallet-caption-width);
+  text-align: center;
+  white-space: nowrap;
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  margin-top: 3px;
+}
+.wallet-card-type {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  font-size: 10px;
+  text-align: right;
+}
+.wallet-card-balance {
+  display: grid;
+  grid-template-columns: var(--wallet-chip-size) minmax(0, 1fr) var(
+      --wallet-chip-size
+    );
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.wallet-card-balance > div {
+  min-width: 0;
+  text-align: center;
+}
+.wallet-card-chip {
+  width: var(--wallet-chip-size);
+  transform: translateX(
+    calc((var(--wallet-caption-width) - var(--wallet-chip-size)) / 2)
+  );
+  flex-shrink: 0;
+  fill: #f0d490;
+  stroke: #947033;
+  stroke-width: 0.8;
+}
+.wallet-card-chip path {
+  fill: none;
+}
+.wallet-card-label {
+  display: block;
+  font-size: 11px;
+}
+.wallet-card-balance strong {
+  display: block;
+  font-size: clamp(27px, 2.8vw, 34px);
+  line-height: 1.35;
   letter-spacing: -1px;
   font-family: system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
   font-weight: 500;
-  margin: 5px 0 27px;
+  overflow-wrap: anywhere;
 }
-.wallet-card > div:last-child {
+.wallet-card-footer {
+  margin-top: auto;
+  align-items: flex-end;
+}
+.wallet-card-holder {
+  min-width: 0;
+}
+.wallet-card-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  margin-top: 3px;
+}
+.wallet-card-assurance {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
   font-size: 12px;
-  color: var(--brand-ink);
 }
 .bank-details {
   position: relative;
+  container-type: inline-size;
+}
+.bank-receiver {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+.bank-account-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@container (min-width: 360px) {
+  .bank-receiver:has(.payment-qr) {
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: 12px;
+  }
 }
 .bank-details h2 {
   font-size: 16px;
@@ -2236,6 +2364,44 @@ td small {
   border-top: 1px solid var(--border);
   padding-top: 16px;
   margin-top: 16px;
+}
+.payment-qr {
+  width: min(100%, 180px);
+  justify-self: center;
+  text-align: center;
+}
+.payment-qr-frame {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.payment-qr-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.payment-qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.payment-qr-full {
+  display: block;
+  width: 100%;
+  height: min(60dvh, 640px);
+  object-fit: contain;
+  background: #fff;
+  margin-bottom: 18px;
 }
 .upload-area {
   border: 1.5px dashed var(--brand-border);
@@ -2704,12 +2870,6 @@ td small {
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
-  .wallet-card {
-    padding: 25px;
-  }
-  .wallet-card > strong {
-    font-size: 32px;
-  }
   .auth-layout {
     margin: 35px auto 55px;
     max-width: 600px;
@@ -3120,8 +3280,15 @@ td small {
   .wallet-layout {
     grid-template-columns: 1fr;
   }
-  .wallet-card > strong {
-    font-size: 37px;
+  .wallet-card {
+    padding: 17px 20px;
+    gap: 13px;
+  }
+  .wallet-card-balance strong {
+    font-size: 32px;
+  }
+  .wallet-card-assurance {
+    font-size: 10px;
   }
   .order-summary {
     gap: 12px 20px;
@@ -3372,14 +3539,6 @@ td small {
   background: var(--primary-soft);
   color: var(--ink);
 }
-.customer-shell .wallet-card {
-  background: var(--primary);
-  color: var(--on-primary, #fff);
-}
-.customer-shell .wallet-card small,
-.customer-shell .wallet-card > div {
-  color: var(--on-primary, #fff);
-}
 .customer-shell .field input,
 .customer-shell .field select,
 .customer-shell .field textarea,
@@ -3589,6 +3748,10 @@ td small {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.image-uploader .transparency-preview {
+  background: conic-gradient(#e3e6ec 25%, #fff 0 50%, #e3e6ec 0 75%, #fff 0) 0
+    0 / 16px 16px;
 }
 .image-uploader label {
   font-size: 13px;
@@ -4036,4 +4199,289 @@ td small {
   .back-to-top:hover {
     transform: none;
   }
+}
+/* Customer contact and address tools share the existing flat, pastel surfaces. */
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.social-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 13px;
+}
+.social-links img {
+  flex: none;
+}
+.receiving-bank-logo {
+  object-fit: contain;
+  display: block;
+  margin: 18px 0;
+}
+.payment-qr-trigger {
+  display: block;
+  padding: 0;
+  margin: 0 auto;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  max-width: 100%;
+}
+.payment-qr-trigger .payment-qr-image {
+  display: block;
+  margin: 0;
+}
+.address-list {
+  display: grid;
+  gap: 14px;
+}
+.address-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface);
+}
+.address-card h3 {
+  margin: 0;
+}
+.address-card p {
+  margin: 5px 0;
+}
+.address-copy {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.address-actions,
+.map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+.address-actions form .form-actions {
+  margin: 0;
+}
+.map-picker {
+  padding: 12px 0;
+}
+.address-map {
+  height: min(48dvh, 380px);
+  min-height: 240px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  z-index: 0;
+}
+.address-map .leaflet-control,
+.address-map .leaflet-bar,
+.address-map .leaflet-marker-icon,
+.address-map .leaflet-popup-content-wrapper,
+.address-map .leaflet-popup-tip,
+.address-map .leaflet-tooltip {
+  box-shadow: none;
+}
+.address-map-pin span {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--primary);
+  border: 3px solid var(--ink);
+}
+.address-map-pin span::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+.address-map .leaflet-control-attribution {
+  font-size: 11px;
+  color: #3a3d4a;
+  background: white;
+}
+.address-map .leaflet-control-attribution a {
+  color: #1d5c75;
+}
+
+/* Verified reviews and consignor tools share the existing pastel surfaces. */
+.review-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--brand-ink);
+}
+.review-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-text);
+  font-size: 12px;
+}
+.product-reviews {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 16px;
+}
+.review-card {
+  border-top: 1px solid var(--border);
+  padding: 16px 0;
+}
+.review-comment {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 600px;
+}
+.verified-buyer {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--positive-text);
+  font-size: 12px;
+}
+.review-media-grid,
+.review-drafts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.review-image-button {
+  padding: 0;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.review-media-grid img {
+  display: block;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+}
+.review-media-grid video,
+.review-drafts video {
+  width: min(100%, 280px);
+  height: 180px;
+  object-fit: contain;
+  background: var(--background-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.review-drafts > div {
+  max-width: 100%;
+  display: grid;
+  gap: 5px;
+}
+.review-drafts img {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.review-full-image {
+  display: block;
+  width: 100%;
+  max-height: 65dvh;
+  object-fit: contain;
+}
+.my-review {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 18px;
+}
+.my-review .warning-box {
+  width: 100%;
+}
+.review-rating {
+  border: 0;
+  margin: 0 0 18px;
+  padding: 0;
+}
+.review-rating > div {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.review-rating label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--ink-subtle);
+  cursor: pointer;
+}
+.review-rating label.selected {
+  color: var(--brand-ink);
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+.review-rating label:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.review-rating input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.review-upload-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+.review-upload-label input {
+  max-width: 100%;
+}
+.consignment-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 18px;
+  padding-top: 12px;
+}
+.consignment-totals strong {
+  display: block;
+  font-size: 24px;
+}
+.section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 16px;
+}
+.section-tabs button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.section-tabs button:hover,
+.section-tabs button.active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
 }

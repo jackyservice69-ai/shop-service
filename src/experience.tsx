@@ -44,6 +44,8 @@ export const IMAGE_SIZES: Record<
   string,
   { w: number; h: number; label: string }
 > = {
+  paymentQr: { w: 1080, h: 1440, label: "QR รับเงิน" },
+  product: { w: 1200, h: 1200, label: "สินค้า" },
   banner: { w: 1600, h: 600, label: "แบนเนอร์" },
   announcement: { w: 1080, h: 1350, label: "ประกาศ" },
   promotion: { w: 1200, h: 800, label: "โปรโมชั่น" },
@@ -211,11 +213,13 @@ export function ImageUpload({
   value,
   onChange,
   onBusyChange,
+  uploadPath,
 }: {
   kind: string;
   value: string;
   onChange: (v: string) => void;
   onBusyChange?: (busy: boolean) => void;
+  uploadPath?: string;
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -224,7 +228,11 @@ export function ImageUpload({
     guide = IMAGE_SIZES[kind];
   return (
     <div className="image-uploader">
-      <div className="upload-preview">
+      <div
+        className={
+          "upload-preview" + (kind === "favicon" ? " transparency-preview" : "")
+        }
+      >
         {value ? (
           <img src={value} alt={"ตัวอย่าง" + guide.label} />
         ) : (
@@ -241,6 +249,14 @@ export function ImageUpload({
           {kind === "favicon" ? " · สี่เหลี่ยมจัตุรัส" : ""}
           <br />
           .png / .jpeg / .jpg · สูงสุด 5 MB
+          {kind === "favicon" && (
+            <>
+              <br />
+              ต้องการพื้นหลังโปร่งใส: ใช้ PNG โปร่งใส
+              <br />
+              JPG/JPEG และ PNG ที่มีพื้นขาวจะยังติดพื้นหลังเดิม
+            </>
+          )}
         </p>
         <input
           id={inputId}
@@ -261,12 +277,21 @@ export function ImageUpload({
             try {
               const body = new FormData();
               body.append("image", file);
-              const r = await api("/admin/media/" + kind, {
+              const r = await api(uploadPath || "/admin/media/" + kind, {
                 method: "POST",
                 body,
               });
               onChange(r.url);
-              setSize(`จัดเก็บ ${r.width} × ${r.height} px`);
+              setSize(
+                `จัดเก็บ ${r.width} × ${r.height} px` +
+                  (kind === "favicon"
+                    ? r.hasTransparency
+                      ? " · มีส่วนโปร่งใส"
+                      : " · พื้นหลังทึบ"
+                    : kind === "paymentQr" && r.verified
+                      ? " · " + r.message
+                      : ""),
+              );
             } catch (e) {
               setError((e as Error).message);
             } finally {
@@ -292,6 +317,111 @@ export function ImageUpload({
         )}
       </div>
       {error && <ErrorBox error={error} />}
+    </div>
+  );
+}
+
+export function StorePaymentQr({
+  image,
+  frame,
+  shopName,
+}: {
+  image: string;
+  frame?: {
+    width: number;
+    height: number;
+    size: number;
+    left: number;
+    top: number;
+    codeLeft: number;
+    codeTop: number;
+    codeRight: number;
+    codeBottom: number;
+  } | null;
+  shopName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+    setOpen(false);
+  }, [image]);
+  const alt = "QR รับเงินของ " + shopName;
+  return (
+    <div className="payment-qr">
+      {failed ? (
+        <ErrorBox
+          error="โหลด QR ไม่สำเร็จ กรุณาลองใหม่หรือใช้ข้อมูลบัญชีร้าน"
+          retry={() => setFailed(false)}
+        />
+      ) : (
+        <>
+          <button
+            type="button"
+            className="payment-qr-trigger"
+            aria-label="ขยายรูป QR รับเงิน"
+            onClick={() => setOpen(true)}
+          >
+            <span className="payment-qr-frame">
+              <img
+                className="payment-qr-image"
+                style={
+                  frame
+                    ? {
+                        position: "absolute",
+                        width: `${(frame.width / frame.size) * 100}%`,
+                        height: `${(frame.height / frame.size) * 100}%`,
+                        left: `${(-frame.left / frame.size) * 100}%`,
+                        top: `${(-frame.top / frame.size) * 100}%`,
+                        maxWidth: "none",
+                        clipPath: `inset(${(frame.codeTop / frame.height) * 100}% ${((frame.width - frame.codeRight) / frame.width) * 100}% ${((frame.height - frame.codeBottom) / frame.height) * 100}% ${(frame.codeLeft / frame.width) * 100}%)`,
+                      }
+                    : undefined
+                }
+                src={image}
+                alt={alt}
+                width={1080}
+                height={1440}
+                onError={() => {
+                  setFailed(true);
+                  setOpen(false);
+                }}
+              />
+            </span>
+          </button>
+          <p className="muted">สแกน QR หรือคลิกที่รูปเพื่อขยาย</p>
+          <div className="payment-qr-actions">
+            <a
+              className="button secondary small"
+              href={image}
+              download="shop-payment-qr.png"
+            >
+              บันทึก QR
+            </a>
+          </div>
+        </>
+      )}
+      {open && (
+        <Modal title="QR รับเงินของร้าน" onClose={() => setOpen(false)}>
+          <img
+            className="payment-qr-full"
+            src={image}
+            alt={alt}
+            width={1080}
+            height={1440}
+          />
+          <p className="muted">
+            ตรวจสอบชื่อผู้รับในแอปธนาคารให้ตรงกับบัญชีร้านก่อนยืนยันโอน
+          </p>
+          <a
+            className="button primary full"
+            href={image}
+            download="shop-payment-qr.png"
+          >
+            บันทึก QR
+          </a>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -895,7 +1025,7 @@ export function PromotionsPage({ coupons = false }: { coupons?: boolean }) {
                     </div>
                   )}
                   <div className="promo-content">
-                    <span className="eyebrow">HIEWLY PRIVILEGES</span>
+                    <span className="eyebrow">IYA HIEW PRIVILEGES</span>
                     <h2>{p.title || p.code}</h2>
                     <strong className="discount-value">
                       ลด {p.type === "percent" ? p.value + "%" : money(p.value)}

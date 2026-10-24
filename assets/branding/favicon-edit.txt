@@ -1,0 +1,8 @@
+Tool: built-in image_gen (transparent_background=true)
+Edit target: the existing uploaded shopping bag favicon, previously opaque white.
+Prompt:
+Edit target: the attached 256×256 shopping bag favicon. Remove only the white canvas/background, including the white space beneath the handle, to real transparent alpha. Preserve the exact flat shopping bag design, pink top, pale yellow bottom, peach attachments, dark handle, proportions, centered placement and original colors. Do not add text, shadows, glow, border or new objects. The icon should fill the same square composition, with genuine transparent pixels everywhere outside the bag/handle silhouette. Output PNG with transparency.
+
+Saved source: assets/branding/favicon-transparent.png
+Normalized website favicon: assets/branding/favicon-256.png
+The original opaque media remains in SQLite; the favicon setting uses a new media URL to avoid stale immutable caches.

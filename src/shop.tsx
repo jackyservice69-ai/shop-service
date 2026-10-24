@@ -1,4 +1,8 @@
-import { StoreBanners, Carousel } from "./experience";
+import { StoreBanners, Carousel, StorePaymentQr } from "./experience";
+import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
+import { BankLogo } from "./contacts";
+import { ProductReviews, Stars } from "./reviews";
+import { WalletCard } from "./wallet-card";
 import { useEffect, useRef, useState } from "react";
 import {
   Link,
@@ -25,6 +29,7 @@ import {
   CreditCard,
   Clock,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -122,7 +127,7 @@ export function StorePage() {
             <span className="parcel-tape" />
             <span className="parcel-label">
               <ShoppingBag size={30} />
-              <b>hiewly</b>
+              <b>Iya hiew</b>
               <i>WITH A LITTLE EXTRA CARE</i>
               <span className="barcode" />
             </span>
@@ -224,6 +229,10 @@ export function StorePage() {
                       {p.name}
                     </button>
                     <p>{p.description}</p>
+                    <div className="review-summary">
+                      <Stars rating={p.rating_average || 0} />
+                      <small>{p.review_count || 0} รีวิว</small>
+                    </div>
                     <div>
                       <strong>{money(p.price)}</strong>
                       <button
@@ -287,6 +296,7 @@ export function StorePage() {
           >
             เพิ่มลงตะกร้า <ShoppingBag size={18} />
           </button>
+          <ProductReviews productId={selected.id} onChanged={reload} />
         </Modal>
       )}
     </>
@@ -339,12 +349,13 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const next = params.get("next") || "/";
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
   useEffect(() => {
-    if (user) navigate(safeNext, { replace: true });
+    if (user)
+      navigate(user.roleId === "customer" ? "/" : safeNext, { replace: true });
   }, [user]);
   return (
     <div className="auth-layout">
       <div className="auth-story">
-        <span className="eyebrow">WELCOME TO HIEWLY</span>
+        <span className="eyebrow">WELCOME TO IYA HIEW</span>
         <h1>
           ช้อปที่ชอบ
           <br />
@@ -363,7 +374,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         </span>
       </div>
       <div className="auth-card">
-        <h1>{register ? "เริ่มต้นช้อปกับหิ้วลี่" : "ยินดีต้อนรับกลับมา"}</h1>
+        <h1>{register ? "เริ่มต้นช้อปกับIyaหิ้ว" : "ยินดีต้อนรับกลับมา"}</h1>
         <p className="muted">
           {register
             ? "สร้างบัญชีของคุณ ใช้เวลาเพียงครู่เดียว"
@@ -374,12 +385,17 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           submit={register ? "สร้างบัญชี" : "เข้าสู่ระบบ"}
           onSubmit={async (f) => {
             const v = formObject(f);
-            await send(register ? "/auth/register" : "/auth/login", v);
+            const result = await send(
+              register ? "/auth/register" : "/auth/login",
+              v,
+            );
             await refresh();
             notify(
               register ? "สร้างบัญชีเรียบร้อยแล้ว" : "เข้าสู่ระบบเรียบร้อยแล้ว",
             );
-            navigate(safeNext);
+            navigate(result.user?.roleId === "customer" ? "/" : safeNext, {
+              replace: true,
+            });
           }}
         >
           {register && (
@@ -481,7 +497,11 @@ export function CartPage() {
     name: "",
     phone: "",
     address: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
+  const defaultAddressApplied = useRef(false);
+  const shippingEdited = useRef(false);
   useEffect(() => {
     if (user) setShipping((s) => ({ ...s, name: s.name || user.name }));
   }, [user?.id]);
@@ -689,7 +709,13 @@ export function CartPage() {
                             errors,
                           );
                         setConfirmation({
-                          shipping: v,
+                          shipping: {
+                            name: v.name,
+                            phone: v.phone,
+                            address: v.address,
+                            latitude: shipping.latitude,
+                            longitude: shipping.longitude,
+                          },
                           ...payload,
                           expectedQuote: quote.fingerprint,
                           quote,
@@ -697,14 +723,41 @@ export function CartPage() {
                       }}
                     >
                       <h3>ข้อมูลจัดส่ง</h3>
+                      <SavedAddressSelect
+                        onDefault={(a) => {
+                          if (
+                            defaultAddressApplied.current ||
+                            shippingEdited.current
+                          )
+                            return;
+                          defaultAddressApplied.current = true;
+                          setShipping({
+                            name: a.name,
+                            phone: a.phone,
+                            address: a.address,
+                            latitude: a.latitude,
+                            longitude: a.longitude,
+                          });
+                        }}
+                        onSelect={(a) =>
+                          setShipping({
+                            name: a.name,
+                            phone: a.phone,
+                            address: a.address,
+                            latitude: a.latitude,
+                            longitude: a.longitude,
+                          })
+                        }
+                      />
                       <Field
                         name="name"
                         label="ชื่อผู้รับ"
                         required
                         value={shipping.name}
-                        onChange={(e) =>
-                          setShipping((s) => ({ ...s, name: e.target.value }))
-                        }
+                        onChange={(e) => {
+                          shippingEdited.current = true;
+                          setShipping((s) => ({ ...s, name: e.target.value }));
+                        }}
                         minLength={2}
                         maxLength={100}
                         autoComplete="name"
@@ -716,9 +769,10 @@ export function CartPage() {
                         required
                         pattern="0[0-9]{8,9}"
                         value={shipping.phone}
-                        onChange={(e) =>
-                          setShipping((s) => ({ ...s, phone: e.target.value }))
-                        }
+                        onChange={(e) => {
+                          shippingEdited.current = true;
+                          setShipping((s) => ({ ...s, phone: e.target.value }));
+                        }}
                         autoComplete="tel"
                       />
                       <Field
@@ -728,14 +782,22 @@ export function CartPage() {
                         minLength={10}
                         maxLength={1000}
                         value={shipping.address}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          shippingEdited.current = true;
                           setShipping((s) => ({
                             ...s,
                             address: e.target.value,
-                          }))
-                        }
+                          }));
+                        }}
                         required
                         autoComplete="street-address"
+                      />
+                      <MapPicker
+                        value={shipping}
+                        onChange={(point) => {
+                          shippingEdited.current = true;
+                          setShipping((s) => ({ ...s, ...point }));
+                        }}
                       />
                       {quote.payNow > user.balance && (
                         <div className="warning-box">
@@ -795,25 +857,30 @@ export function WalletPage() {
       />
       <div className="wallet-layout">
         <section>
-          <div className="wallet-card">
-            <div>
-              <span>HIEWLY WALLET</span>
-              <Wallet size={27} />
-            </div>
-            <small>ยอดเงินพร้อมใช้</small>
-            <strong>{money(user?.balance || 0)}</strong>
-            <div>
-              <span>{user?.name}</span>
-              <ShieldCheck size={20} />
-            </div>
-          </div>
+          <WalletCard balance={user?.balance ?? 0} holder={user?.name || ""} />
           <div className="panel bank-details">
             <h2>บัญชีรับเงินของร้าน</h2>
-            <div className="bank-logo">SCB</div>
-            <strong>{publicData?.bankName || "ยังไม่ได้ตั้งค่าธนาคาร"}</strong>
-            <h2 className="bank-number">{publicData?.bankNumber || "—"}</h2>
-            <p>{publicData?.accountName}</p>
-            <p className="muted">{publicData?.accountNameEn}</p>
+            <div className="bank-receiver">
+              <div className="bank-account-info">
+                <BankLogo
+                  code={publicData?.bankCode}
+                  name={publicData?.bankName}
+                />
+                <strong>
+                  {publicData?.bankName || "ยังไม่ได้ตั้งค่าธนาคาร"}
+                </strong>
+                <h2 className="bank-number">{publicData?.bankNumber || "—"}</h2>
+                <p>{publicData?.accountName}</p>
+                <p className="muted">{publicData?.accountNameEn}</p>
+              </div>
+              {publicData?.topupReady && publicData?.paymentQr && (
+                <StorePaymentQr
+                  image={publicData.paymentQr}
+                  frame={publicData.paymentQrFrame}
+                  shopName={publicData.shopName}
+                />
+              )}
+            </div>
             <p className="warning-note">
               ตรวจสอบชื่อและเลขบัญชีให้ตรงก่อนโอนทุกครั้ง
               สลิปต้องเป็นรายการภายใน 24 ชั่วโมง
@@ -983,6 +1050,17 @@ export function OrdersPage() {
                 จัดส่งให้ {o.shipping.name} · {o.shipping.phone}
                 <br />
                 {o.shipping.address}
+                {o.shipping.latitude != null &&
+                  o.shipping.longitude != null && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${o.shipping.latitude},${o.shipping.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-button"
+                    >
+                      ดูหมุดจัดส่งบนแผนที่
+                    </a>
+                  )}
               </p>
               {o.tracking && (
                 <div className="info-box">
@@ -1223,9 +1301,10 @@ export function AccountPage() {
             navigate("/login");
           }}
         >
-          ออกจากระบบ
+          <LogOut size={18} /> ออกจากระบบ
         </button>
       </section>
+      <AddressBook />
     </div>
   );
 }

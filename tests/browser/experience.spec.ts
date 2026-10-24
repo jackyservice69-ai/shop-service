@@ -97,6 +97,13 @@ test("appearance editor persists six pastel colors, uploaded logo/favicon and co
     await expect(page.locator(".image-uploader").nth(1)).toContainText(
       "จัดเก็บ 256 × 256",
     );
+    await expect(page.locator(".image-uploader").nth(1)).toContainText(
+      "พื้นหลังทึบ",
+    );
+    await expect(page.locator(".transparency-preview")).toHaveCSS(
+      "background-image",
+      /conic-gradient/,
+    );
     await page.getByLabel("ค่าคอมมิชชั่นแนะนำเพื่อน").fill("7.25");
     await page.getByRole("button", { name: "บันทึก", exact: true }).click();
     await expect(page.locator(".toast")).toContainText(

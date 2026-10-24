@@ -8,6 +8,7 @@ import {
   setSetting,
 } from "../server/db.mjs";
 import { createApp } from "../server/app.mjs";
+import { branchAccounts, accountResponse } from "./payment-data.mjs";
 export const PASSWORD = "Test-strong-password-2026!";
 export const bank = {
   bankCode: "014",
@@ -26,6 +27,11 @@ export function fixture(overrides = {}) {
       easyslipApiKey: "test-slip",
       lineChannelSecret: "test-line-secret",
       lineChannelAccessToken: "test-line-token",
+    },
+    fetch: async (url) => {
+      if (String(url).includes("/bank-accounts?"))
+        return accountResponse(branchAccounts(bank));
+      throw new Error("External network disabled in unit tests");
     },
     ...overrides,
   };

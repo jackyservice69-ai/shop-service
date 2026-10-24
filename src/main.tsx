@@ -7,6 +7,9 @@ import {
   themeStyle,
 } from "./experience";
 import React from "react";
+import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
+import { AdminReviewsPage } from "./reviews";
+import { SocialLinks } from "./contacts";
 import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
@@ -35,6 +38,7 @@ import {
   LogOut,
   Store,
   UserRound,
+  Star,
   ChevronRight,
   Headphones,
 } from "lucide-react";
@@ -66,6 +70,8 @@ const nav = [
   ["dashboard", "ภาพรวม", LayoutDashboard],
   ["orders", "คำสั่งซื้อ", Package],
   ["products", "จัดการสินค้า", ShoppingBag],
+  ["consignments", "ตัวแทนฝากขาย", Store],
+  ["reviews", "รีวิวสินค้า", Star],
   ["members", "สมาชิก", Users],
   ["finance", "รายรับ–รายจ่าย", Receipt],
   ["promotions", "โปรโมชั่น", Ticket],
@@ -101,10 +107,11 @@ function Protected({ admin = false }: { admin?: boolean }) {
 function StoreLayout() {
   const { user, cart, refresh, notify, publicData } = useApp();
   const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = React.useState(false);
   return (
     <div className="customer-shell" style={themeStyle(publicData?.theme)}>
       <header className="store-header">
-        <Link to="/" aria-label="หิ้วลี่ หน้าร้าน">
+        <Link to="/" aria-label="Iya หิ้ว หน้าร้าน">
           <Brand />
         </Link>
         <nav>
@@ -118,6 +125,7 @@ function StoreLayout() {
               <NavLink to="/wallet">กระเป๋าเงิน</NavLink>
               <NavLink to="/referrals">ชวนเพื่อน</NavLink>
               <NavLink to="/coupons">คูปอง</NavLink>
+              <NavLink to="/consignment">ฝากขาย</NavLink>
             </>
           )}
         </nav>
@@ -138,9 +146,34 @@ function StoreLayout() {
             <span>{cart.reduce((s, i) => s + i.quantity, 0)}</span>
           </Link>
           {user ? (
-            <Link className="avatar" to="/account" aria-label="บัญชีของฉัน">
-              {user.name.slice(0, 1)}
-            </Link>
+            <>
+              <Link className="avatar" to="/account" aria-label="บัญชีของฉัน">
+                <UserRound size={22} />
+              </Link>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="ออกจากระบบ"
+                title="ออกจากระบบ"
+                disabled={loggingOut}
+                onClick={async () => {
+                  if (loggingOut) return;
+                  setLoggingOut(true);
+                  try {
+                    await send("/auth/logout", {});
+                    await refresh();
+                    navigate("/", { replace: true });
+                    notify("ออกจากระบบแล้ว");
+                  } catch (e) {
+                    notify((e as Error).message);
+                  } finally {
+                    setLoggingOut(false);
+                  }
+                }}
+              >
+                <LogOut size={21} />
+              </button>
+            </>
           ) : (
             <Link className="button primary small" to="/login">
               เข้าสู่ระบบ
@@ -154,7 +187,8 @@ function StoreLayout() {
       <footer className="store-footer">
         <Brand />
         <p>ของที่ชอบ ให้เราหิ้ว ดูแลตั้งแต่สั่งจนถึงมือคุณ</p>
-        <span>หิ้วลี่ · Personal shopping service</span>
+        <SocialLinks />
+        <span>Iya หิ้ว · Personal shopping service</span>
       </footer>
       <AnnouncementPopup />
       <BackToTop />
@@ -232,7 +266,7 @@ function AdminLayout() {
               <Store size={16} /> ดูหน้าร้าน <ArrowUpRight size={14} />
             </Link>
             <Link to="/account" className="avatar" aria-label="บัญชีของฉัน">
-              {user?.name.slice(0, 1)}
+              <UserRound size={22} />
             </Link>
           </div>
         </header>
@@ -240,7 +274,7 @@ function AdminLayout() {
           <Outlet />
         </main>
         <footer className="admin-footer">
-          <span>หิ้วลี่ — ร้านที่ดี เริ่มจากการดูแลที่ดี</span>
+          <span>Iya หิ้ว — ร้านที่ดี เริ่มจากการดูแลที่ดี</span>
           <span>จัดเก็บข้อมูลในฐานข้อมูลของร้าน</span>
         </footer>
       </div>
@@ -294,11 +328,28 @@ function App() {
               <Route path="orders" element={<OrdersPage />} />
               <Route path="referrals" element={<ReferralPage />} />
               <Route path="account" element={<AccountPage />} />
+              <Route path="consignment" element={<ConsignmentPage />} />
             </Route>
           </Route>
           <Route element={<Protected admin />}>
             <Route path="admin" element={<AdminLayout />}>
               <Route index element={<HomeAdmin />} />
+              <Route
+                path="consignments"
+                element={
+                  <Permission name="consignments">
+                    <AdminConsignmentsPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="reviews"
+                element={
+                  <Permission name="reviews">
+                    <AdminReviewsPage />
+                  </Permission>
+                }
+              />
               <Route
                 path="appearance"
                 element={

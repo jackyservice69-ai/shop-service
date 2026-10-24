@@ -31,6 +31,8 @@ export type Product = {
   image: string;
   active?: number;
   version?: number;
+  rating_average?: number;
+  review_count?: number;
 };
 export type PageData<T = any> = {
   items: T[];

@@ -1,10 +1,26 @@
 import multer from "multer";
 import sharp from "sharp";
 import { z } from "zod";
-import { id, now, audit, transaction, getSettings, setSetting } from "./db.mjs";
+import {
+  id,
+  now,
+  audit,
+  transaction,
+  getSettings,
+  setSetting,
+  hash,
+} from "./db.mjs";
 import { fail } from "./commerce.mjs";
+import { verifyPaymentQr } from "./payment-qr.mjs";
+import { secret } from "./integrations.mjs";
 
 export const IMAGE_GUIDES = {
+  paymentQr: {
+    width: 1080,
+    height: 1440,
+    label: "QR รับเงิน",
+    permission: "settings",
+  },
   banner: {
     width: 1600,
     height: 600,
@@ -37,6 +53,29 @@ export const IMAGE_GUIDES = {
     permission: "products",
   },
 };
+export function receivingAccountKey(s) {
+  return hash(
+    JSON.stringify(
+      [s.bankCode, s.bankNumber, s.accountName, s.accountNameEn].map((value) =>
+        String(value || "")
+          .normalize("NFKC")
+          .trim()
+          .replace(/\s+/g, " ")
+          .toLowerCase(),
+      ),
+    ),
+  );
+}
+export function currentPaymentQr(s, credentialHash) {
+  return s.paymentQr &&
+    s.paymentQrVerification?.version === 1 &&
+    s.paymentQrVerification?.url === s.paymentQr &&
+    s.paymentQrReceiver === receivingAccountKey(s) &&
+    (credentialHash === undefined ||
+      s.paymentQrVerification.credentialHash === credentialHash)
+    ? s.paymentQr
+    : "";
+}
 export function checkMedia(db, url, kind) {
   if (!url) return;
   if (
@@ -83,12 +122,19 @@ const bannerSchema = z
     version: z.number().int().optional(),
   })
   .refine((v) => v.ends_at > v.starts_at, "วันสิ้นสุดต้องหลังวันเริ่ม");
-export function publicExperience(db) {
+export function publicExperience(db, config) {
   const s = getSettings(db);
+  const paymentQr = currentPaymentQr(
+    s,
+    hash(secret(db, "easyslipApiKey", config)),
+  );
   return {
     theme: s.theme,
     logo: s.logo,
     favicon: s.favicon,
+    paymentQr,
+    paymentQrFrame: paymentQr ? s.paymentQrVerification?.frame || null : null,
+    socials: s.socials || {},
     slideSeconds: s.slideSeconds,
     commissionPercent: s.commissionPercent,
     banners: db
@@ -184,8 +230,24 @@ export function attachExperience(
           "ไฟล์ภาพไม่สมบูรณ์หรือชนิดไม่ตรง ใช้ PNG/JPEG จริง ขนาด 16–6000 px",
         );
       }
+      const hasTransparency =
+        kind === "favicon"
+          ? !(await sharp(result.data).stats()).isOpaque
+          : undefined;
       const mid = id();
+      const receiver = receivingAccountKey(getSettings(db));
+      const verification =
+        kind === "paymentQr"
+          ? await verifyPaymentQr(db, config, result.data, getSettings(db))
+          : null;
       transaction(db, () => {
+        if (
+          verification &&
+          (receiver !== receivingAccountKey(getSettings(db)) ||
+            verification.credentialHash !==
+              hash(secret(db, "easyslipApiKey", config)))
+        )
+          fail(409, "บัญชีรับเงินเปลี่ยนระหว่างตรวจสอบ กรุณาอัปโหลดใหม่");
         const bytes = db
           .prepare("SELECT COALESCE(SUM(bytes),0) n FROM media")
           .get().n;
@@ -217,11 +279,30 @@ export function attachExperience(
           height: result.info.height,
           bytes: result.data.length,
         });
+        if (verification) {
+          db.prepare("INSERT INTO payment_qr_checks VALUES(?,?,?)").run(
+            mid,
+            receiver,
+            JSON.stringify(verification),
+          );
+          audit(db, req.user.id, "payment_qr.verified", mid, {
+            bankAccountId: verification.bankAccountId,
+            promptpayAccountId: verification.promptpayAccountId,
+          });
+        }
       });
       res.status(201).json({
         url: "/api/media/" + mid,
         width: result.info.width,
         height: result.info.height,
+        ...(kind === "favicon" ? { hasTransparency } : {}),
+        ...(verification
+          ? {
+              verified: true,
+              message:
+                "ตรวจสอบเลขพร้อมเพย์ ชื่อผู้รับ และบัญชีที่เชื่อม Branch แล้ว",
+            }
+          : {}),
         recommended: IMAGE_GUIDES[kind],
       });
     }),

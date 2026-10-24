@@ -2,8 +2,16 @@ import {
   attachExperience,
   publicExperience,
   checkMedia,
+  receivingAccountKey,
+  currentPaymentQr,
 } from "./experience.mjs";
 import express from "express";
+import { attachAddresses } from "./addresses.mjs";
+import { attachConsignments } from "./consignments.mjs";
+import { settleConsignments } from "./consignment-ledger.mjs";
+import { attachReviews } from "./reviews.mjs";
+import { verifyPaymentQr } from "./payment-qr.mjs";
+import socialPlatforms from "../shared/socials.json" with { type: "json" };
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
@@ -57,6 +65,8 @@ export const PERMISSIONS = [
   "announcements",
   "settings",
   "audit",
+  "consignments",
+  "reviews",
 ];
 const asyncRoute = (fn) => (req, res, next) =>
   Promise.resolve()
@@ -175,6 +185,7 @@ export function createApp(db, config) {
   app.disable("x-powered-by");
   app.use(
     helmet({
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
@@ -278,7 +289,7 @@ export function createApp(db, config) {
   };
   const authLimiter = rateLimit({
     windowMs: 15 * 60000,
-    limit: 20,
+    limit: config.production ? 20 : (config.authRateLimit ?? 20),
     message: { error: "เข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาที" },
   });
   function session(req, res, user) {
@@ -464,7 +475,7 @@ export function createApp(db, config) {
     asyncRoute((req, res) => {
       const s = getSettings(db);
       res.json({
-        ...publicExperience(db),
+        ...publicExperience(db, config),
         shopName: s.shopName,
         depositPercent: s.depositPercent,
         bankCode: s.bankCode,
@@ -503,7 +514,7 @@ export function createApp(db, config) {
       res.json(
         pageRows(
           db,
-          "SELECT id,name,description,category,price,stock,image,created_at FROM products WHERE active=1 AND name LIKE ? AND (?='' OR category=?)" +
+          "SELECT id,name,description,category,price,stock,image,created_at,(SELECT COALESCE(AVG(rating),0) FROM reviews WHERE product_id=products.id AND visible=1) rating_average,(SELECT COUNT(*) FROM reviews WHERE product_id=products.id AND visible=1) review_count FROM products WHERE active=1 AND name LIKE ? AND (?='' OR category=?)" +
             (ids.length ? ` AND id IN (${ids.map(() => "?").join(",")})` : "") +
             " ORDER BY created_at DESC",
           ["%" + q + "%", cat, cat, ...ids],
@@ -734,7 +745,7 @@ export function createApp(db, config) {
             e.expense +
             db
               .prepare(
-                "SELECT COALESCE(SUM(amount),0) n FROM ledger WHERE kind='commission' AND date(created_at,'+7 hours')=?",
+                "SELECT COALESCE(SUM(amount),0) n FROM ledger WHERE kind IN ('commission','consignment') AND date(created_at,'+7 hours')=?",
               )
               .get(date).n,
         });
@@ -749,7 +760,7 @@ export function createApp(db, config) {
           manual.expense +
           db
             .prepare(
-              "SELECT COALESCE(SUM(amount),0) n FROM ledger WHERE kind='commission'",
+              "SELECT COALESCE(SUM(amount),0) n FROM ledger WHERE kind IN ('commission','consignment')",
             )
             .get().n,
         net:
@@ -758,7 +769,7 @@ export function createApp(db, config) {
           manual.expense -
           db
             .prepare(
-              "SELECT COALESCE(SUM(amount),0) n FROM ledger WHERE kind='commission'",
+              "SELECT COALESCE(SUM(amount),0) n FROM ledger WHERE kind IN ('commission','consignment')",
             )
             .get().n,
         commissionExpense: db
@@ -851,6 +862,27 @@ export function createApp(db, config) {
         if (!version) fail(400, "ไม่มีเวอร์ชันข้อมูล กรุณาโหลดใหม่");
         transaction(db, () => {
           const entries = Object.entries(v);
+          if (table === "products") {
+            const old = db
+              .prepare("SELECT consignor_id FROM products WHERE id=?")
+              .get(req.params.id);
+            if (old?.consignor_id) {
+              const ps = JSON.parse(req.user.permissions);
+              if (!ps.includes("*") && !ps.includes("consignments"))
+                fail(403, "ต้องมีสิทธิ์ฝากขายเพื่อแก้ไขสินค้าของตัวแทน");
+              if (
+                v.active &&
+                db
+                  .prepare("SELECT status FROM consignors WHERE user_id=?")
+                  .get(old.consignor_id)?.status !== "approved"
+              )
+                fail(409, "ตัวแทนฝากขายยังไม่ได้รับอนุมัติ");
+              entries.push([
+                "consignment_status",
+                v.active ? "approved" : "pending",
+              ]);
+            }
+          }
           const result = db
             .prepare(
               `UPDATE ${table} SET ${entries.map(([k]) => k + "=?").join(",")},version=version+1 WHERE id=? AND version=?`,
@@ -928,6 +960,7 @@ export function createApp(db, config) {
           o.id,
         );
         if (v.status === "completed") settleCommission(db, o.id);
+        if (v.status === "completed") settleConsignments(db, o.id);
         audit(db, req.user.id, "order.status_changed", o.id, v);
       });
       res.json({ ok: true });
@@ -1069,7 +1102,7 @@ export function createApp(db, config) {
       const v = parse(
         z.object({
           name: boundedText,
-          permissions: z.array(z.enum(PERMISSIONS)).max(10),
+          permissions: z.array(z.enum(PERMISSIONS)).max(PERMISSIONS.length),
         }),
         req.body,
       );
@@ -1094,7 +1127,7 @@ export function createApp(db, config) {
       const v = parse(
         z.object({
           name: boundedText,
-          permissions: z.array(z.enum(PERMISSIONS)).max(10),
+          permissions: z.array(z.enum(PERMISSIONS)).max(PERMISSIONS.length),
         }),
         req.body,
       );
@@ -1169,6 +1202,10 @@ export function createApp(db, config) {
       }
       res.json({
         ...s,
+        paymentQrReady: !!currentPaymentQr(
+          s,
+          hash(secret(db, "easyslipApiKey", config)),
+        ),
         webhookUrl: `${config.origin}/api/line/webhook`,
         botEvents: db
           .prepare(
@@ -1186,6 +1223,37 @@ export function createApp(db, config) {
     bankName: boundedText,
     accountName: boundedText,
     accountNameEn: z.string().trim().max(200),
+    paymentQr: z.string().max(100).optional(),
+    socials: z
+      .record(z.string(), z.string().max(500))
+      .optional()
+      .superRefine((value, ctx) => {
+        for (const [key, link] of Object.entries(value || {})) {
+          const platform = socialPlatforms.find((p) => p.key === key);
+          let valid = !!platform;
+          if (link) {
+            try {
+              const u = new URL(link);
+              valid &&=
+                u.protocol === "https:" &&
+                !u.username &&
+                !u.password &&
+                !u.port &&
+                platform.hosts.some(
+                  (host) => u.hostname === host || u.hostname === "www." + host,
+                );
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid)
+            ctx.addIssue({
+              code: "custom",
+              path: [key],
+              message: "ใช้ลิงก์ HTTPS ของช่องทางนี้เท่านั้น",
+            });
+        }
+      }),
     botEnabled: z.boolean(),
     aiEnabled: z.boolean(),
     aiModel: z.string().regex(/^[a-zA-Z0-9.-]{1,80}$/),
@@ -1199,8 +1267,9 @@ export function createApp(db, config) {
   app.put(
     "/api/admin/settings",
     permission("settings"),
-    asyncRoute((req, res) => {
+    asyncRoute(async (req, res) => {
       const v = parse(settingsSchema, req.body);
+      if (v.paymentQr) checkMedia(db, v.paymentQr, "paymentQr");
       if (v.aiEnabled && !v.openaiApiKey && !secret(db, "openaiApiKey", config))
         fail(400, "กรุณาใส่ OpenAI API key ก่อนเปิด AI");
       if (
@@ -1210,17 +1279,64 @@ export function createApp(db, config) {
             !secret(db, "lineChannelAccessToken", config)))
       )
         fail(400, "กรุณาตั้งค่า LINE ให้ครบ");
+      let paymentQrCleared = false;
+      const snapshot = getSettings(db);
+      const credentialBefore = hash(secret(db, "easyslipApiKey", config));
+      const requested = v.paymentQr ?? snapshot.paymentQr;
+      const receiverChanged =
+        receivingAccountKey(v) !== receivingAccountKey(snapshot);
+      const keyChanged =
+        !!v.easyslipApiKey &&
+        v.easyslipApiKey !== secret(db, "easyslipApiKey", config);
+      let qrVerification = snapshot.paymentQrVerification;
+      if (requested && requested !== snapshot.paymentQr) {
+        const media = db
+          .prepare("SELECT body FROM media WHERE id=? AND kind='paymentQr'")
+          .get(requested.split("/").at(-1));
+        if (keyChanged)
+          fail(409, "บันทึก API key ใหม่ก่อน แล้วจึงอัปโหลด QR อีกครั้ง");
+        qrVerification = {
+          ...(await verifyPaymentQr(db, config, Buffer.from(media.body), v)),
+          url: requested,
+        };
+      }
       transaction(db, () => {
+        const before = getSettings(db);
+        if (
+          receivingAccountKey(before) !== receivingAccountKey(snapshot) ||
+          before.paymentQr !== snapshot.paymentQr ||
+          hash(secret(db, "easyslipApiKey", config)) !== credentialBefore
+        )
+          fail(409, "การตั้งค่าเปลี่ยนระหว่างตรวจสอบ กรุณาโหลดข้อมูลใหม่");
+        const requestedQr = v.paymentQr ?? before.paymentQr;
+        const receiver = receivingAccountKey(v);
+        paymentQrCleared =
+          !!requestedQr &&
+          requestedQr === before.paymentQr &&
+          (receiverChanged ||
+            keyChanged ||
+            before.paymentQrReceiver !== receiver ||
+            !currentPaymentQr(before, credentialBefore));
         for (const [k, value] of Object.entries(v)) {
+          if (k === "paymentQr") continue;
           if (SECRET_KEYS.includes(k)) {
             if (value) setSetting(db, k, encrypt(value, config.encryptionKey));
           } else setSetting(db, k, value);
         }
+        const paymentQr = paymentQrCleared ? "" : requestedQr;
+        setSetting(db, "paymentQr", paymentQr);
+        setSetting(db, "paymentQrReceiver", paymentQr ? receiver : "");
+        setSetting(
+          db,
+          "paymentQrVerification",
+          paymentQr ? qrVerification : null,
+        );
         audit(db, req.user.id, "settings.updated", "shop", {
           keys: Object.keys(v).filter((k) => !SECRET_KEYS.includes(k)),
+          paymentQrCleared,
         });
       });
-      res.json({ ok: true });
+      res.json({ ok: true, paymentQrCleared });
     }),
   );
   app.get(
@@ -1269,6 +1385,21 @@ export function createApp(db, config) {
       ),
     ),
   );
+  attachAddresses(app, db, { auth, csrf, asyncRoute });
+  attachConsignments(app, db, config, {
+    auth,
+    csrf,
+    permission,
+    asyncRoute,
+    pageRows,
+  });
+  attachReviews(app, db, config, {
+    auth,
+    csrf,
+    permission,
+    asyncRoute,
+    pageRows,
+  });
   attachExperience(app, db, config, {
     auth,
     csrf,

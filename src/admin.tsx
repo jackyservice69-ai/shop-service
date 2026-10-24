@@ -1,6 +1,7 @@
 import { ImageUpload } from "./experience";
+import socialPlatforms from "../shared/socials.json";
 import brandColors from "../shared/customer-colors.json";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ResponsiveContainer,
@@ -155,7 +156,7 @@ export function DashboardPage() {
               <div className="welcome-graphic" aria-hidden="true">
                 <div className="mini-parcel">
                   <ShoppingBag size={38} />
-                  <span>hiewly</span>
+                  <span>Iya hiew</span>
                 </div>
                 <span className="float-check">
                   <CheckCircle2 size={24} />
@@ -1055,6 +1056,17 @@ export function AdminOrders() {
               {view.shipping.name} · {view.shipping.phone}
             </b>
             <p>{view.shipping.address}</p>
+            {view.shipping.latitude != null &&
+              view.shipping.longitude != null && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${view.shipping.latitude},${view.shipping.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-button"
+                >
+                  ดูหมุดจัดส่งบนแผนที่
+                </a>
+              )}
           </div>
           {view.tracking && (
             <p>
@@ -1458,6 +1470,8 @@ export function MembersPage() {
 const permissionLabels: Record<string, string> = {
   dashboard: "ภาพรวมร้าน",
   products: "จัดการสินค้า",
+  consignments: "จัดการตัวแทนฝากขาย",
+  reviews: "จัดการรีวิวสินค้า",
   orders: "จัดการคำสั่งซื้อ",
   finance: "รายรับ–รายจ่าย",
   members: "ดูสมาชิก",
@@ -1597,6 +1611,11 @@ export function SettingsPage() {
   const [integration, setIntegration] = useState<any>(null),
     [checking, setChecking] = useState(false),
     [checkError, setCheckError] = useState("");
+  const [paymentQr, setPaymentQr] = useState<string | null>(null);
+  const [qrUploading, setQrUploading] = useState(false);
+  useEffect(() => {
+    setPaymentQr(null);
+  }, [s]);
   return (
     <>
       <PageHeading
@@ -1611,15 +1630,27 @@ export function SettingsPage() {
         s && (
           <Form
             noValidate
+            blocked={qrUploading}
             onSubmit={async (f) => {
               const v: any = formObject(f);
               v.depositPercent = Number(v.depositPercent);
               v.botEnabled = v.botEnabled === "on";
               v.aiEnabled = v.aiEnabled === "on";
-              await send("/admin/settings", v, "PUT");
+              v.paymentQr = paymentQr ?? s.paymentQr ?? "";
+              v.socials = Object.fromEntries(
+                socialPlatforms.map((p) => [
+                  p.key,
+                  String(v["socials." + p.key] || "").trim(),
+                ]),
+              );
+              const result = await send("/admin/settings", v, "PUT");
               await refresh();
               reload();
-              notify("บันทึกการตั้งค่าแล้ว");
+              notify(
+                result.paymentQrCleared
+                  ? "บันทึกแล้ว · บัญชีเปลี่ยน กรุณาอัปโหลด QR ที่ตรงกับบัญชีใหม่"
+                  : "บันทึกการตั้งค่าแล้ว",
+              );
             }}
           >
             <div className="settings-grid">
@@ -1679,6 +1710,46 @@ export function SettingsPage() {
                     name="accountNameEn"
                     defaultValue={s.accountNameEn}
                   />
+                  <h3 className="section-space">QR รับเงินของร้าน</h3>
+                  <p className="muted">
+                    อัปโหลด QR ที่รับเงินเข้าบัญชีด้านบน
+                    รูปจะแสดงในหน้ากระเป๋าเงินลูกค้าหลังบันทึก
+                  </p>
+                  <ImageUpload
+                    kind="paymentQr"
+                    value={paymentQr ?? s.paymentQr ?? ""}
+                    onChange={setPaymentQr}
+                    onBusyChange={setQrUploading}
+                  />
+                  <p className="muted">
+                    ระบบอ่านเลขพร้อมเพย์จากรูปและตรวจทั้งบัญชีธนาคารและบัญชี
+                    PROMPTPAY ว่าชื่อผู้รับตรงและเชื่อมโยงกับ Branch ของ
+                    EasySlip แล้ว บันทึกบัญชีหรือ API key ใหม่ก่อนอัปโหลด QR
+                    หากเปลี่ยนผู้รับ ระบบจะซ่อน QR เดิม
+                  </p>
+                  {s.paymentQrReady && (
+                    <p className="positive">
+                      QR ผ่านการตรวจสอบบัญชีและ Branch แล้ว
+                    </p>
+                  )}
+                </section>
+                <section className="panel section-space">
+                  <h2>ช่องทางติดต่อร้าน</h2>
+                  <p className="muted">
+                    ลิงก์ที่บันทึกจะแสดงพร้อมโลโก้สีที่ท้ายหน้าร้าน
+                    เว้นว่างเพื่อซ่อนช่องทาง
+                  </p>
+                  {socialPlatforms.map((p) => (
+                    <Field
+                      key={p.key}
+                      label={p.label}
+                      name={"socials." + p.key}
+                      type="url"
+                      maxLength={500}
+                      defaultValue={s.socials?.[p.key] || ""}
+                      placeholder={"https://" + p.hosts[0] + "/…"}
+                    />
+                  ))}
                 </section>
                 <section className="panel section-space">
                   <div className="panel-title">

@@ -159,7 +159,7 @@ test("profile migration preserves old names, passwords and balances and can run 
         "line_id",
       ])
         assert.equal(row[field], "");
-      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 3);
+      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 5);
       db.close();
       db = undefined;
     }

@@ -75,9 +75,20 @@ export function openDb(path) {
  CREATE INDEX IF NOT EXISTS ledger_user_date ON ledger(user_id,created_at);
  CREATE INDEX IF NOT EXISTS audit_date ON audit(created_at);
  CREATE TABLE IF NOT EXISTS media(id TEXT PRIMARY KEY,kind TEXT NOT NULL,mime TEXT NOT NULL,width INTEGER NOT NULL,height INTEGER NOT NULL,bytes INTEGER NOT NULL,body BLOB NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id),created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS payment_qr_checks(media_id TEXT PRIMARY KEY REFERENCES media(id),receiver TEXT NOT NULL,verification TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS addresses(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),label TEXT NOT NULL,name TEXT NOT NULL,phone TEXT NOT NULL,address TEXT NOT NULL,latitude REAL,longitude REAL,is_default INTEGER NOT NULL DEFAULT 0 CHECK(is_default IN (0,1)),version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,CHECK((latitude IS NULL AND longitude IS NULL) OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180)));
+ CREATE INDEX IF NOT EXISTS addresses_user ON addresses(user_id,created_at);
+ CREATE UNIQUE INDEX IF NOT EXISTS addresses_one_default ON addresses(user_id) WHERE is_default=1;
  CREATE TABLE IF NOT EXISTS banners(id TEXT PRIMARY KEY,title TEXT NOT NULL,image TEXT NOT NULL,link TEXT NOT NULL DEFAULT '',position INTEGER NOT NULL DEFAULT 0,active INTEGER NOT NULL DEFAULT 1,starts_at TEXT NOT NULL,ends_at TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1);
  CREATE TABLE IF NOT EXISTS coupon_claims(user_id TEXT NOT NULL REFERENCES users(id),promotion_id TEXT NOT NULL REFERENCES promotions(id),created_at TEXT NOT NULL,PRIMARY KEY(user_id,promotion_id));
  CREATE TABLE IF NOT EXISTS commissions(order_id TEXT PRIMARY KEY REFERENCES orders(id),referrer_id TEXT NOT NULL REFERENCES users(id),rate_bps INTEGER NOT NULL CHECK(rate_bps BETWEEN 0 AND 10000),base INTEGER NOT NULL CHECK(base>=0),amount INTEGER NOT NULL CHECK(amount>=0),status TEXT NOT NULL CHECK(status IN ('pending','credited','void')),created_at TEXT NOT NULL,paid_at TEXT);
+ CREATE TABLE IF NOT EXISTS consignors(user_id TEXT PRIMARY KEY REFERENCES users(id),shop_name TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('pending','approved','suspended','rejected')),note TEXT NOT NULL DEFAULT '',version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS consignment_sales(order_id TEXT NOT NULL REFERENCES orders(id),product_id TEXT NOT NULL REFERENCES products(id),seller_id TEXT NOT NULL REFERENCES users(id),fee_bps INTEGER NOT NULL CHECK(fee_bps BETWEEN 0 AND 10000),base INTEGER NOT NULL CHECK(base>=0),fee INTEGER NOT NULL CHECK(fee>=0 AND fee<=base),net INTEGER NOT NULL CHECK(net=base-fee),status TEXT NOT NULL CHECK(status IN ('pending','credited','void')),created_at TEXT NOT NULL,paid_at TEXT,PRIMARY KEY(order_id,product_id));
+ CREATE INDEX IF NOT EXISTS consignment_sales_seller ON consignment_sales(seller_id,created_at);
+ CREATE TABLE IF NOT EXISTS reviews(id TEXT PRIMARY KEY,product_id TEXT NOT NULL REFERENCES products(id),user_id TEXT NOT NULL REFERENCES users(id),rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),comment TEXT NOT NULL,visible INTEGER NOT NULL DEFAULT 1 CHECK(visible IN (0,1)),moderation_reason TEXT NOT NULL DEFAULT '',version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(product_id,user_id));
+ CREATE INDEX IF NOT EXISTS reviews_product ON reviews(product_id,visible,created_at);
+ CREATE TABLE IF NOT EXISTS review_media(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),product_id TEXT NOT NULL REFERENCES products(id),review_id TEXT REFERENCES reviews(id),mime TEXT NOT NULL,width INTEGER NOT NULL,height INTEGER NOT NULL,duration REAL NOT NULL DEFAULT 0,bytes INTEGER NOT NULL,body BLOB NOT NULL,created_at TEXT NOT NULL);
+ CREATE INDEX IF NOT EXISTS review_media_owner ON review_media(user_id,created_at);
  `);
   // Additive, repeatable migration: preserve existing products, orders and balances.
   transaction(db, () => {
@@ -96,6 +107,8 @@ export function openDb(path) {
       ["orders", "referrer_id", "TEXT REFERENCES users(id)"],
       ["orders", "commission_bps", "INTEGER NOT NULL DEFAULT 0"],
       ["orders", "commission_amount", "INTEGER NOT NULL DEFAULT 0"],
+      ["products", "consignor_id", "TEXT REFERENCES users(id)"],
+      ["products", "consignment_status", "TEXT NOT NULL DEFAULT 'none'"],
     ])
       if (
         !db
@@ -104,7 +117,7 @@ export function openDb(path) {
           .some((c) => c.name === column)
       )
         db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-    db.exec("PRAGMA user_version=3");
+    db.exec("PRAGMA user_version=5");
   });
   db.prepare("INSERT OR IGNORE INTO roles VALUES (?,?,?)").run(
     "admin",
@@ -120,6 +133,7 @@ export function openDb(path) {
     shopName: "หิ้วลี่",
     depositPercent: 0,
     commissionPercent: 0,
+    consignmentFeePercent: 0,
     theme: Object.fromEntries(
       ["primary", "ink", "muted", "background", "surface", "positive"].map(
         (role) => [role, customerColors[role].DEFAULT],
@@ -127,6 +141,8 @@ export function openDb(path) {
     ),
     logo: "",
     favicon: "",
+    paymentQr: "",
+    paymentQrReceiver: "",
     slideSeconds: 6,
     bankCode: "",
     bankNumber: "",

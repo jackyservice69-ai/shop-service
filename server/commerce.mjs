@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { snapshotConsignments } from "./consignment-ledger.mjs";
 import {
   id,
   now,
@@ -29,13 +30,20 @@ export const checkoutSchema = cartSchema.extend({
   expectedQuote: z
     .string()
     .regex(/^[a-f0-9]{64}$/, "กรุณาคำนวณยอดใหม่ก่อนยืนยัน"),
-  shipping: z.object({
-    name: z.string().trim().min(2).max(100),
-    phone: z
-      .string()
-      .regex(/^0\d{8,9}$/, "เบอร์โทรต้องมี 9–10 หลักและเริ่มด้วย 0"),
-    address: z.string().trim().min(10).max(1000),
-  }),
+  shipping: z
+    .object({
+      name: z.string().trim().min(2).max(100),
+      phone: z
+        .string()
+        .regex(/^0\d{8,9}$/, "เบอร์โทรต้องมี 9–10 หลักและเริ่มด้วย 0"),
+      address: z.string().trim().min(10).max(1000),
+      latitude: z.number().finite().min(-90).max(90).nullable().optional(),
+      longitude: z.number().finite().min(-180).max(180).nullable().optional(),
+    })
+    .refine(
+      (v) => (v.latitude == null) === (v.longitude == null),
+      "กรุณาระบุพิกัดให้ครบ",
+    ),
 });
 export function quote(db, userId, input) {
   const seen = new Set();
@@ -47,11 +55,22 @@ export function quote(db, userId, input) {
       .get(item.productId);
     if (!p || p.stock < item.quantity)
       fail(409, "สินค้าไม่พร้อมจำหน่ายหรือจำนวนคงเหลือไม่พอ");
+    if (p.consignor_id) {
+      if (p.consignor_id === userId)
+        fail(409, "ไม่สามารถสั่งซื้อสินค้าที่ตนเองฝากขายได้");
+      const seller = db
+        .prepare(
+          "SELECT c.status,u.active FROM consignors c JOIN users u ON u.id=c.user_id WHERE c.user_id=?",
+        )
+        .get(p.consignor_id);
+      if (!seller || seller.status !== "approved" || !seller.active)
+        fail(409, "ตัวแทนฝากขายไม่พร้อมจำหน่าย");
+    }
     return {
       ...item,
       name: p.name,
       price: p.price,
-      cost: p.cost,
+      cost: p.consignor_id ? 0 : p.cost,
       total: p.price * item.quantity,
     };
   });
@@ -180,6 +199,7 @@ export function createOrder(db, userId, input, key) {
         p.quantity,
       );
     }
+    snapshotConsignments(db, orderId, userId, q);
     if (q.payNow) wallet(db, userId, -q.payNow, "purchase", orderId);
     const buyer = db
         .prepare("SELECT referred_by FROM users WHERE id=?")
@@ -242,6 +262,9 @@ export function cancelOrder(db, actor, orderId, isAdmin = false) {
     db.prepare("UPDATE orders SET status='cancelled' WHERE id=?").run(o.id);
     db.prepare(
       "UPDATE commissions SET status='void' WHERE order_id=? AND status='pending'",
+    ).run(o.id);
+    db.prepare(
+      "UPDATE consignment_sales SET status='void' WHERE order_id=? AND status='pending'",
     ).run(o.id);
     audit(db, actor, "order.cancelled", o.id, { refund: o.paid });
     return db.prepare("SELECT * FROM orders WHERE id=?").get(o.id);

@@ -18,17 +18,21 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { ApiError, useApp, type PageData } from "./api";
-export function Brand() {
+import walletLogo from "../shared/wallet-logo.json";
+export function Brand({
+  variant = "default",
+}: {
+  variant?: "default" | "wallet";
+}) {
   const { publicData } = useApp();
-  if (publicData?.logo)
+  const logo =
+    variant === "wallet" && publicData?.logo === walletLogo.source
+      ? walletLogo.image
+      : publicData?.logo;
+  if (logo)
     return (
       <span className="brand custom-brand">
-        <img
-          src={publicData.logo}
-          alt={publicData.shopName}
-          width="264"
-          height="99"
-        />
+        <img src={logo} alt={publicData.shopName} width="264" height="99" />
       </span>
     );
   return (
@@ -37,7 +41,7 @@ export function Brand() {
         <span />
       </span>
       <span>
-        หิ้วลี่<span className="brand-en">hiewly</span>
+        Iya หิ้ว<span className="brand-en">Iya hiew</span>
       </span>
     </span>
   );
@@ -117,6 +121,7 @@ export function Badge({ status, label }: { status: string; label?: string }) {
     settlement: "ชำระส่วนที่เหลือ",
     refund: "คืนเงิน",
     commission: "ค่าคอมมิชชั่น",
+    consignment: "รายรับฝากขาย",
     credited: "จ่ายแล้ว",
     void: "ยกเลิกสิทธิ์",
     income: "รายรับ",
