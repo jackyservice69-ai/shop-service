@@ -21,6 +21,7 @@ import {
 } from "./member-management.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import socialPlatforms from "../shared/socials.json" with { type: "json" };
+import passwordPolicy from "../shared/password-policy.json" with { type: "json" };
 import {
   catalog as authorization,
   hasPermission,
@@ -413,7 +414,7 @@ export function createApp(db, config) {
     asyncRoute((req, res) => {
       const input = parse(
         memberProfileSchema.extend({
-          password: z.string().min(12).max(128),
+          password: z.string().min(passwordPolicy.minimumLength).max(128),
           referralCode: z.string().max(40).optional(),
         }),
         req.body,
@@ -497,7 +498,7 @@ export function createApp(db, config) {
       const v = parse(
         z.object({
           current: z.string().min(1).max(128),
-          password: z.string().min(12).max(128),
+          password: z.string().min(passwordPolicy.minimumLength).max(128),
           confirmPassword: z.string().optional(),
         }),
         req.body,

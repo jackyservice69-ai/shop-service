@@ -1,5 +1,43 @@
 # Storefront image enhancement v2
 
+## Local contact ribbon revision v3 (25 October 2026)
+
+The owner requested removal of only the painted ติดต่อเรา button while keeping the real HTML contact link. Built-in Imagegen edited `contact-hd-v2.webp`; the original v2 assets remain intact. Generated output included blank outer padding, removed only for delivery with Sharp (2172×348 active ribbon; trim top187px). Original generated PNG is preserved locally at `output/image-enhancement/masters/contact-no-button-generated-v3.png` and trimmed master at `output/image-enhancement/masters/contact-no-button-v3.png`. WebP delivery files use the existing2169×348 and1084×174 frames: `public/assets/storefront/contact-no-button-v3.webp` and `contact-no-button-small-v3.webp`. Existing layout, responsive sizes, contact URL and real CTA are unchanged. This revision has not been deployed.
+
+Final built-in edit prompt:
+
+```text
+Use case: precise-object-edit.
+Edit target: the attached existing Iya shop CONTACT RIBBON image. Remove ONLY the pink pill-shaped call-to-action at about 62–83% from the left: completely erase its pill background, white Thai ติดต่อเรา text and white right arrow. Seamlessly reconstruct the original soft blush background through that area, with no remaining button shape, border, text, arrow or new objects. Leave quiet empty space there for a real clickable HTML button supplied by the website.
+Keep EVERYTHING ELSE unchanged: original very wide 449:72 composition and placements, full edge-to-edge canvas approximately2169x348, rounded ribbon corners, pastel pink and mint patches, little gold/white sparkles, smiling heart on the left and outlined pink shopping bag with heart on the far right. Preserve all branding and other lettering verbatim: IYA HIEW; YOUR EVERYDAY PERSONAL SHOPPER; ให้ทุกความชอบใกล้คุณมากขึ้น with the existing little pink heart. Maintain sharp original type, colors and illustration linework. No redesign, no size reduction, no added margins, no additional slogans, no watermark. Only remove the painted contact button; do not add any replacement button or other UI control.
+```
+
+
+## Local hero revision v3 (25 October 2026)
+
+The owner requested the same reduction and baked-button removal for the hero, with no production update. Built-in Imagegen edited `hero-hd-v2.webp`, preserving other illustration elements and lettering. The selected PNG is saved locally at `output/image-enhancement/masters/hero-no-button-v3.png`. Delivery-only Sharp WebP encoding/resizing produced `public/assets/storefront/hero-no-button-v3.webp` (1376×1143, 155,062 bytes) and `hero-no-button-small-v3.webp` (688×572, 63,746 bytes); the original v2 assets remain intact. Maximum display width was restored to 1000px at the owner’s request; the real product-catalog link overlays the quiet lower-left area on desktop and phones. This revision has not been deployed.
+
+Final built-in edit prompt:
+
+```text
+Use case: precise-object-edit.
+Edit target: the attached existing Iya storefront hero image. Change ONLY the large pill-shaped CTA button in the lower-left area: remove the entire hot-pink rounded button, its white border, the Thai text เลือกช้อปของที่ชอบ, and the white right arrow. Fill this area seamlessly with the existing soft pink background so there is no remaining button shape, border, arrow, lettering or button-like remnant. Keep this space calm for a real HTML website link.
+Preserve the existing original composition, warm pastel pink/cream/mint colors, hearts, clouds, tiny crown, gold sparkles, kraft parcel on the right, pink handbag, perfume, white heart shirt, gold necklace and parcel label. Preserve all other text and decorations exactly, including the top decorative brand pill YOUR EVERYDAY PERSONAL SHOPPER, the main Thai headline ของที่ชอบ and ให้เราหิ้วมาให้, speech bubble ของแท้ / พร้อมหิ้วทุกประเภท, body copy รวมของน่ารัก ของน่าใช้ และของที่คุณเล็งไว้ / สั่งง่าย จ่ายสะดวก ติดตามได้ทุกขั้นตอน, and the three bottom service icons/captions ตรวจสลิปอัตโนมัติ, จ่ายได้หลายช่องทาง, จัดส่งทั่วไทย. Thai spelling should remain verbatim and sharp. Preserve the white-outlined friendly headline lettering. Keep the full original approximately455:378 canvas ratio, edge to edge without blank outer margins, high-resolution around1600px wide. This is the same hero artwork enhanced for a smaller website display, not a redesign. Do not remove the top brand pill; only remove the lower-left call-to-action button. Do not add new text, new objects, watermarks or UI controls.
+```
+
+
+## Local promotion revision v3 (25 October 2026)
+
+The owner requested a smaller promotion banner and removal of the button painted into the image. Built-in Imagegen edited the existing `promotion-hd-v2.webp`. The original v2 assets remain intact. The selected PNG master is saved locally at `output/image-enhancement/masters/promotion-no-button-v3.png`; delivery-only Sharp resizing/WebP encoding produced `public/assets/storefront/promotion-no-button-v3.webp` (1536×512, 57,974 bytes) and `promotion-no-button-small-v3.webp` (768×256, 24,160 bytes). Display was restored to a 1000px maximum at the owner’s request. The real HTML link remains operable and overlays the quiet lower-left area on desktop and phones. This revision has not been deployed.
+
+Final built-in edit prompt:
+
+```text
+Use case: precise-object-edit.
+Edit target: the attached existing Iya pastel promotion banner. Edit this existing image, do not create a different campaign. Remove completely the large pink pill-shaped button in the lower left, including the white Thai text ดูโปรโมชั่นทั้งหมด and its white right arrow. Seamlessly fill that entire area with the same soft blush pink background; no button outline, rectangle, lettering, arrow or button-like remnant. Preserve the two existing text lines verbatim and crisp: โปรโมชั่นสุดพิเศษ and ลดจัดเต็ม ช้อปได้มากกว่า. Preserve the pink gift box and ribbon on the right, percent tag, small gold gift, sale tag on the left, mint patches, hearts and gold sparkles. Keep the existing pink, mint, cream and gold colors and polished 3D illustration style. Keep the same very wide 447:141 panoramic composition, with all main objects inside the canvas and balanced negative space. Make the scene a little lighter and more compact, avoiding oversized props, while retaining the original visual identity. This is a website banner that will display at a maximum width of 800 CSS pixels, so deliver a sharp high-resolution image about 1600 pixels wide. Fill the canvas edge to edge; no additional outer border or white margins. No CTA buttons, no UI controls, no new text, no watermark, no logos. The website will supply a real HTML button separately.
+```
+
+
 The owner authorized new Imagegen edits on 25 October 2026 after the reference-crop deployment. Built-in image_gen was used in edit mode, one call per original asset. This is faithful AI reconstruction from small references; it is not recovery of the original high-resolution pixels. No external API key or CLI image-generation path was used.
 
 The published v1 reference files are preserved. New files stay local until a separate production update is requested. The layout, real CTA links, shop settings and catalog data are unchanged.

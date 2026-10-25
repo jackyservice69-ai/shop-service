@@ -1,0 +1,88 @@
+.store-shell .store-header .store-navigation {
+  overflow: visible;
+  flex-wrap: wrap;
+}
+.store-shell .account-navigation {
+  position: relative;
+  min-width: 0;
+}
+.store-shell .account-navigation > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink);
+}
+.store-shell .account-navigation > summary::-webkit-details-marker {
+  display: none;
+}
+.store-shell .account-navigation[data-active] > summary {
+  text-decoration: underline;
+  text-decoration-color: var(--primary-active);
+  text-underline-offset: 8px;
+  text-decoration-thickness: 2px;
+}
+.store-shell .account-navigation[open] > summary svg {
+  transform: rotate(180deg);
+}
+.store-shell .account-navigation-links {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  z-index: 3;
+}
+.store-shell .store-header .account-navigation-links a {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--control);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.store-shell .account-navigation-links a:is(:hover, .active) {
+  background: var(--primary-light);
+  color: var(--brand-ink);
+}
+.store-shell .account-navigation > summary:focus-visible {
+  outline: 3px solid var(--focus-ring, var(--brand-ink));
+  outline-offset: 3px;
+  border-radius: var(--control);
+}
+@media (max-width: 900px) {
+  .store-shell .account-navigation {
+    grid-column: 1 / -1;
+  }
+  .store-shell .account-navigation > summary {
+    border: 1px solid var(--border);
+    border-radius: var(--control);
+    padding: 10px 8px;
+  }
+  .store-shell .account-navigation-links {
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+@media (forced-colors: active) {
+  .store-shell .account-navigation-links,
+  .store-shell .account-navigation > summary {
+    border: 1px solid ButtonText;
+  }
+}

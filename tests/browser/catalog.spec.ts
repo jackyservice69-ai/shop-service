@@ -41,7 +41,13 @@ test("home and catalog are separate; left filters preserve URL state, validate p
     const menu = page.getByRole("navigation", { name: "เมนูหน้าร้าน" });
     const labels = await menu.getByRole("link").allTextContents();
     expect(labels.slice(0, 2)).toEqual(["หน้าหลัก", "เลือกซื้อสินค้า"]);
-    expect(labels.slice(-2)).toEqual(["ที่อยู่จัดส่ง", "ติดต่อเรา"]);
+    expect(labels).toEqual([
+      "หน้าหลัก",
+      "เลือกซื้อสินค้า",
+      "โปรโมชั่น",
+      "วิธีสั่งซื้อ",
+      "ติดต่อเรา",
+    ]);
     const adminIcon = page.getByRole("link", { name: "หลังบ้าน", exact: true });
     await expect(adminIcon).toHaveCSS("border-radius", "50%");
     expect((await adminIcon.boundingBox())?.width).toBe(44);
@@ -124,6 +130,9 @@ test("home and catalog are separate; left filters preserve URL state, validate p
     await page.goto("/?q=" + prefix);
     await expect(page).toHaveURL(new RegExp("/products\\?q=" + prefix));
     await expect(page.locator(".product-card")).toHaveCount(3);
+    await page
+      .getByRole("button", { name: "แสดงตัวกรอง", exact: true })
+      .click();
     await page.getByLabel("ราคาต่ำสุด", { exact: true }).fill("999");
     await page.getByLabel("ราคาสูงสุด", { exact: true }).fill("100");
     await page

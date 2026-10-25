@@ -192,7 +192,7 @@ test("temporary reset revokes all sessions, expires, blocks protected reads/writ
           .post("/api/auth/password")
           .set("x-csrf-token", sign.body.csrf)
           .send(v),
-      password = "Customer-private-password-2026!";
+      password = "Priv8!xx";
     assert.equal((await change({ current: temp, password })).status, 400);
     assert.equal(
       (await change({ current: temp, password: temp, confirmPassword: temp }))

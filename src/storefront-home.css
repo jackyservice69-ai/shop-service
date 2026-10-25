@@ -884,6 +884,9 @@
 .customer-shell .pastel-storefront .reference-hero {
   order: 1;
   min-height: 0;
+  width: 100%;
+  max-width: 1000px;
+  margin-inline: auto;
   aspect-ratio: 455 / 378;
   border: 0;
   border-radius: 0;
@@ -931,7 +934,10 @@
 .customer-shell .pastel-storefront .reference-promotion {
   order: 3;
   min-height: 0;
-  aspect-ratio: 447 / 141;
+  width: 100%;
+  max-width: 1000px;
+  margin-inline: auto;
+  aspect-ratio: 3 / 1;
   padding: 0;
   border-radius: 20px;
 }
@@ -946,10 +952,11 @@
 .customer-shell .pastel-storefront .reference-promotion-cta {
   position: absolute;
   left: 17%;
-  top: 64%;
+  top: auto;
+  bottom: 12%;
   width: 34.3%;
   height: 24%;
-  min-height: 32px;
+  min-height: 44px;
   border: 0;
   border-radius: 99px;
   font-size: clamp(10px, 1.8vw, 20px);
@@ -986,10 +993,24 @@
   order: 7;
 }
 @media (max-width: 700px) {
+  .customer-shell .pastel-storefront .reference-promotion {
+    min-height: 128px;
+  }
+  .customer-shell .pastel-storefront .reference-promotion .reference-promotion-cta {
+    bottom: 8px;
+    padding: 0 5px;
+    font-size: clamp(10px, 3.2vw, 12px);
+  }
   .customer-shell .pastel-storefront .reference-hero-cta {
-    min-height: 36px;
+    top: auto;
+    bottom: 15.5%;
+    min-height: 44px;
+    padding: 0 10px;
     gap: 5px;
     font-size: 12px;
+  }
+  .customer-shell .pastel-storefront .reference-hero-cta svg {
+    width: 16px;
   }
   .customer-shell .pastel-storefront .pastel-quick-categories {
     padding: 14px 10px;
@@ -1041,6 +1062,9 @@
   .customer-shell .pastel-storefront .reference-hero {
     aspect-ratio: auto;
     padding: 24px;
+  }
+  .customer-shell .pastel-storefront .reference-hero .pastel-hero-illustration {
+    display: none;
   }
   .customer-shell .pastel-storefront .reference-hero .sr-only,
   .customer-shell .pastel-storefront .reference-promotion .sr-only {
@@ -1119,5 +1143,86 @@
     position: static;
     width: auto;
     height: auto;
+  }
+}
+
+/* Local responsive refinement: preserve reference art and reserve real touch space. */
+.customer-shell .pastel-storefront .reference-hero-cta,
+.customer-shell .pastel-storefront .reference-promotion-cta,
+.customer-shell .pastel-storefront .reference-contact .reference-referral-link,
+.customer-shell .pastel-storefront .pastel-text-link {
+  min-height: 44px;
+}
+.customer-shell .pastel-storefront .reference-contact {
+  margin-bottom: calc(44px + 6px + 24px);
+}
+.customer-shell .pastel-storefront .reference-contact .reference-contact-cta {
+  top: 50%;
+  min-height: 44px;
+  transform: translateY(-50%);
+}
+.customer-shell .pastel-storefront .reference-referral-link {
+  top: calc(100% + 6px);
+}
+
+@media (max-width: 700px) {
+  .customer-shell .pastel-storefront .pastel-quick-categories a > span:last-child {
+    font-size: 12px;
+    line-height: 1.65;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .customer-shell .pastel-storefront .service-strip,
+  .customer-shell .pastel-storefront .pastel-browse-grid,
+  .customer-shell .pastel-storefront .pastel-steps ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px;
+  }
+  .customer-shell .pastel-storefront .service-strip {
+    margin-block: 24px;
+    padding: 12px;
+  }
+  .customer-shell .pastel-storefront .service-strip > div {
+    padding: 12px 3px;
+  }
+  .customer-shell .pastel-storefront .service-strip b,
+  .customer-shell .pastel-storefront .pastel-browse-label b,
+  .customer-shell .pastel-storefront .pastel-steps ol b {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .customer-shell .pastel-storefront .service-strip small,
+  .customer-shell .pastel-storefront .pastel-browse-label small,
+  .customer-shell .pastel-storefront .pastel-steps ol p {
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .customer-shell .pastel-storefront .pastel-browse-label {
+    padding: 12px;
+    gap: 6px;
+  }
+  .customer-shell .pastel-storefront .pastel-browse-label svg {
+    width: 18px;
+  }
+  .customer-shell .pastel-storefront .pastel-steps {
+    margin-block: 24px;
+    padding: 24px 17px;
+  }
+  .customer-shell .pastel-storefront .pastel-steps ol {
+    row-gap: 24px;
+  }
+  .customer-shell .pastel-storefront .reference-contact .reference-contact-cta {
+    left: auto;
+    right: 17.1%;
+    width: auto;
+    min-width: 88px;
+    font-size: 12px;
+  }
+}
+
+@media (forced-colors: active) {
+  .customer-shell .pastel-storefront .reference-contact .reference-contact-cta {
+    position: static;
+    transform: none;
   }
 }

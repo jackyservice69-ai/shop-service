@@ -12,7 +12,7 @@ export function activeSocialUser(user) {
     fail(401, "บัญชีนี้ยังไม่พร้อมเข้าสู่ระบบ กรุณาติดต่อร้าน");
 }
 
-export function verifySocialChange(req, password = "") {
+function verifySocialSession(req) {
   if (!req.user || !req.session)
     fail(401, "กรุณาเข้าสู่ระบบก่อนเชื่อมต่อบัญชี");
   if (!req.get("x-csrf-token") || req.get("x-csrf-token") !== req.session.csrf)
@@ -20,6 +20,10 @@ export function verifySocialChange(req, password = "") {
   if (req.user.must_change_password)
     fail(403, "กรุณาเปลี่ยนรหัสผ่านก่อนเชื่อมต่อบัญชี");
   activeSocialUser(req.user);
+}
+
+export function verifySocialChange(req, password = "") {
+  verifySocialSession(req);
   if (req.user.has_password) {
     if (!passwordMatches(password, req.user.password))
       fail(401, "รหัสผ่านปัจจุบันไม่ถูกต้อง");
@@ -34,8 +38,10 @@ export function verifySocialChange(req, password = "") {
   }
 }
 
-export function beginSocialLink(db, req, provider, stateHash, password = "") {
-  verifySocialChange(req, password);
+export function beginSocialLink(db, req, provider, stateHash) {
+  // Connecting proves provider ownership in OAuth; the signed-in session and
+  // CSRF token bind that proof to this member. Disconnection still reauthenticates.
+  verifySocialSession(req);
   db.prepare("DELETE FROM social_link_flows WHERE expires_at<=?").run(now());
   db.prepare("INSERT INTO social_link_flows VALUES(?,?,?,?,?)").run(
     stateHash,

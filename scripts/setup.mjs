@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
 import { randomBytes } from "node:crypto";
+import passwordPolicy from "../shared/password-policy.json" with { type: "json" };
 import { config as dotenv } from "dotenv";
 import {
   openDb,
@@ -29,8 +30,10 @@ const db = openDb(process.env.DATABASE_PATH || "./data/hiewly.sqlite");
 if (!db.prepare("SELECT id FROM users WHERE role_id='admin'").get()) {
   const password =
     process.env.ADMIN_PASSWORD || randomBytes(20).toString("base64url");
-  if (password.length < 12)
-    throw new Error("ADMIN_PASSWORD must contain at least 12 characters");
+  if (password.length < passwordPolicy.minimumLength)
+    throw new Error(
+      `ADMIN_PASSWORD must contain at least ${passwordPolicy.minimumLength} characters`,
+    );
   const email = (process.env.ADMIN_EMAIL || "admin@hiewly.local").toLowerCase();
   const uid = id();
   transaction(db, () => {

@@ -62,14 +62,7 @@ test("existing member connects LINE and Google on account; signed LINE slip appe
     .click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toContainText(user.email);
-  await dialog.getByLabel("รหัสผ่านปัจจุบันเพื่อเชื่อมต่อ").fill("wrong");
-  await dialog
-    .getByRole("button", { name: "ยืนยันและไปยัง LINE", exact: true })
-    .click();
-  await expect(dialog.getByRole("alert")).toContainText(
-    "รหัสผ่านปัจจุบันไม่ถูกต้อง",
-  );
-  await dialog.getByLabel("รหัสผ่านปัจจุบันเพื่อเชื่อมต่อ").fill(password);
+  await expect(dialog.locator('input[type="password"]')).toHaveCount(0);
   await dialog
     .getByRole("button", { name: "ยืนยันและไปยัง LINE", exact: true })
     .click();
@@ -80,10 +73,9 @@ test("existing member connects LINE and Google on account; signed LINE slip appe
   await page
     .getByRole("button", { name: "เชื่อมต่อ Google", exact: true })
     .click();
-  await page
-    .getByRole("dialog")
-    .getByLabel("รหัสผ่านปัจจุบันเพื่อเชื่อมต่อ")
-    .fill(password);
+  await expect(
+    page.getByRole("dialog").locator('input[type="password"]'),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "ยืนยันและไปยัง Google", exact: true })
     .click();
@@ -202,7 +194,7 @@ test("new LINE member completes contact profile; optional unconfigured LINE and 
   ).toBeEnabled();
 });
 
-test("Google-only member can link LINE after fresh provider login without inventing a local password", async ({
+test("Google-only member can link LINE without a local password", async ({
   page,
 }) => {
   await authorize(page, "google", {

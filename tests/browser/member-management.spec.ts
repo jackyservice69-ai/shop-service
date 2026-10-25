@@ -137,7 +137,14 @@ test("admin edits a customer and resets password; secret is masked, old sessions
     await customerPage.goto("/wallet");
     await expect(customerPage).toHaveURL(/\/account$/);
     await customerPage.getByLabel("รหัสผ่านชั่วคราว").fill(temporary);
-    const privatePassword = "Customer-private-password-2026!";
+    const privatePassword = "Priv8!xx";
+    await expect(
+      customerPage.locator('input[name="password"]'),
+    ).toHaveAttribute("minlength", "8");
+    await expect(customerPage.getByLabel("ยืนยันรหัสผ่านใหม่")).toHaveAttribute(
+      "minlength",
+      "8",
+    );
     await customerPage.locator('input[name="password"]').fill(privatePassword);
     await customerPage
       .getByLabel("ยืนยันรหัสผ่านใหม่")

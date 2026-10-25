@@ -14,6 +14,7 @@ export function SocialLinks() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={"ติดต่อทาง " + p.label}
+          title={p.label}
         >
           <img
             src={"/assets/brands/" + p.key + ".svg"}

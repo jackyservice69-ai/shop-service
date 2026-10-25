@@ -49,6 +49,7 @@ import {
   Headphones,
   Search,
   X,
+  Menu,
 } from "lucide-react";
 import { AppProvider, useApp, can, send } from "./api";
 import { Brand, Loading } from "./ui";
@@ -75,7 +76,14 @@ import {
 import "./brand.generated.css";
 import "./styles.css";
 import "./storefront-shell.css";
+import "./responsive-ux.css";
 import { CatalogPage } from "./catalog";
+import { AccountNavigation } from "./account-navigation";
+const ShoppingGuidePage = React.lazy(() =>
+  import("./shopping-guide").then((page) => ({
+    default: page.ShoppingGuidePage,
+  })),
+);
 const nav = [
   ["dashboard", "ภาพรวม", LayoutDashboard],
   ["orders", "คำสั่งซื้อ", Package],
@@ -120,6 +128,26 @@ function StoreLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [loggingOut, setLoggingOut] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [composingSearch, setComposingSearch] = React.useState(false);
+  const menuToggle = React.useRef<HTMLButtonElement>(null);
+  const secondaryNavigation = React.useRef<HTMLDivElement>(null);
+  const mainContent = React.useRef<HTMLElement>(null);
+  const previousPath = React.useRef(location.pathname);
+  React.useEffect(() => {
+    const media = window.matchMedia("(max-width: 900px)");
+    const syncNavigation = () => {
+      if (
+        media.matches &&
+        secondaryNavigation.current?.contains(document.activeElement)
+      )
+        setMenuOpen(true);
+      if (!media.matches && document.activeElement === menuToggle.current)
+        mainContent.current?.focus({ preventScroll: true });
+    };
+    media.addEventListener("change", syncNavigation);
+    return () => media.removeEventListener("change", syncNavigation);
+  }, []);
   const currentSearch = new URLSearchParams(location.search).get("q") || "";
   const [search, setSearch] = React.useState(currentSearch);
   const searchInput = React.useRef<HTMLInputElement>(null);
@@ -127,7 +155,39 @@ function StoreLayout() {
     setSearch(currentSearch);
   }, [currentSearch, location.pathname]);
   React.useEffect(() => {
-    if (location.pathname !== "/products" || search === currentSearch) return;
+    setMenuOpen(false);
+    if (previousPath.current !== location.pathname) {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      mainContent.current?.focus({ preventScroll: true });
+    }
+    previousPath.current = location.pathname;
+  }, [location.pathname]);
+  React.useEffect(() => {
+    if (
+      location.pathname !== "/" ||
+      location.hash !== "#store-contact" ||
+      !publicData
+    )
+      return;
+    const frame = requestAnimationFrame(() => {
+      const footer = document.getElementById("store-contact");
+      footer?.focus({ preventScroll: true });
+      footer?.scrollIntoView({
+        block: "end",
+        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [location.pathname, location.hash, location.key, publicData]);
+  React.useEffect(() => {
+    if (
+      composingSearch ||
+      location.pathname !== "/products" ||
+      search === currentSearch
+    )
+      return;
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams(location.search);
       const query = search.trim();
@@ -139,11 +199,21 @@ function StoreLayout() {
       );
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [search, currentSearch, location.pathname, location.search, navigate]);
+  }, [
+    search,
+    currentSearch,
+    location.pathname,
+    location.search,
+    navigate,
+    composingSearch,
+  ]);
   if (user?.mustChangePassword && location.pathname !== "/account")
     return <Navigate to="/account" replace />;
   return (
-    <div className="customer-shell" style={themeStyle(publicData?.theme)}>
+    <div
+      className="customer-shell store-shell"
+      style={themeStyle(publicData?.theme)}
+    >
       <header className="store-header">
         <Link to="/" title="หน้าร้าน" className="store-header-brand">
           <Brand variant="marble" />
@@ -155,6 +225,7 @@ function StoreLayout() {
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
+            if (composingSearch) return;
             const query = search.trim();
             const params = new URLSearchParams(
               location.pathname === "/products" ? location.search : "",
@@ -173,6 +244,11 @@ function StoreLayout() {
             aria-label="ค้นหาสินค้า"
             placeholder="ค้นหาสินค้าที่อยากให้หิ้ว…"
             value={search}
+            onCompositionStart={() => setComposingSearch(true)}
+            onCompositionEnd={(event) => {
+              setComposingSearch(false);
+              setSearch(event.currentTarget.value);
+            }}
             onChange={(event) => setSearch(event.target.value)}
           />
           {search && (
@@ -182,6 +258,7 @@ function StoreLayout() {
               aria-label="ล้างคำค้นหา"
               onClick={() => {
                 setSearch("");
+                setComposingSearch(false);
                 navigate("/products", { state: { resetCatalogFilters: true } });
                 searchInput.current?.focus();
               }}
@@ -193,23 +270,56 @@ function StoreLayout() {
             ค้นหา
           </button>
         </form>
-        <nav aria-label="เมนูหน้าร้าน">
-          <NavLink to="/" end>
+        <nav
+          aria-label="เมนูหน้าร้าน"
+          className={
+            menuOpen ? "store-navigation menu-open" : "store-navigation"
+          }
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && menuOpen) {
+              event.preventDefault();
+              setMenuOpen(false);
+              menuToggle.current?.focus();
+            }
+          }}
+          onClick={(event) => {
+            const link = (event.target as HTMLElement).closest("a");
+            if (link) setMenuOpen(false);
+          }}
+        >
+          <NavLink to="/" end className="store-primary-link">
             หน้าหลัก
           </NavLink>
-          <NavLink to="/products">เลือกซื้อสินค้า</NavLink>
-          <NavLink to="/promotions">โปรโมชั่น</NavLink>
-          {user && !user.mustChangePassword && (
-            <>
-              <NavLink to="/orders">คำสั่งซื้อ</NavLink>
-              <NavLink to="/wallet">กระเป๋าเงิน</NavLink>
-              <NavLink to="/referrals">ชวนเพื่อน</NavLink>
-              <NavLink to="/coupons">คูปอง</NavLink>
-              <NavLink to="/consignment">ฝากขาย</NavLink>
-              <NavLink to="/addresses">ที่อยู่จัดส่ง</NavLink>
-            </>
-          )}
-          <a href="#store-contact">ติดต่อเรา</a>
+          <NavLink to="/products" className="store-primary-link">
+            เลือกซื้อสินค้า
+          </NavLink>
+          <button
+            type="button"
+            ref={menuToggle}
+            className="store-menu-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="store-secondary-navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? (
+              <X size={19} aria-hidden="true" />
+            ) : (
+              <Menu size={19} aria-hidden="true" />
+            )}
+            เมนู
+          </button>
+          <div
+            id="store-secondary-navigation"
+            ref={secondaryNavigation}
+            className="store-secondary-navigation"
+          >
+            <NavLink to="/promotions">โปรโมชั่น</NavLink>
+            <NavLink to="/how-to-order">วิธีสั่งซื้อ</NavLink>
+            {user && !user.mustChangePassword && (
+              <AccountNavigation navigationOpen={menuOpen} />
+            )}
+            <Link to="/#store-contact">ติดต่อเรา</Link>
+          </div>
         </nav>
         <div className="store-tools">
           {user?.permissions.length ? (
@@ -232,6 +342,14 @@ function StoreLayout() {
             <ShoppingBag size={20} />
             <span>{cart.reduce((s, i) => s + i.quantity, 0)}</span>
           </Link>
+          <NavLink
+            to="/wallet"
+            className="wallet-link"
+            aria-label="กระเป๋าเงิน"
+            title="กระเป๋าเงิน"
+          >
+            <Wallet size={20} aria-hidden="true" />
+          </NavLink>
           {user ? (
             <>
               <Link className="avatar" to="/account" aria-label="บัญชีของฉัน">
@@ -268,10 +386,15 @@ function StoreLayout() {
           )}
         </div>
       </header>
-      <main id="main-content" className="store-main" tabIndex={-1}>
+      <main
+        id="main-content"
+        ref={mainContent}
+        className="store-main"
+        tabIndex={-1}
+      >
         <Outlet />
       </main>
-      <footer id="store-contact" className="store-footer">
+      <footer id="store-contact" className="store-footer" tabIndex={-1}>
         <Brand variant="marble" />
         <p>ของที่ชอบ ให้เราหิ้ว ดูแลตั้งแต่สั่งจนถึงมือคุณ</p>
         <SocialLinks />
@@ -437,6 +560,14 @@ function App() {
           <Route element={<StoreLayout />}>
             <Route index element={<StoreHome />} />
             <Route path="products" element={<CatalogPage />} />
+            <Route
+              path="how-to-order"
+              element={
+                <React.Suspense fallback={<Loading />}>
+                  <ShoppingGuidePage />
+                </React.Suspense>
+              }
+            />
             <Route path="login" element={<AuthPage />} />
             <Route path="register" element={<AuthPage register />} />
             <Route path="google/complete" element={<GoogleCompletePage />} />

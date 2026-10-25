@@ -1,4 +1,5 @@
 import { useState } from "react";
+import passwordPolicy from "../shared/password-policy.json";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { send, useApp, useData } from "./api";
 import { ErrorBox, Field, Form, Loading, Modal, formObject } from "./ui";
@@ -178,7 +179,7 @@ export function SocialConnections() {
             !data?.[provider === "line" ? "google" : "line"].linked && (
               <ErrorBox error="กรุณาเชื่อมต่อช่องทางเข้าสู่ระบบอื่นก่อนยกเลิกช่องทางสุดท้าย" />
             )}
-          {!user?.hasPassword && (
+          {action === "unlink" && !user?.hasPassword && (
             <p className="info-box">
               ใช้การเข้าสู่ระบบล่าสุดยืนยัน หากเข้าสู่ระบบเกิน 10 นาที
               กรุณาออกแล้วเข้าสู่ระบบอีกครั้ง
@@ -215,7 +216,6 @@ export function SocialConnections() {
                 return;
               }
               const result = await send(`/auth/${provider}/start`, {
-                ...formObject(f),
                 intent: "link",
               });
               const url = new URL(result.url);
@@ -229,13 +229,9 @@ export function SocialConnections() {
               window.location.assign(url.href);
             }}
           >
-            {user?.hasPassword && (
+            {action === "unlink" && user?.hasPassword && (
               <Field
-                label={
-                  action === "unlink"
-                    ? "รหัสผ่านปัจจุบันเพื่อยกเลิกการเชื่อมต่อ"
-                    : "รหัสผ่านปัจจุบันเพื่อเชื่อมต่อ"
-                }
+                label="รหัสผ่านปัจจุบันเพื่อยกเลิกการเชื่อมต่อ"
                 name="password"
                 type="password"
                 required
@@ -327,10 +323,10 @@ export function LineCompletePage() {
                   name="password"
                   type="password"
                   required
-                  minLength={12}
+                  minLength={passwordPolicy.minimumLength}
                   maxLength={128}
                   autoComplete="new-password"
-                  help="อย่างน้อย 12 ตัวอักษร"
+                  help={`อย่างน้อย ${passwordPolicy.minimumLength} ตัวอักษร`}
                 />
                 <DiscoverySourceField />
                 <Field

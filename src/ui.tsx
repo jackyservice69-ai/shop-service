@@ -19,14 +19,13 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { ApiError, useApp, type PageData } from "./api";
 import walletLogo from "../shared/wallet-logo.json";
-export function Brand({
-  variant = "default",
-}: {
-  variant?: "default" | "wallet" | "marble";
-}) {
+export function Brand(
+  _props: {
+    variant?: "default" | "wallet" | "marble";
+  } = {},
+) {
   const { publicData } = useApp();
   const logo =
-    (variant === "wallet" || variant === "marble") &&
     publicData?.logo === walletLogo.source
       ? walletLogo.image
       : publicData?.logo;

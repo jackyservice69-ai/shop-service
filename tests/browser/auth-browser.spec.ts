@@ -145,9 +145,9 @@ for (const provider of ["line", "google"] as const)
           await page
             .getByRole("button", { name: `เชื่อมต่อ ${label}`, exact: true })
             .click();
-          await page
-            .getByLabel("รหัสผ่านปัจจุบันเพื่อเชื่อมต่อ")
-            .fill(password);
+          await expect(
+            page.getByRole("dialog").locator('input[type="password"]'),
+          ).toHaveCount(0);
           await page
             .getByRole("button", {
               name: `ยืนยันและไปยัง ${label}`,

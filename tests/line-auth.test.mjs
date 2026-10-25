@@ -201,7 +201,31 @@ test("LINE registration creates one customer, preserves referral and returning l
   }
 });
 
-test("LINE never auto-merges user-entered email; explicit link requires CSRF/password and prevents identity stealing", async () => {
+test("LINE signup rejects seven characters and accepts an eight-character local password", async () => {
+  const f = setup();
+  try {
+    const flow = await start(f);
+    await callback(f, flow);
+    assert.equal(
+      (await complete(flow, { ...profile, password: "Aa12!xy" })).status,
+      400,
+    );
+    const result = await complete(flow, { ...profile, password: "Aa12!xyz" });
+    assert.equal(result.status, 200);
+    assert.equal(
+      (
+        await request(f.app)
+          .post("/api/auth/login")
+          .send({ email: profile.email, password: "Aa12!xyz" })
+      ).status,
+      200,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("LINE never auto-merges user-entered email; explicit link requires a session/CSRF without a password and prevents identity stealing", async () => {
   const f = setup();
   try {
     const flow = await start(f);
@@ -220,20 +244,7 @@ test("LINE never auto-merges user-entered email; explicit link requires CSRF/pas
       ).status,
       403,
     );
-    assert.equal(
-      (
-        await client.agent
-          .post("/api/auth/line/start")
-          .set("Origin", origin)
-          .set("x-csrf-token", client.csrf)
-          .send({ intent: "link", password: "wrong" })
-      ).status,
-      401,
-    );
-    const linked = await start(f, client, {
-      intent: "link",
-      password: PASSWORD,
-    });
+    const linked = await start(f, client, { intent: "link" });
     assert.match(
       (await callback(f, linked)).headers.location,
       /account\?line=linked$/,

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
+import passwordPolicy from "../shared/password-policy.json" with { type: "json" };
 import {
   audit,
   getSettings,
@@ -137,8 +138,7 @@ export function attachLineAuth(
         browser = opaque(),
         nonce = opaque(),
         verifier = randomBytes(48).toString("base64url");
-      if (v.intent === "link")
-        beginSocialLink(db, req, "line", hash(state), v.password);
+      if (v.intent === "link") beginSocialLink(db, req, "line", hash(state));
       if (req.cookies[cookieName])
         db.prepare("DELETE FROM line_auth_attempts WHERE browser_hash=?").run(
           hash(req.cookies[cookieName]),
@@ -325,7 +325,7 @@ export function attachLineAuth(
       // user-entered email; existing members must log in and explicitly link.
       const v = memberProfileSchema
         .extend({
-          password: z.string().min(12).max(128),
+          password: z.string().min(passwordPolicy.minimumLength).max(128),
           referralCode: z.string().max(40).default(p.referral_code),
         })
         .strict()

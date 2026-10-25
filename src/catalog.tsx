@@ -4,7 +4,7 @@ import {
   useNavigationType,
   useSearchParams,
 } from "react-router-dom";
-import { Plus, ShoppingBag } from "lucide-react";
+import { ChevronDown, Plus, ShoppingBag } from "lucide-react";
 import {
   ApiError,
   money,
@@ -72,6 +72,15 @@ export function CatalogPage() {
   const location = useLocation();
   const navigationType = useNavigationType();
   const stockId = useId();
+  const filterBodyId = useId();
+  const filterHeading = useRef<HTMLHeadingElement>(null);
+  const filterTrigger = useRef<HTMLButtonElement>(null);
+  const filterBody = useRef<HTMLDivElement>(null);
+  const results = useRef<HTMLElement>(null);
+  const [mobileFilters, setMobileFilters] = useState(
+    () => window.matchMedia("(max-width: 760px)").matches,
+  );
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const category = params.get("category") || "";
   const minPrice = params.get("minPrice") || "";
   const maxPrice = params.get("maxPrice") || "";
@@ -83,6 +92,12 @@ export function CatalogPage() {
   const [formVersion, setFormVersion] = useState(0);
   const [selected, setSelected] = useState<Product | null>(null);
   const categories: string[] = publicData?.categories || [];
+  const activeFilterCount = [
+    Boolean(category),
+    Boolean(minPrice || maxPrice),
+    committedInStock,
+    Boolean(params.get("sort") && params.get("sort") !== "newest"),
+  ].filter(Boolean).length;
   const query = new URLSearchParams();
   // Forward the full committed state, including invalid links, for server validation.
   for (const key of filterKeys)
@@ -90,6 +105,33 @@ export function CatalogPage() {
   const { data, error, loading, reload } = useData<PageData<Product>>(
     "/products?" + query.toString(),
   );
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    function syncLayout() {
+      if (!media.matches && document.activeElement === filterTrigger.current)
+        filterHeading.current?.focus();
+      // Keep a focused field visible when a desktop window becomes narrow.
+      setFiltersOpen(
+        media.matches &&
+          Boolean(filterBody.current?.contains(document.activeElement)),
+      );
+      setMobileFilters(media.matches);
+    }
+    media.addEventListener("change", syncLayout);
+    return () => media.removeEventListener("change", syncLayout);
+  }, []);
+
+  function toggleFilters() {
+    if (filtersOpen) filterTrigger.current?.focus();
+    setFiltersOpen((open) => !open);
+  }
+
+  function returnToResults() {
+    results.current?.focus({ preventScroll: true });
+    setFiltersOpen(false);
+    results.current?.scrollIntoView({ block: "start" });
+  }
 
   useEffect(() => {
     setInStock(committedInStock);
@@ -160,98 +202,134 @@ export function CatalogPage() {
           aria-labelledby="catalog-filter-heading"
         >
           <div className="catalog-filter-heading">
-            <h2 id="catalog-filter-heading">กรองสินค้า</h2>
+            <div>
+              <h2 id="catalog-filter-heading" ref={filterHeading} tabIndex={-1}>
+                กรองสินค้า
+              </h2>
+              <p className="catalog-filter-count" aria-live="polite">
+                {activeFilterCount
+                  ? `ใช้ตัวกรอง ${activeFilterCount} รายการ`
+                  : "สินค้าทั้งหมด"}
+              </p>
+            </div>
+            <button
+              ref={filterTrigger}
+              type="button"
+              className="button secondary catalog-filter-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls={filterBodyId}
+              onClick={toggleFilters}
+            >
+              {filtersOpen ? "ซ่อนตัวกรอง" : "แสดงตัวกรอง"}
+              <ChevronDown size={18} aria-hidden="true" />
+            </button>
+          </div>
+          <div
+            id={filterBodyId}
+            ref={filterBody}
+            className="catalog-filter-body"
+            hidden={mobileFilters && !filtersOpen}
+          >
             <button
               type="button"
-              className="text-button"
+              className="text-button catalog-filter-reset"
               onClick={resetFilters}
             >
               ล้างตัวกรอง
             </button>
+            <Form
+              key={formVersion}
+              noValidate
+              submit="ใช้ช่วงราคา"
+              onSubmit={async () => {
+                const min = priceInput(minDraft, "minPrice");
+                const max = priceInput(maxDraft, "maxPrice");
+                if (min && max && Number(min) > Number(max))
+                  throw new ApiError("กรุณาตรวจสอบช่วงราคา", 400, [
+                    {
+                      path: "maxPrice",
+                      message: "ราคาสูงสุดต้องไม่น้อยกว่าราคาต่ำสุด",
+                    },
+                  ]);
+                commit({ minPrice: min, maxPrice: max });
+              }}
+            >
+              <Field
+                label="หมวดหมู่"
+                name="category"
+                value={category}
+                onChange={(event) => commit({ category: event.target.value })}
+              >
+                <option value="">สินค้าทั้งหมด</option>
+                {category && !categories.includes(category) && (
+                  <option value={category}>{category}</option>
+                )}
+                {categories.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </Field>
+              <fieldset className="catalog-price-fields">
+                <legend>ช่วงราคา (บาท)</legend>
+                <Field
+                  label="ราคาต่ำสุด"
+                  name="minPrice"
+                  type="text"
+                  inputMode="decimal"
+                  value={minDraft}
+                  placeholder="0"
+                  onChange={(event) => setMinDraft(event.target.value)}
+                />
+                <Field
+                  label="ราคาสูงสุด"
+                  name="maxPrice"
+                  type="text"
+                  inputMode="decimal"
+                  value={maxDraft}
+                  placeholder="ไม่จำกัด"
+                  help="ทศนิยมได้ไม่เกิน 2 ตำแหน่ง"
+                  onChange={(event) => setMaxDraft(event.target.value)}
+                />
+              </fieldset>
+              <label className="catalog-stock-filter" htmlFor={stockId}>
+                <input
+                  id={stockId}
+                  type="checkbox"
+                  name="inStock"
+                  checked={inStock}
+                  onChange={(event) => {
+                    setInStock(event.target.checked);
+                    commit({ inStock: event.target.checked ? "1" : "" });
+                  }}
+                />
+                เฉพาะสินค้าที่มีในสต็อก
+              </label>
+              <Field
+                label="เรียงสินค้า"
+                name="sort"
+                value={params.get("sort") || "newest"}
+                onChange={(event) => commit({ sort: event.target.value })}
+              >
+                <option value="newest">มาใหม่ล่าสุด</option>
+                <option value="price-asc">ราคา: ต่ำไปสูง</option>
+                <option value="price-desc">ราคา: สูงไปต่ำ</option>
+                <option value="name">ชื่อสินค้า</option>
+              </Field>
+            </Form>
+            <button
+              type="button"
+              className="button secondary catalog-return-results"
+              onClick={returnToResults}
+            >
+              ดูรายการสินค้า
+            </button>
           </div>
-          <Form
-            key={formVersion}
-            noValidate
-            submit="ใช้ช่วงราคา"
-            onSubmit={async () => {
-              const min = priceInput(minDraft, "minPrice");
-              const max = priceInput(maxDraft, "maxPrice");
-              if (min && max && Number(min) > Number(max))
-                throw new ApiError("กรุณาตรวจสอบช่วงราคา", 400, [
-                  {
-                    path: "maxPrice",
-                    message: "ราคาสูงสุดต้องไม่น้อยกว่าราคาต่ำสุด",
-                  },
-                ]);
-              commit({ minPrice: min, maxPrice: max });
-            }}
-          >
-            <Field
-              label="หมวดหมู่"
-              name="category"
-              value={category}
-              onChange={(event) => commit({ category: event.target.value })}
-            >
-              <option value="">สินค้าทั้งหมด</option>
-              {category && !categories.includes(category) && (
-                <option value={category}>{category}</option>
-              )}
-              {categories.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </Field>
-            <fieldset className="catalog-price-fields">
-              <legend>ช่วงราคา (บาท)</legend>
-              <Field
-                label="ราคาต่ำสุด"
-                name="minPrice"
-                type="text"
-                inputMode="decimal"
-                value={minDraft}
-                placeholder="0"
-                onChange={(event) => setMinDraft(event.target.value)}
-              />
-              <Field
-                label="ราคาสูงสุด"
-                name="maxPrice"
-                type="text"
-                inputMode="decimal"
-                value={maxDraft}
-                placeholder="ไม่จำกัด"
-                help="ทศนิยมได้ไม่เกิน 2 ตำแหน่ง"
-                onChange={(event) => setMaxDraft(event.target.value)}
-              />
-            </fieldset>
-            <label className="catalog-stock-filter" htmlFor={stockId}>
-              <input
-                id={stockId}
-                type="checkbox"
-                name="inStock"
-                checked={inStock}
-                onChange={(event) => {
-                  setInStock(event.target.checked);
-                  commit({ inStock: event.target.checked ? "1" : "" });
-                }}
-              />
-              เฉพาะสินค้าที่มีในสต็อก
-            </label>
-            <Field
-              label="เรียงสินค้า"
-              name="sort"
-              value={params.get("sort") || "newest"}
-              onChange={(event) => commit({ sort: event.target.value })}
-            >
-              <option value="newest">มาใหม่ล่าสุด</option>
-              <option value="price-asc">ราคา: ต่ำไปสูง</option>
-              <option value="price-desc">ราคา: สูงไปต่ำ</option>
-              <option value="name">ชื่อสินค้า</option>
-            </Field>
-          </Form>
         </aside>
         <section
+          ref={results}
           className="catalog-results"
+          tabIndex={-1}
           aria-label="รายการสินค้า"
           aria-busy={loading}
         >
@@ -308,16 +386,18 @@ export function CatalogPage() {
                         <Stars rating={product.rating_average || 0} />
                         <small>{product.review_count || 0} รีวิว</small>
                       </div>
-                      <div>
+                      <div className="product-purchase">
                         <strong>{money(product.price)}</strong>
                         <button
                           type="button"
                           className="add-cart"
                           aria-label={"เพิ่ม " + product.name + " ลงตะกร้า"}
+                          title={product.stock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
                           disabled={!product.stock}
                           onClick={() => add(product)}
                         >
                           <Plus size={19} aria-hidden="true" />
+                          <span>เพิ่ม</span>
                         </button>
                       </div>
                       <small className="stock-label">

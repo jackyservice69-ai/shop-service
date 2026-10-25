@@ -1,4 +1,5 @@
 import { StoreBanners, Carousel } from "./experience";
+import passwordPolicy from "../shared/password-policy.json";
 import "./storefront-home.css";
 import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
 import { BankDetailsPanel } from "./bank-details";
@@ -90,8 +91,8 @@ export function StorePage() {
       <section className="store-hero reference-hero">
         <img
           className="pastel-hero-illustration"
-          src="/assets/storefront/hero-hd-v2.webp"
-          srcSet="/assets/storefront/hero-hd-small-v2.webp 688w, /assets/storefront/hero-hd-v2.webp 1376w"
+          src="/assets/storefront/hero-no-button-v3.webp"
+          srcSet="/assets/storefront/hero-no-button-small-v3.webp 688w, /assets/storefront/hero-no-button-v3.webp 1376w"
           sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           alt=""
           width="1376"
@@ -132,12 +133,12 @@ export function StorePage() {
         aria-labelledby="pastel-promotion-title"
       >
         <img
-          src="/assets/storefront/promotion-hd-v2.webp"
-          srcSet="/assets/storefront/promotion-hd-small-v2.webp 894w, /assets/storefront/promotion-hd-v2.webp 1788w"
+          src="/assets/storefront/promotion-no-button-v3.webp"
+          srcSet="/assets/storefront/promotion-no-button-small-v3.webp 768w, /assets/storefront/promotion-no-button-v3.webp 1536w"
           sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           alt=""
-          width="1788"
-          height="564"
+          width="1536"
+          height="512"
           loading="lazy"
         />
         <h2 className="sr-only" id="pastel-promotion-title">
@@ -281,8 +282,8 @@ export function StorePage() {
       </section>
       <section className="pastel-contact reference-contact">
         <img
-          src="/assets/storefront/contact-hd-v2.webp"
-          srcSet="/assets/storefront/contact-hd-small-v2.webp 1084w, /assets/storefront/contact-hd-v2.webp 2169w"
+          src="/assets/storefront/contact-no-button-v3.webp"
+          srcSet="/assets/storefront/contact-no-button-small-v3.webp 1084w, /assets/storefront/contact-no-button-v3.webp 2169w"
           sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           width={2169}
           height={348}
@@ -482,7 +483,12 @@ export function AuthPage({ register = false }: { register?: boolean }) {
             type="password"
             required
             autoComplete={register ? "new-password" : "current-password"}
-            help={register ? "อย่างน้อย 12 ตัวอักษร" : ""}
+            minLength={register ? passwordPolicy.minimumLength : undefined}
+            help={
+              register
+                ? `อย่างน้อย ${passwordPolicy.minimumLength} ตัวอักษร`
+                : ""
+            }
           />
           {register && (
             <>
@@ -1340,9 +1346,9 @@ export function AccountPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={12}
+                minLength={passwordPolicy.minimumLength}
                 maxLength={128}
-                help="อย่างน้อย 12 ตัวอักษร"
+                help={`อย่างน้อย ${passwordPolicy.minimumLength} ตัวอักษร`}
               />
               {user?.mustChangePassword && (
                 <Field
@@ -1351,7 +1357,7 @@ export function AccountPage() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  minLength={12}
+                  minLength={passwordPolicy.minimumLength}
                   maxLength={128}
                 />
               )}

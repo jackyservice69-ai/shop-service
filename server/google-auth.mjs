@@ -137,8 +137,7 @@ export function attachGoogleAuth(
           hash(req.cookies[pendingName]),
         );
       clear(res, pendingName);
-      if (v.intent === "link")
-        beginSocialLink(db, req, "google", hash(state), v.password);
+      if (v.intent === "link") beginSocialLink(db, req, "google", hash(state));
       db.prepare(
         "INSERT INTO google_auth_attempts VALUES(?,?,?,?,?,?,?,?,?)",
       ).run(

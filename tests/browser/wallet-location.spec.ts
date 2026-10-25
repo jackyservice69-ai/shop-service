@@ -223,6 +223,7 @@ test("customer finds address/map page, pins current location and saves it; denie
       }),
     );
     await page.goto("/account");
+    await page.locator(".account-navigation > summary").click();
     await page
       .getByRole("link", { name: "ที่อยู่จัดส่ง", exact: true })
       .click();
