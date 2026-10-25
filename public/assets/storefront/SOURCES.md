@@ -13,3 +13,7 @@ The reference palette sidebar is omitted. Headline text has an accessible HTML e
 ## High-resolution v2 iteration
 
 The owner subsequently authorized Imagegen to enhance each original section. The hd-v2 WebP siblings are faithful AI reconstructions from the originals, not recovered original pixels. Larger and smaller variants serve responsive HTML images and CSS image-set atlases. Original reference files remain intact. Exact built-in prompts, output dimensions and provenance are recorded in docs/STOREFRONT-IMAGE-ENHANCEMENT.md in the repository. PNG masters are retained locally under output/image-enhancement/masters/.
+
+## Additional category illustrations v3
+
+The eight new category circles were created using built-in Imagegen from the existing v2 illustrated circles as a style reference. Makeup, skincare, shoes, watches, eyewear, home goods, tech accessories and collectibles share one 4-column × 2-row atlas. Original artwork remains intact. Delivery WebP sizes are 1600 × 800 and 800 × 400; Sharp only resizes/encodes the generated image. The exact prompt and master provenance are in docs/CATEGORY-ART-V3.md.

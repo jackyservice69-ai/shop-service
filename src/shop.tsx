@@ -1,6 +1,7 @@
 import { StoreBanners, Carousel } from "./experience";
 import passwordPolicy from "../shared/password-policy.json";
 import "./storefront-home.css";
+import { QuickCategories, categoryArtwork } from "./quick-categories";
 import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
 import { BankDetailsPanel } from "./bank-details";
 import { WalletCard } from "./wallet-card";
@@ -66,24 +67,10 @@ import {
 
 export function StorePage() {
   const { publicData } = useApp();
-  const quickCategories = [
-    { label: "กระเป๋า", match: /กระเป๋า|bag/i, art: "bag" },
-    { label: "น้ำหอม", match: /น้ำหอม|perfume|fragrance/i, art: "perfume" },
-    {
-      label: "เครื่องประดับ",
-      match: /เครื่องประดับ|จิวเวล|jewel|accessor/i,
-      art: "jewelry",
-    },
-    {
-      label: "เสื้อผ้า",
-      match: /เสื้อ|แฟชั่น|cloth|fashion/i,
-      art: "clothing",
-    },
-  ];
   const categories: string[] = publicData?.categories || [];
   const browseCategories = categories.slice(0, 4).map((name) => ({
     name,
-    art: quickCategories.find((item) => item.match.test(name))?.art,
+    art: categoryArtwork(name),
   }));
   return (
     <div className="pastel-storefront">
@@ -108,26 +95,7 @@ export function StorePage() {
           เลือกช้อปของที่ชอบ <ArrowRight aria-hidden="true" size={18} />
         </Link>
       </section>
-      <nav className="pastel-quick-categories" aria-label="เลือกหมวดหมู่สินค้า">
-        {quickCategories.map((item) => {
-          const value =
-            categories.find((name) => item.match.test(name)) || item.label;
-          return (
-            <Link
-              key={item.art}
-              to={"/products?category=" + encodeURIComponent(value)}
-            >
-              <span
-                className={"pastel-category-art art-" + item.art}
-                aria-hidden="true"
-              />
-              <span>
-                {item.label} <ArrowRight size={15} aria-hidden="true" />
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+      <QuickCategories categories={categories} />
       <section
         className="pastel-promotion reference-promotion"
         aria-labelledby="pastel-promotion-title"
