@@ -156,6 +156,30 @@
 .quick-categories-strip .art-collectibles {
   background-position: 100% 100%;
 }
+.customer-shell
+  .pastel-storefront
+  .quick-categories-strip
+  .pastel-category-art.art-beauty {
+  background-image: url("/assets/storefront/category-beauty-small-v4.webp");
+  background-image: image-set(
+    url("/assets/storefront/category-beauty-small-v4.webp") 1x,
+    url("/assets/storefront/category-beauty-v4.webp") 2x
+  );
+  background-size: 100% 100%;
+  background-position: center;
+}
+.customer-shell
+  .pastel-storefront
+  .quick-categories-strip
+  .pastel-category-art.art-gadgets {
+  background-image: url("/assets/storefront/category-gadgets-small-v4.webp");
+  background-image: image-set(
+    url("/assets/storefront/category-gadgets-small-v4.webp") 1x,
+    url("/assets/storefront/category-gadgets-v4.webp") 2x
+  );
+  background-size: 100% 100%;
+  background-position: center;
+}
 .quick-categories-track:focus-visible {
   outline: 2px solid var(--focus-ring, var(--brand-ink));
   outline-offset: 2px;

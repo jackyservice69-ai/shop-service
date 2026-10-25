@@ -1,0 +1,66 @@
+.store-shell .store-header .store-navigation {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  scrollbar-gutter: auto;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-block: 6px;
+  max-width: 100%;
+  min-width: 0;
+  cursor: grab;
+}
+.store-shell .store-header .store-navigation::-webkit-scrollbar {
+  display: none;
+}
+.store-navigation-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: max-content;
+  min-width: 100%;
+  padding-inline: 4px;
+}
+.store-shell .store-header .store-navigation-track > a,
+.store-shell .store-header .store-navigation-track > .account-navigation {
+  flex: none;
+}
+.store-shell .store-header .store-navigation-track > a,
+.store-shell .store-header .account-navigation > summary {
+  min-height: 44px;
+  padding: 8px 4px;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+}
+.store-shell .store-header .account-navigation > summary {
+  justify-content: center;
+}
+.store-shell .store-header .store-navigation.is-dragging,
+.store-shell .store-header .store-navigation.is-dragging * {
+  cursor: grabbing;
+  user-select: none;
+}
+.store-shell .store-navigation:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--brand-ink));
+  outline-offset: -2px;
+}
+@media (max-width: 900px) {
+  .store-navigation-track {
+    gap: 8px;
+  }
+  .store-shell .store-header .store-navigation-track > a {
+    border-radius: var(--control);
+    padding-inline: 6px;
+  }
+  .store-shell .store-header .store-navigation-track > a.active {
+    background: var(--primary-light);
+    color: var(--brand-ink);
+  }
+}

@@ -1676,11 +1676,6 @@ export function SettingsPage() {
   const [integration, setIntegration] = useState<any>(null),
     [checking, setChecking] = useState(false),
     [checkError, setCheckError] = useState("");
-  const [paymentQr, setPaymentQr] = useState<string | null>(null);
-  const [qrUploading, setQrUploading] = useState(false);
-  useEffect(() => {
-    setPaymentQr(null);
-  }, [s]);
   return (
     <>
       <PageHeading
@@ -1695,7 +1690,6 @@ export function SettingsPage() {
         s && (
           <Form
             noValidate
-            blocked={qrUploading}
             onSubmit={async (f) => {
               const v: any = formObject(f);
               v.depositPercent = Number(v.depositPercent);
@@ -1703,11 +1697,17 @@ export function SettingsPage() {
               v.lineLoginEnabled = v.lineLoginEnabled === "on";
               v.lineTopupEnabled = v.lineTopupEnabled === "on";
               v.aiEnabled = v.aiEnabled === "on";
-              v.paymentQr = paymentQr ?? s.paymentQr ?? "";
+              v.paymentQr = s.paymentQr || "";
               v.socials = Object.fromEntries(
                 socialPlatforms.map((p) => [
                   p.key,
                   String(v["socials." + p.key] || "").trim(),
+                ]),
+              );
+              v.socialVisibility = Object.fromEntries(
+                socialPlatforms.map((p) => [
+                  p.key,
+                  v["socialVisibility." + p.key] === "on",
                 ]),
               );
               const result = await send("/admin/settings", v, "PUT");
@@ -1745,77 +1745,44 @@ export function SettingsPage() {
                     defaultValue={s.depositPercent}
                     help="0 = จองได้โดยไม่หักเงิน ต้องจ่ายส่วนที่เหลือก่อนจัดส่ง"
                   />
-                  <div className="form-grid">
-                    <Field
-                      label="รหัสธนาคาร"
-                      name="bankCode"
-                      required
-                      defaultValue={s.bankCode}
-                      help="ไทยพาณิชย์ = 014"
-                    />
-                    <Field
-                      label="ชื่อธนาคาร"
-                      name="bankName"
-                      required
-                      defaultValue={s.bankName}
-                    />
-                  </div>
-                  <Field
-                    label="เลขบัญชีรับเงิน"
-                    name="bankNumber"
-                    required
-                    defaultValue={s.bankNumber}
-                  />
-                  <Field
-                    label="ชื่อบัญชีภาษาไทย"
-                    name="accountName"
-                    required
-                    defaultValue={s.accountName}
-                  />
-                  <Field
-                    label="ชื่อบัญชีภาษาอังกฤษ"
-                    name="accountNameEn"
-                    defaultValue={s.accountNameEn}
-                  />
-                  <h3 className="section-space">QR รับเงินของร้าน</h3>
+                  <h3 className="section-space">บัญชีรับเงินของร้าน</h3>
                   <p className="muted">
-                    อัปโหลด QR ที่รับเงินเข้าบัญชีด้านบน
-                    รูปจะแสดงในหน้ากระเป๋าเงินลูกค้าหลังบันทึก
+                    จัดการหลายบัญชีธนาคารและหลาย QR
+                    เลือกรายการหลักและเปิด–ปิดการแสดงได้ที่หน้าบัญชีร้านค้า
                   </p>
-                  <ImageUpload
-                    kind="paymentQr"
-                    value={paymentQr ?? s.paymentQr ?? ""}
-                    onChange={setPaymentQr}
-                    onBusyChange={setQrUploading}
-                  />
-                  <p className="muted">
-                    ระบบอ่านเลขพร้อมเพย์จากรูปและตรวจทั้งบัญชีธนาคารและบัญชี
-                    PROMPTPAY ว่าชื่อผู้รับตรงและเชื่อมโยงกับ Branch ของ
-                    EasySlip แล้ว บันทึกบัญชีหรือ API key ใหม่ก่อนอัปโหลด QR
-                    หากเปลี่ยนผู้รับ ระบบจะซ่อน QR เดิม
-                  </p>
-                  {s.paymentQrReady && (
-                    <p className="positive">
-                      QR ผ่านการตรวจสอบบัญชีและ Branch แล้ว
-                    </p>
-                  )}
+                  <Link
+                    className="button secondary"
+                    to="/admin/merchant-accounts"
+                  >
+                    จัดการบัญชีร้านค้า
+                  </Link>
                 </section>
                 <section className="panel section-space">
                   <h2>ช่องทางติดต่อร้าน</h2>
                   <p className="muted">
-                    ลิงก์ที่บันทึกจะแสดงพร้อมโลโก้สีที่ท้ายหน้าร้าน
-                    เว้นว่างเพื่อซ่อนช่องทาง
+                    เลือกช่องทางที่ต้องการแสดงบนหน้าร้าน
+                    ปิดแล้วลิงก์เดิมยังคงอยู่ ช่องทางที่ไม่มีลิงก์จะไม่แสดง ปิด
+                    LINE จะซ่อนปุ่มติดต่อ LINE บนหน้าร้านด้วย
                   </p>
                   {socialPlatforms.map((p) => (
-                    <Field
-                      key={p.key}
-                      label={p.label}
-                      name={"socials." + p.key}
-                      type="url"
-                      maxLength={500}
-                      defaultValue={s.socials?.[p.key] || ""}
-                      placeholder={"https://" + p.hosts[0] + "/…"}
-                    />
+                    <div className="social-setting-row" key={p.key}>
+                      <label className="checkbox-field">
+                        <input
+                          type="checkbox"
+                          name={"socialVisibility." + p.key}
+                          defaultChecked={s.socialVisibility?.[p.key] !== false}
+                        />
+                        แสดง {p.label}
+                      </label>
+                      <Field
+                        label={p.label}
+                        name={"socials." + p.key}
+                        type="url"
+                        maxLength={500}
+                        defaultValue={s.socials?.[p.key] || ""}
+                        placeholder={"https://" + p.hosts[0] + "/…"}
+                      />
+                    </div>
                   ))}
                 </section>
                 <section className="panel section-space">

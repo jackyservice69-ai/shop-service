@@ -653,7 +653,7 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
     [logo, setLogo] = useState(s.logo),
     [favicon, setFavicon] = useState(s.favicon),
     [uploads, setUploads] = useState(0);
-  const { notify, refresh, user } = useApp();
+  const { notify, refresh } = useApp();
   const busy = (value: boolean) => setUploads((n) => n + (value ? 1 : -1));
   return (
     <Form
@@ -668,9 +668,6 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
             logo,
             favicon,
             slideSeconds: Number(v.slideSeconds),
-            ...(can(user, "settings")
-              ? { commissionPercent: Number(v.commissionPercent) }
-              : {}),
           },
           "PUT",
         );
@@ -775,28 +772,6 @@ function AppearanceEditor({ initial: s }: { initial: any }) {
               required
               defaultValue={s.slideSeconds}
             />
-            {can(user, "settings") && (
-              <>
-                <Field
-                  label="ค่าคอมมิชชั่นแนะนำเพื่อน (% ต่อบิล)"
-                  name="commissionPercent"
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  required
-                  defaultValue={s.commissionPercent}
-                />
-                <div className="info-box">
-                  <p>
-                    คิดจากยอดบิลหลังหักส่วนลด
-                    จ่ายเข้ากระเป๋าเงินผู้แนะนำเมื่อออร์เดอร์สำเร็จ ล็อก %
-                    ตอนสร้างบิล ปัดลงเป็นสตางค์ และไม่จ่ายบิลยกเลิก ค่า 0%
-                    คือปิดค่าคอมสำหรับบิลใหม่
-                  </p>
-                </div>
-              </>
-            )}
           </section>
         </div>
       </div>
@@ -1142,7 +1117,64 @@ export function PromotionsPage({ coupons = false }: { coupons?: boolean }) {
     </div>
   );
 }
+function CommissionRateSettings() {
+  const { data, error, loading, reload } = useData<{
+    commissionPercent: number;
+  }>("/admin/commissions/settings");
+  const { notify, refresh } = useApp();
+  return (
+    <section className="panel">
+      <h2>ตั้งค่าคอมมิชชั่นแนะนำเพื่อน</h2>
+      {error ? (
+        <ErrorBox error={error} retry={reload} />
+      ) : loading && !data ? (
+        <Loading />
+      ) : (
+        data && (
+          <Form
+            noValidate
+            submit="บันทึกอัตราค่าคอมมิชชั่น"
+            onSubmit={async (form) => {
+              await send(
+                "/admin/commissions/settings",
+                {
+                  commissionPercent: Number(formObject(form).commissionPercent),
+                },
+                "PUT",
+              );
+              await refresh();
+              notify("บันทึกอัตราค่าคอมมิชชั่นแล้ว");
+              reload();
+            }}
+          >
+            <Field
+              label="ค่าคอมมิชชั่นแนะนำเพื่อน (% ต่อบิล)"
+              name="commissionPercent"
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              required
+              defaultValue={data.commissionPercent}
+              help="ตั้งได้ 0–100% ทศนิยมไม่เกิน 2 ตำแหน่ง"
+            />
+            <div className="info-box">
+              <p>
+                คิดจากยอดบิลหลังหักส่วนลด
+                จ่ายเข้ากระเป๋าเงินผู้แนะนำเมื่อออร์เดอร์สำเร็จ ล็อก %
+                ตอนสร้างบิล ปัดลงเป็นสตางค์ และไม่จ่ายบิลยกเลิก ค่า 0%
+                คือปิดค่าคอมสำหรับบิลใหม่ การเปลี่ยนอัตราไม่กระทบบิลเดิม
+              </p>
+            </div>
+          </Form>
+        )
+      )}
+    </section>
+  );
+}
+
 export function CommissionsPage() {
+  const { user } = useApp();
   const list = useListQuery();
   const { data, error, loading, reload } = useData<any>(
     "/admin/commissions?" + list.query,
@@ -1153,7 +1185,10 @@ export function CommissionsPage() {
         title="ค่าคอมมิชชั่นแนะนำเพื่อน"
         sub="อัตราถูกล็อกตอนสร้างบิล จ่ายเมื่อสำเร็จ และบันทึกเข้ากระเป๋าอัตโนมัติ"
       />
-      <section className="panel">
+      {can(user, "settings") && <CommissionRateSettings />}
+      <section
+        className={can(user, "settings") ? "panel section-space" : "panel"}
+      >
         {error ? (
           <ErrorBox error={error} retry={reload} />
         ) : loading && !data ? (
@@ -1190,7 +1225,7 @@ export function CommissionsPage() {
         ) : (
           <Empty
             title="ยังไม่มีค่าคอมมิชชั่น"
-            description="ตั้ง % ในสีและภาพลักษณ์ร้าน แล้วรายการจากบิลใหม่จะแสดงที่นี่"
+            description="รายการค่าคอมมิชชั่นจากบิลที่มีผู้แนะนำจะแสดงที่นี่"
           />
         )}
       </section>

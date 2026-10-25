@@ -1,6 +1,5 @@
-.store-shell .store-header .store-navigation {
-  overflow: visible;
-  flex-wrap: wrap;
+.store-shell .store-header:has(.account-navigation[open]) {
+  z-index: 20;
 }
 .store-shell .account-navigation {
   position: relative;
@@ -31,14 +30,17 @@
   transform: rotate(180deg);
 }
 .store-shell .account-navigation-links {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 240px;
+  position: fixed;
+  top: var(--account-menu-top, 100%);
+  left: var(--account-menu-left, 12px);
+  width: 300px;
   max-width: calc(100vw - 32px);
-  padding: 6px;
+  max-height: var(--account-menu-max-height, calc(100dvh - 200px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: calc(var(--radius) + 8px);
   background: var(--surface);
   z-index: 3;
 }
@@ -46,9 +48,11 @@
   display: flex;
   justify-content: flex-start;
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
-  border-radius: var(--control);
+  align-items: center;
+  min-height: 52px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  font-size: 16px;
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -56,29 +60,16 @@
   background: var(--primary-light);
   color: var(--brand-ink);
 }
+.store-shell .store-header .account-navigation-links a.active {
+  text-decoration: underline;
+  text-decoration-color: var(--primary-active);
+  text-underline-offset: 7px;
+  text-decoration-thickness: 2px;
+}
 .store-shell .account-navigation > summary:focus-visible {
   outline: 3px solid var(--focus-ring, var(--brand-ink));
   outline-offset: 3px;
   border-radius: var(--control);
-}
-@media (max-width: 900px) {
-  .store-shell .account-navigation {
-    grid-column: 1 / -1;
-  }
-  .store-shell .account-navigation > summary {
-    border: 1px solid var(--border);
-    border-radius: var(--control);
-    padding: 10px 8px;
-  }
-  .store-shell .account-navigation-links {
-    position: static;
-    width: 100%;
-    max-width: none;
-    margin-top: 8px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
 }
 @media (forced-colors: active) {
   .store-shell .account-navigation-links,

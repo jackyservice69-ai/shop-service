@@ -34,8 +34,32 @@ const f = fixture({
   },
   googleTransport: google,
   fetch: async (url, options) => {
+    if (url.endsWith("/banks"))
+      return Response.json({
+        success: true,
+        data: [
+          { code: "014", nameTh: bank.bankName },
+          { code: "004", nameTh: "ธนาคารกสิกรไทย" },
+        ],
+      });
     if (url.includes("/bank-accounts?"))
-      return accountResponse(branchAccounts(bank));
+      return accountResponse([
+        ...branchAccounts(bank),
+        {
+          id: 201,
+          bankCode: "004",
+          bankNumber: "9876543210",
+          nameTh: "ร้านทดสอบสอง",
+          nameEn: "SECOND TEST SHOP",
+        },
+        {
+          id: 202,
+          bankCode: "PROMPTPAY",
+          bankNumber: "9876543210123",
+          nameTh: "ร้านทดสอบสอง",
+          nameEn: "SECOND TEST SHOP",
+        },
+      ]);
     if (url.includes("/verify/bank")) {
       const verified = slip(
         options.body.has("matchAmount")
@@ -69,6 +93,20 @@ const bot = startBotWorker(f.db, f.config);
 bot.stop();
 f.app.post("/__test/bank-card", (req, res) => {
   res.json({ fingerprint: currentBankCard(f.db, f.config).fingerprint });
+});
+// Merchant UI tests restore only their in-memory settings; this route never
+// exists in the real application and cannot reach production data.
+f.app.post("/__test/merchant-state", (req, res) => {
+  const row = f.db
+    .prepare("SELECT value FROM settings WHERE key='merchantAccounts'")
+    .get();
+  res.json({ value: row ? JSON.parse(row.value) : null });
+});
+f.app.put("/__test/merchant-state", (req, res) => {
+  if (req.body.value === null)
+    f.db.prepare("DELETE FROM settings WHERE key='merchantAccounts'").run();
+  else setSetting(f.db, "merchantAccounts", req.body.value);
+  res.json({ ok: true });
 });
 f.app.post("/__test/line-code", (req, res) => {
   const attempt = f.db

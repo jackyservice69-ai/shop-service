@@ -618,6 +618,15 @@ summary {
   width: 17px;
   height: 17px;
 }
+.social-setting-row .checkbox-field {
+  min-height: 44px;
+  margin: 0;
+}
+.social-setting-row + .social-setting-row {
+  border-top: 1px solid var(--border);
+  margin-top: 17px;
+  padding-top: 10px;
+}
 .field-errors {
   font-size: 12px;
   color: var(--negative);
@@ -2365,9 +2374,9 @@ td small {
   font-size: 13px;
 }
 .bank-logo {
-  position: absolute;
-  right: 24px;
-  top: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--primary);
   color: var(--ink);
   font-family: system-ui, sans-serif;
@@ -4681,4 +4690,63 @@ td small {
 }
 .social-connections > .info-box {
   margin-top: 16px;
+}
+.merchant-accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 20px;
+}
+.merchant-account {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.merchant-account-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.merchant-account-heading h3 {
+  margin: 0 0 8px;
+}
+.merchant-account-heading > div,
+.merchant-qr-item > div {
+  min-width: 0;
+}
+.merchant-account .bank-number {
+  overflow-wrap: anywhere;
+  font-size: 23px;
+  font-family: system-ui, sans-serif;
+  letter-spacing: 2px;
+}
+.merchant-qr-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+.merchant-qr-list {
+  display: grid;
+  gap: 12px;
+}
+.merchant-qr-item {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.merchant-qr-item img {
+  flex: 0 0 96px;
+  object-fit: contain;
+  background: #fff;
+}
+.merchant-qr-item strong {
+  overflow-wrap: anywhere;
+}
+.merchant-visibility {
+  display: grid;
+  gap: 4px;
+  margin-block: 12px;
 }

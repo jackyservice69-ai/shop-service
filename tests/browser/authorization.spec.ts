@@ -188,6 +188,16 @@ test("marketing branding, banners and campaigns work without bank, API or commis
     await expect(
       f.page.getByRole("link", { name: "คำสั่งซื้อ", exact: true }),
     ).toHaveCount(0);
+    await f.page
+      .getByRole("link", { name: "ค่าคอมมิชชั่น", exact: true })
+      .click();
+    await expect(
+      f.page.getByRole("heading", {
+        name: "ค่าคอมมิชชั่นแนะนำเพื่อน",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(f.page.getByLabel("ค่าคอมมิชชั่นแนะนำเพื่อน")).toHaveCount(0);
     await expectForbidden(f.page, "/admin/members");
   } finally {
     await m.context.close();

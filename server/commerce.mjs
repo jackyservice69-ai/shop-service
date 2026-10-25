@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { snapshotConsignments } from "./consignment-ledger.mjs";
 import { isAuthorizedPromptpayResponse } from "./receiving-policy.mjs";
+import { receivingCandidates } from "./merchant-account-policy.mjs";
 import {
   id,
   now,
@@ -301,20 +302,22 @@ export function validateSlip(
     fail(409, "สลิปนี้ถูกใช้งานแล้วหรือไม่ยืนยันสถานะซ้ำ");
   const matched = data.matchedAccount;
   const digits = (s) => String(s || "").replace(/[^0-9]/g, "");
-  if (
-    !matched ||
-    ((matched.bank?.code !== settings.bankCode ||
-      digits(matched.bankNumber) !== digits(settings.bankNumber)) &&
-      !isAuthorizedPromptpayResponse(data, settings))
-  )
-    fail(422, "บัญชีผู้รับไม่ตรงกับบัญชีของร้าน");
+  const receiver =
+    matched &&
+    receivingCandidates(settings).find(
+      (candidate) =>
+        (matched.bank?.code === candidate.bankCode &&
+          digits(matched.bankNumber) === digits(candidate.bankNumber)) ||
+        isAuthorizedPromptpayResponse(data, candidate),
+    );
+  if (!receiver) fail(422, "บัญชีผู้รับไม่ตรงกับบัญชีของร้าน");
   const name = (s) =>
     String(s || "")
       .normalize("NFKC")
       .replace(/\s/g, "")
       .toLowerCase();
   if (
-    ![settings.accountName, settings.accountNameEn]
+    ![receiver.accountName, receiver.accountNameEn]
       .filter(Boolean)
       .some((n) =>
         [matched.nameTh, matched.nameEn]

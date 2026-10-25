@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import jsQR from "jsqr";
+import { receivingCandidates } from "./merchant-account-policy.mjs";
 import { easyRequest, secret } from "./integrations.mjs";
 import { fail } from "./commerce.mjs";
 import { getSettings, hash, now } from "./db.mjs";
@@ -204,9 +205,23 @@ export async function verifyPaymentQr(db, config, buffer, settings) {
 
 export async function authorizeSlipPromptpay(db, config, data) {
   if (data?.matchedAccount?.bank?.code !== "PROMPTPAY") return;
-  const settings = getSettings(db),
-    credentialHash = hash(secret(db, "easyslipApiKey", config));
-  const qr = currentPaymentQr(settings, credentialHash);
+  const candidates = receivingCandidates(getSettings(db));
+  const credentialHash = hash(secret(db, "easyslipApiKey", config));
+  const verifiedCandidates = candidates.filter((s) =>
+    currentPaymentQr(s, credentialHash),
+  );
+  // Prefer an exact identifier before the legacy QR whose older metadata may
+  // lack it. The immutable legacy image is still decoded and checked below.
+  const settings =
+    verifiedCandidates.find(
+      (s) =>
+        digits(s.paymentQrVerification?.promptpayIdentifier) ===
+        digits(data.matchedAccount.bankNumber),
+    ) ||
+    verifiedCandidates.find(
+      (s) => !s.paymentQrVerification?.promptpayIdentifier,
+    );
+  const qr = settings && currentPaymentQr(settings, credentialHash);
   if (!qr)
     fail(
       422,
@@ -226,26 +241,21 @@ export async function authorizeSlipPromptpay(db, config, data) {
   );
   if (digits(data.matchedAccount.bankNumber) !== proof.promptpayIdentifier)
     fail(422, "เลขพร้อมเพย์ผู้รับไม่ตรงกับ QR รับเงินของร้าน");
-  const live = getSettings(db);
+  const snapshot = (s) =>
+    JSON.stringify([
+      s.bankCode,
+      s.bankNumber,
+      s.accountName,
+      s.accountNameEn,
+      s.paymentQr,
+      s.paymentQrReceiver,
+      s.paymentQrVerification,
+      s.easyslipApiKey || "",
+    ]);
   if (
-    JSON.stringify([
-      live.bankCode,
-      live.bankNumber,
-      live.accountName,
-      live.accountNameEn,
-      live.paymentQr,
-      live.paymentQrReceiver,
-      live.paymentQrVerification,
-    ]) !==
-    JSON.stringify([
-      settings.bankCode,
-      settings.bankNumber,
-      settings.accountName,
-      settings.accountNameEn,
-      settings.paymentQr,
-      settings.paymentQrReceiver,
-      settings.paymentQrVerification,
-    ])
+    !receivingCandidates(getSettings(db)).some(
+      (s) => snapshot(s) === snapshot(settings),
+    )
   )
     fail(409, "บัญชีรับเงินหรือ QR เปลี่ยนระหว่างตรวจสอบ กรุณาลองใหม่");
   authorizePromptpayResponse(data, settings, proof.promptpayIdentifier);

@@ -13,11 +13,47 @@ const links = [
   ["/consignment", "ฝากขาย"],
 ] as const;
 
-export function AccountNavigation({
-  navigationOpen,
-}: {
-  navigationOpen: boolean;
-}) {
+function fitDropdown(details: HTMLDetailsElement | null) {
+  if (!details?.open) return;
+  const panel = details.querySelector<HTMLElement>(".account-navigation-links");
+  const trigger = details.querySelector("summary");
+  const nav = details.closest<HTMLElement>(".store-navigation");
+  if (!panel || !trigger || !nav) return;
+  const anchor = trigger.getBoundingClientRect(),
+    rail = nav.getBoundingClientRect();
+  const viewport = window.visualViewport;
+  const bottom = viewport
+    ? viewport.offsetTop + viewport.height
+    : window.innerHeight;
+  if (
+    anchor.right <= rail.left ||
+    anchor.left >= rail.right ||
+    anchor.bottom <= 0 ||
+    anchor.top >= bottom
+  ) {
+    if (panel.contains(document.activeElement))
+      nav.focus({ preventScroll: true });
+    details.open = false;
+    return;
+  }
+  const width = panel.getBoundingClientRect().width;
+  const left = Math.max(
+    12,
+    Math.min(
+      anchor.right - width,
+      document.documentElement.clientWidth - width - 12,
+    ),
+  );
+  const top = anchor.bottom + 8;
+  panel.style.setProperty("--account-menu-left", `${left}px`);
+  panel.style.setProperty("--account-menu-top", `${top}px`);
+  panel.style.setProperty(
+    "--account-menu-max-height",
+    `${Math.max(44, bottom - top - 12)}px`,
+  );
+}
+
+export function AccountNavigation() {
   const location = useLocation();
   const disclosure = useRef<HTMLDetailsElement>(null);
   const trigger = useRef<HTMLElement>(null);
@@ -25,9 +61,7 @@ export function AccountNavigation({
     if (disclosure.current) disclosure.current.open = false;
   }, [location.key]);
   useEffect(() => {
-    if (!navigationOpen && disclosure.current) disclosure.current.open = false;
-  }, [navigationOpen]);
-  useEffect(() => {
+    const fit = () => fitDropdown(disclosure.current);
     const closeOutside = (event: PointerEvent) => {
       if (
         !disclosure.current?.contains(event.target as Node) &&
@@ -36,11 +70,26 @@ export function AccountNavigation({
         disclosure.current.open = false;
     };
     document.addEventListener("pointerdown", closeOutside);
-    return () => document.removeEventListener("pointerdown", closeOutside);
+    window.addEventListener("resize", fit);
+    window.addEventListener("scroll", fit, { passive: true, capture: true });
+    window.visualViewport?.addEventListener("resize", fit);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      window.removeEventListener("resize", fit);
+      window.removeEventListener("scroll", fit, true);
+      window.visualViewport?.removeEventListener("resize", fit);
+    };
   }, []);
   return (
     <details
       ref={disclosure}
+      onToggle={() => {
+        const panel = disclosure.current?.querySelector<HTMLElement>(
+          ".account-navigation-links",
+        );
+        if (disclosure.current?.open && panel) panel.scrollTop = 0;
+        fitDropdown(disclosure.current);
+      }}
       className="account-navigation"
       data-active={
         links.some(([path]) => location.pathname === path) || undefined

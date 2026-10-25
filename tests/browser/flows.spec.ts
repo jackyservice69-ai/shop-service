@@ -422,14 +422,23 @@ test("admin visits every module and creates/updates product, promotion, announce
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
-test("shop payment QR uploads in settings and customers can enlarge/download it; bank changes invalidate it", async ({
+test("shop payment QR uploads under merchant accounts and customers can enlarge/download it; visibility hides it", async ({
   page,
   browser,
 }) => {
   await adminLogin(page);
   await page.goto("/admin/settings");
-  const initial = await (await page.request.get("/api/admin/settings")).json();
-  const csrf = (await (await page.request.get("/api/me")).json()).csrf;
+  const initial = await (
+    await page.request.post("/__test/merchant-state")
+  ).json();
+  await page
+    .getByRole("link", { name: "จัดการบัญชีร้านค้า", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "เพิ่ม QR", exact: true })
+    .first()
+    .click();
+  await page.getByLabel("ชื่อ QR").fill("QR ทดสอบรูปหลัก");
   const context = await browser.newContext({
     baseURL: "http://127.0.0.1:4319",
   });
@@ -457,7 +466,9 @@ test("shop payment QR uploads in settings and customers can enlarge/download it;
       "จัดเก็บ 1080 × 1440",
     );
     await page.getByRole("button", { name: "บันทึก", exact: true }).click();
-    await expect(page.locator(".toast")).toContainText("บันทึกการตั้งค่าแล้ว");
+    await expect(page.locator(".toast")).toContainText(
+      "บันทึกบัญชีร้านค้าแล้ว",
+    );
     const registered = await context.request.post("/api/auth/register", {
       data: {
         firstName: "ผู้สแกน",
@@ -557,14 +568,17 @@ test("shop payment QR uploads in settings and customers can enlarge/download it;
     broken = false;
     await customer.getByRole("button", { name: "ลองอีกครั้ง" }).click();
     await expect(customer.locator(".payment-qr-image")).toBeVisible();
-    await page.getByLabel("เลขบัญชีรับเงิน").fill("2222222222");
+    await page
+      .getByRole("button", { name: "แก้ไข QR", exact: true })
+      .first()
+      .click();
+    await page.getByLabel("แสดงบนหน้าร้าน", { exact: true }).uncheck();
     await page.getByRole("button", { name: "บันทึก", exact: true }).click();
-    await expect(page.locator(".toast")).toContainText("บัญชีเปลี่ยน");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await customer.reload();
     await expect(customer.locator(".payment-qr")).toHaveCount(0);
   } finally {
-    const response = await page.request.put("/api/admin/settings", {
-      headers: { "x-csrf-token": csrf },
+    const response = await page.request.put("/__test/merchant-state", {
       data: initial,
     });
     expect(response.ok()).toBe(true);
@@ -758,6 +772,51 @@ test("social contact settings display local full-color logos and safe contact li
       path: "output/playwright/contacts-mobile.png",
       fullPage: true,
     });
+    await page.goto("/admin/settings");
+    await page
+      .getByRole("checkbox", { name: "แสดง LINE", exact: true })
+      .uncheck();
+    await page
+      .getByRole("checkbox", { name: "แสดง Facebook", exact: true })
+      .uncheck();
+    await page.getByRole("button", { name: "บันทึก", exact: true }).click();
+    await expect(page.locator(".toast")).toContainText("บันทึกการตั้งค่าแล้ว");
+    await page.reload();
+    await expect(
+      page.getByRole("checkbox", { name: "แสดง LINE", exact: true }),
+    ).not.toBeChecked();
+    await expect(page.getByLabel("LINE", { exact: true })).toHaveValue(
+      "https://lin.ee/example",
+    );
+    await expect(page.getByLabel("Facebook", { exact: true })).toHaveValue(
+      "https://facebook.com/example",
+    );
+    await page.goto("/");
+    await expect(contacts.getByRole("link")).toHaveCount(3);
+    await expect(
+      contacts.getByRole("link", { name: "ติดต่อทาง LINE", exact: true }),
+    ).toHaveCount(0);
+    await expect(page.locator(".floating-line-contact")).toHaveCount(0);
+    await expect(page.locator(".reference-contact-cta")).toHaveCount(0);
+    await page.goto("/admin/settings");
+    for (const label of ["LINE", "Facebook", "Telegram", "TikTok", "Instagram"])
+      await page
+        .getByRole("checkbox", { name: "แสดง " + label, exact: true })
+        .uncheck();
+    await page.getByRole("button", { name: "บันทึก", exact: true }).click();
+    await expect(page.locator(".toast")).toContainText("บันทึกการตั้งค่าแล้ว");
+    await page.goto("/");
+    await expect(contacts).toHaveCount(0);
+    await page.goto("/admin/settings");
+    await page
+      .getByRole("checkbox", { name: "แสดง LINE", exact: true })
+      .focus();
+    await page.keyboard.press("Space");
+    await page.getByRole("button", { name: "บันทึก", exact: true }).click();
+    await expect(page.locator(".toast")).toContainText("บันทึกการตั้งค่าแล้ว");
+    await page.goto("/");
+    await expect(contacts.getByRole("link")).toHaveCount(1);
+    await expect(page.locator(".floating-line-contact")).toBeVisible();
   } finally {
     expect(
       (

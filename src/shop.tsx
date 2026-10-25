@@ -260,14 +260,16 @@ export function StorePage() {
         />
         <h2 className="sr-only">IYA HIEW · Your everyday personal shopper</h2>
         <p className="sr-only">ให้ทุกความชอบของคุณอยู่ใกล้ขึ้น</p>
-        <a
-          href="https://lin.ee/rwcULIh"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="button primary reference-contact-cta"
-        >
-          ติดต่อเรา <ArrowUpRight size={17} aria-hidden="true" />
-        </a>
+        {publicData && publicData.socialVisibility?.line !== false && (
+          <a
+            href="https://lin.ee/rwcULIh"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="button primary reference-contact-cta"
+          >
+            ติดต่อเรา <ArrowUpRight size={17} aria-hidden="true" />
+          </a>
+        )}
         <Link
           to="/referrals"
           className="pastel-text-link reference-referral-link"

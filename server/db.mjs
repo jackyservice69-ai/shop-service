@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import socialPlatforms from "../shared/socials.json" with { type: "json" };
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import customerColors from "../shared/customer-colors.json" with { type: "json" };
@@ -251,6 +252,9 @@ export function openDb(path) {
     paymentQr: "",
     paymentQrReceiver: "",
     slideSeconds: 6,
+    socialVisibility: Object.fromEntries(
+      socialPlatforms.map((p) => [p.key, true]),
+    ),
     bankCode: "",
     bankNumber: "",
     bankName: "",

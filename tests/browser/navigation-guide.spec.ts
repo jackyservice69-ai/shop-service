@@ -36,6 +36,20 @@ test("account links stay grouped, support Escape/outside click, and navigate wit
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
   expect(scan.violations.map((v) => v.id)).toEqual([]);
+  await page.screenshot({
+    path: "output/playwright/account-navigation-dropdown-desktop.png",
+  });
+  await expect(group).toHaveAttribute("open", "");
+  await page.setViewportSize({ width: 1440, height: 400 });
+  await expect
+    .poll(async () => {
+      const box = (await group
+        .locator(".account-navigation-links")
+        .boundingBox())!;
+      return box.y + box.height;
+    })
+    .toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await group.getByRole("link", { name: "ข้อมูลบัญชี", exact: true }).click();
   await expect(page).toHaveURL("/account");
   await account.click();

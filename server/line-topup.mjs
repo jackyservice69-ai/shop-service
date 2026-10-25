@@ -1,6 +1,7 @@
 import { getSettings, hash, now } from "./db.mjs";
 import { creditTopup, fail } from "./commerce.mjs";
 import { easySlip, secret } from "./integrations.mjs";
+import { merchantAccounts } from "./merchant-account-policy.mjs";
 
 export function queueLineImage(db, event) {
   if (
@@ -153,7 +154,7 @@ export async function lineSlipReply(db, config, event, payload) {
   if (existing) return existing.reply_text;
   const token = secret(db, "lineChannelAccessToken", config);
   if (!token) throw new Error("LINE_NOT_CONFIGURED");
-  if (!s.bankCode || !s.bankNumber || !s.accountName)
+  if (!merchantAccounts(s).length)
     fail(503, "ร้านยังไม่ได้ตั้งค่าบัญชีรับเงิน");
   const file = await imageContent(config, token, payload.messageId);
   if (

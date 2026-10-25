@@ -17,3 +17,7 @@ The owner subsequently authorized Imagegen to enhance each original section. The
 ## Additional category illustrations v3
 
 The eight new category circles were created using built-in Imagegen from the existing v2 illustrated circles as a style reference. Makeup, skincare, shoes, watches, eyewear, home goods, tech accessories and collectibles share one 4-column × 2-row atlas. Original artwork remains intact. Delivery WebP sizes are 1600 × 800 and 800 × 400; Sharp only resizes/encodes the generated image. The exact prompt and master provenance are in docs/CATEGORY-ART-V3.md.
+
+## Beauty and gadgets v4
+
+Two additional standalone illustrations generated with built-in Imagegen use the v3 atlas as their style reference: beauty (mirror, brush, lipstick) and gadgets (headphones, portable speaker). Each has 400px and 200px WebP deliveries; PNG masters remain locally at output/image-enhancement/masters/. Exact prompts and provenance are in docs/CATEGORY-ART-V4.md. Earlier artwork is preserved.

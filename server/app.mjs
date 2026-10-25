@@ -21,6 +21,8 @@ import {
 } from "./member-management.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import socialPlatforms from "../shared/socials.json" with { type: "json" };
+import { attachMerchantAccounts } from "./merchant-accounts.mjs";
+import { merchantAccounts, bankFields } from "./merchant-account-policy.mjs";
 import passwordPolicy from "../shared/password-policy.json" with { type: "json" };
 import {
   catalog as authorization,
@@ -528,16 +530,6 @@ export function createApp(db, config) {
         ...publicExperience(db, config),
         shopName: s.shopName,
         depositPercent: s.depositPercent,
-        bankCode: s.bankCode,
-        bankNumber: s.bankNumber,
-        bankName: s.bankName,
-        accountName: s.accountName,
-        accountNameEn: s.accountNameEn,
-        topupReady:
-          !!s.bankCode &&
-          !!s.bankNumber &&
-          !!s.accountName &&
-          !!secret(db, "easyslipApiKey", config),
         announcements: db
           .prepare(
             "SELECT id,title,body,image,version FROM announcements WHERE active=1 AND starts_at<=? AND ends_at>=? ORDER BY position,rowid DESC LIMIT 30",
@@ -659,7 +651,7 @@ export function createApp(db, config) {
           Number(req.body.amount),
         ),
         s = getSettings(db);
-      if (!s.bankCode || !s.bankNumber || !s.accountName)
+      if (!merchantAccounts(s).length)
         fail(503, "ร้านยังไม่ได้ตั้งค่าบัญชีรับเงิน");
       const f = req.file;
       if (!f) fail(400, "กรุณาแนบรูปสลิป");
@@ -1317,12 +1309,22 @@ export function createApp(db, config) {
   const settingsSchema = z.object({
     shopName: boundedText,
     depositPercent: z.number().int().min(0).max(100),
-    bankCode: z.string().regex(/^\d{3}$/),
-    bankNumber: z.string().regex(/^\d{10,15}$/),
-    bankName: boundedText,
-    accountName: boundedText,
+    bankCode: z.string().regex(/^(?:\d{3})?$/),
+    bankNumber: z.string().regex(/^(?:\d{10,15})?$/),
+    bankName: z.string().trim().max(200),
+    accountName: z.string().trim().max(200),
     accountNameEn: z.string().trim().max(200),
     paymentQr: z.string().max(100).optional(),
+    socialVisibility: z
+      .record(z.string(), z.boolean())
+      .optional()
+      .refine(
+        (value) =>
+          Object.keys(value || {}).every((key) =>
+            socialPlatforms.some((p) => p.key === key),
+          ),
+        "ช่องทางติดต่อไม่ถูกต้อง",
+      ),
     socials: z
       .record(z.string(), z.string().max(500))
       .optional()
@@ -1374,7 +1376,19 @@ export function createApp(db, config) {
     "/api/admin/settings",
     permission("settings"),
     asyncRoute(async (req, res) => {
-      const v = parse(settingsSchema, req.body);
+      const currentSettings = getSettings(db);
+      const input = { ...req.body };
+      for (const field of bankFields)
+        if (input[field] === undefined)
+          input[field] = currentSettings[field] || "";
+      if (
+        Array.isArray(currentSettings.merchantAccounts) &&
+        (bankFields.some((k) => input[k] !== currentSettings[k]) ||
+          (input.paymentQr !== undefined &&
+            input.paymentQr !== currentSettings.paymentQr))
+      )
+        fail(409, "จัดการบัญชีรับเงินและ QR ที่เมนูบัญชีร้านค้า");
+      const v = parse(settingsSchema, input);
       const lineBefore = getSettings(db);
       const lineEnabled = v.lineLoginEnabled ?? lineBefore.lineLoginEnabled;
       if (
@@ -1446,6 +1460,10 @@ export function createApp(db, config) {
             !currentPaymentQr(before, credentialBefore));
         for (const [k, value] of Object.entries(v)) {
           if (k === "paymentQr") continue;
+          if (k === "socialVisibility") {
+            setSetting(db, k, { ...before.socialVisibility, ...value });
+            continue;
+          }
           if (SECRET_KEYS.includes(k)) {
             if (value) setSetting(db, k, encrypt(value, config.encryptionKey));
           } else setSetting(db, k, value);
@@ -1512,6 +1530,12 @@ export function createApp(db, config) {
       ),
     ),
   );
+  attachMerchantAccounts(app, db, config, {
+    auth,
+    csrf,
+    permission,
+    asyncRoute,
+  });
   attachAddresses(app, db, { auth, csrf, asyncRoute });
   attachMemberManagement(app, db, { permission, asyncRoute });
   attachConsignments(app, db, config, {

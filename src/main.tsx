@@ -11,6 +11,7 @@ import { GoogleCompletePage } from "./google-auth";
 import { LineCompletePage } from "./line-auth";
 import { BrowserRecoveryPage } from "./auth-browser";
 import { BankDetailsExportPage } from "./bank-details";
+import { MerchantAccountsPage } from "./merchant-accounts";
 import { AdminWalletPage } from "./admin-wallet";
 import { AddressesPage } from "./address-book";
 import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
@@ -49,7 +50,6 @@ import {
   Headphones,
   Search,
   X,
-  Menu,
 } from "lucide-react";
 import { AppProvider, useApp, can, send } from "./api";
 import { Brand, Loading } from "./ui";
@@ -78,7 +78,7 @@ import "./styles.css";
 import "./storefront-shell.css";
 import "./responsive-ux.css";
 import { CatalogPage } from "./catalog";
-import { AccountNavigation } from "./account-navigation";
+import { StoreNavigation } from "./store-navigation";
 const ShoppingGuidePage = React.lazy(() =>
   import("./shopping-guide").then((page) => ({
     default: page.ShoppingGuidePage,
@@ -100,10 +100,15 @@ const nav = [
   ["banners", "แบนเนอร์", Megaphone],
   ["commissions", "ค่าคอมมิชชั่น", Users],
   ["settings", "ตั้งค่าระบบ", Settings],
+  ["merchant-accounts", "บัญชีร้านค้า", Wallet],
   ["audit", "บันทึก Audit", ScrollText],
 ] as const;
 const navPermission = (p: string) =>
-  ({ commissions: "finance", wallet: "finance" })[p] || p;
+  ({
+    commissions: "finance",
+    wallet: "finance",
+    "merchant-accounts": "settings",
+  })[p] || p;
 function Protected({ admin = false }: { admin?: boolean }) {
   const { user, loading } = useApp();
   const location = useLocation();
@@ -128,26 +133,9 @@ function StoreLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [loggingOut, setLoggingOut] = React.useState(false);
-  const [menuOpen, setMenuOpen] = React.useState(false);
   const [composingSearch, setComposingSearch] = React.useState(false);
-  const menuToggle = React.useRef<HTMLButtonElement>(null);
-  const secondaryNavigation = React.useRef<HTMLDivElement>(null);
   const mainContent = React.useRef<HTMLElement>(null);
   const previousPath = React.useRef(location.pathname);
-  React.useEffect(() => {
-    const media = window.matchMedia("(max-width: 900px)");
-    const syncNavigation = () => {
-      if (
-        media.matches &&
-        secondaryNavigation.current?.contains(document.activeElement)
-      )
-        setMenuOpen(true);
-      if (!media.matches && document.activeElement === menuToggle.current)
-        mainContent.current?.focus({ preventScroll: true });
-    };
-    media.addEventListener("change", syncNavigation);
-    return () => media.removeEventListener("change", syncNavigation);
-  }, []);
   const currentSearch = new URLSearchParams(location.search).get("q") || "";
   const [search, setSearch] = React.useState(currentSearch);
   const searchInput = React.useRef<HTMLInputElement>(null);
@@ -155,7 +143,6 @@ function StoreLayout() {
     setSearch(currentSearch);
   }, [currentSearch, location.pathname]);
   React.useEffect(() => {
-    setMenuOpen(false);
     if (previousPath.current !== location.pathname) {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       mainContent.current?.focus({ preventScroll: true });
@@ -270,57 +257,7 @@ function StoreLayout() {
             ค้นหา
           </button>
         </form>
-        <nav
-          aria-label="เมนูหน้าร้าน"
-          className={
-            menuOpen ? "store-navigation menu-open" : "store-navigation"
-          }
-          onKeyDown={(event) => {
-            if (event.key === "Escape" && menuOpen) {
-              event.preventDefault();
-              setMenuOpen(false);
-              menuToggle.current?.focus();
-            }
-          }}
-          onClick={(event) => {
-            const link = (event.target as HTMLElement).closest("a");
-            if (link) setMenuOpen(false);
-          }}
-        >
-          <NavLink to="/" end className="store-primary-link">
-            หน้าหลัก
-          </NavLink>
-          <NavLink to="/products" className="store-primary-link">
-            เลือกซื้อสินค้า
-          </NavLink>
-          <button
-            type="button"
-            ref={menuToggle}
-            className="store-menu-toggle"
-            aria-expanded={menuOpen}
-            aria-controls="store-secondary-navigation"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? (
-              <X size={19} aria-hidden="true" />
-            ) : (
-              <Menu size={19} aria-hidden="true" />
-            )}
-            เมนู
-          </button>
-          <div
-            id="store-secondary-navigation"
-            ref={secondaryNavigation}
-            className="store-secondary-navigation"
-          >
-            <NavLink to="/promotions">โปรโมชั่น</NavLink>
-            <NavLink to="/how-to-order">วิธีสั่งซื้อ</NavLink>
-            {user && !user.mustChangePassword && (
-              <AccountNavigation navigationOpen={menuOpen} />
-            )}
-            <Link to="/#store-contact">ติดต่อเรา</Link>
-          </div>
-        </nav>
+        <StoreNavigation showAccount={!!user && !user.mustChangePassword} />
         <div className="store-tools">
           {user?.permissions.length ? (
             <Link
@@ -403,16 +340,18 @@ function StoreLayout() {
       <AnnouncementPopup />
       <nav aria-label="เครื่องมือช่วยเหลือหน้าร้าน">
         <BackToTop />
-        <a
-          className="floating-line-contact"
-          href="https://lin.ee/rwcULIh"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
-          title="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
-        >
-          <img src="/assets/brands/line.svg" alt="" width={36} height={36} />
-        </a>
+        {publicData && publicData.socialVisibility?.line !== false && (
+          <a
+            className="floating-line-contact"
+            href="https://lin.ee/rwcULIh"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
+            title="เพิ่มเพื่อน LINE ของร้าน (เปิดในแท็บใหม่)"
+          >
+            <img src="/assets/brands/line.svg" alt="" width={36} height={36} />
+          </a>
+        )}
       </nav>
     </div>
   );
@@ -628,6 +567,14 @@ function App() {
                 element={
                   <Permission name="finance">
                     <CommissionsPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="merchant-accounts"
+                element={
+                  <Permission name="settings">
+                    <MerchantAccountsPage />
                   </Permission>
                 }
               />

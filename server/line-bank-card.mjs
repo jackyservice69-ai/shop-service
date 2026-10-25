@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { audit, getSettings, hash } from "./db.mjs";
 import { secret } from "./integrations.mjs";
-import { currentPaymentQr } from "./receiving-policy.mjs";
+import { receivingPublicData } from "./merchant-account-policy.mjs";
 import {
   bankDetailsData,
   bankDetailsSnapshot,
@@ -23,17 +23,19 @@ export function isBankAccountRequest(value) {
 export function currentBankCard(db, config) {
   const s = getSettings(db),
     credentialHash = hash(secret(db, "easyslipApiKey", config));
-  const ready =
-    !!s.bankCode &&
-    !!s.bankNumber &&
-    !!s.accountName &&
-    !!secret(db, "easyslipApiKey", config);
+  const receiving = receivingPublicData(
+    s,
+    credentialHash,
+    !!secret(db, "easyslipApiKey", config),
+  );
+  const ready = receiving.topupReady && !!receiving.bankNumber;
   if (!ready) fail(503, "ร้านยังไม่ได้ตั้งค่าบัญชีรับเงินให้พร้อมใช้งาน");
-  const qr = currentPaymentQr(s, credentialHash);
+  const qr = receiving.paymentQr;
   const data = bankDetailsData({
     ...s,
+    ...receiving,
     paymentQr: qr,
-    paymentQrFrame: qr ? s.paymentQrVerification?.frame : null,
+    paymentQrFrame: qr ? receiving.paymentQrFrame : null,
     topupReady: ready,
   });
   return {

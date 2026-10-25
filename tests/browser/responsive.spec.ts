@@ -10,17 +10,6 @@ test("mobile navigation and filters retain keyboard focus, drafts and reset beha
   expect(auth.ok()).toBe(true);
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto("/products");
-  const menu = page.getByRole("button", {
-    name: "เมนู",
-    exact: true,
-  });
-  await expect(
-    page.getByRole("link", { name: "ที่อยู่จัดส่ง", exact: true }),
-  ).toBeHidden();
-  await menu.click();
-  await expect(
-    page.getByRole("button", { name: "เมนู", exact: true }),
-  ).toHaveAttribute("aria-expanded", "true");
   const account = page.locator(".account-navigation > summary");
   await account.click();
   await expect(
@@ -29,10 +18,6 @@ test("mobile navigation and filters retain keyboard focus, drafts and reset beha
   await page.keyboard.press("Escape");
   await expect(account).toBeFocused();
   await expect(page.locator(".account-navigation")).not.toHaveAttribute("open");
-  await page.keyboard.press("Escape");
-  await expect(menu).toBeFocused();
-  await expect(menu).toHaveAttribute("aria-expanded", "false");
-  await menu.click();
   await account.click();
   await page
     .locator(".account-navigation")
@@ -40,9 +25,6 @@ test("mobile navigation and filters retain keyboard focus, drafts and reset beha
     .click();
   await expect(page).toHaveURL("/wallet");
   await expect(page.locator("#main-content")).toBeFocused();
-  await expect(
-    page.getByRole("button", { name: "เมนู", exact: true }),
-  ).toHaveAttribute("aria-expanded", "false");
   await page
     .getByRole("navigation", { name: "เมนูหน้าร้าน" })
     .getByRole("link", { name: "เลือกซื้อสินค้า", exact: true })

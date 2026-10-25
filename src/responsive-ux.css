@@ -1,10 +1,4 @@
 /* Responsive interaction layer; colors stay with the existing theme owners. */
-.store-shell .store-secondary-navigation {
-  display: contents;
-}
-.store-shell .store-menu-toggle {
-  display: none;
-}
 .store-shell .store-header nav a {
   font-size: 14px;
 }
@@ -88,74 +82,6 @@
 }
 
 @media (max-width: 900px) {
-  .store-shell .store-header .store-navigation {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) auto;
-    gap: 6px;
-    overflow: visible;
-    padding-block: 6px;
-  }
-  .store-shell .store-navigation > .store-primary-link {
-    justify-content: center;
-    border-radius: var(--control);
-    padding: 8px 4px;
-    min-height: 44px;
-    font-size: 14px;
-    white-space: nowrap;
-  }
-  .store-shell .store-navigation > .store-primary-link.active {
-    background: var(--primary-light);
-    color: var(--brand-ink);
-    text-decoration: none;
-  }
-  .store-shell .store-menu-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    min-height: 44px;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--control);
-    background: var(--surface);
-    color: var(--ink);
-    font: inherit;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .store-shell .store-menu-toggle:hover {
-    background: var(--surface-hover);
-    border-color: var(--brand-ink);
-  }
-  .store-shell .store-menu-toggle:active {
-    background: var(--primary-light);
-  }
-  .store-shell .store-secondary-navigation {
-    display: none;
-    grid-column: 1 / -1;
-  }
-  .store-shell .menu-open .store-secondary-navigation {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    padding: 12px 0 6px;
-    border-top: 1px solid var(--border);
-  }
-  .store-shell .store-secondary-navigation a {
-    justify-content: center;
-    padding: 10px 8px;
-    min-height: 44px;
-    border: 1px solid var(--border);
-    border-radius: var(--control);
-    white-space: normal;
-    text-align: center;
-    font-size: 14px;
-  }
-  .store-shell .store-secondary-navigation a.active {
-    background: var(--primary-light);
-    color: var(--brand-ink);
-    text-decoration: none;
-  }
   .store-shell .store-header-search input {
     font-size: 16px;
   }
@@ -239,8 +165,7 @@
   }
 }
 @media (forced-colors: active) {
-  .store-shell .store-menu-toggle,
-  .store-shell .store-secondary-navigation a {
+  .store-shell .store-navigation-track > a {
     border-color: ButtonText;
   }
 }

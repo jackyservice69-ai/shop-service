@@ -4,7 +4,11 @@ import { Landmark } from "lucide-react";
 
 export function SocialLinks() {
   const { publicData } = useApp();
-  const active = platforms.filter((p) => publicData?.socials?.[p.key]);
+  const active = platforms.filter(
+    (p) =>
+      publicData?.socialVisibility?.[p.key] !== false &&
+      publicData?.socials?.[p.key],
+  );
   return active.length ? (
     <nav className="social-links" aria-label="ช่องทางติดต่อร้าน">
       {active.map((p) => (
@@ -38,8 +42,8 @@ export function BankLogo({ code, name }: { code?: string; name?: string }) {
       height={48}
     />
   ) : (
-    <span className="bank-logo" aria-label={name || "ธนาคาร"}>
-      <Landmark size={28} />
+    <span className="bank-logo" role="img" aria-label={name || "ธนาคาร"}>
+      <Landmark size={28} aria-hidden="true" />
     </span>
   );
 }

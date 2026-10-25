@@ -73,7 +73,7 @@ async function deactivate(
     });
 }
 
-test("appearance editor persists six pastel colors, uploaded logo/favicon and commission; controls work in dark surfaces", async ({
+test("appearance editor persists branding without changing the rate; commission settings live on the commissions page", async ({
   page,
 }) => {
   const csrf = await admin(page),
@@ -104,11 +104,39 @@ test("appearance editor persists six pastel colors, uploaded logo/favicon and co
       "background-image",
       /conic-gradient/,
     );
-    await page.getByLabel("ค่าคอมมิชชั่นแนะนำเพื่อน").fill("7.25");
+    await expect(page.getByLabel("ค่าคอมมิชชั่นแนะนำเพื่อน")).toHaveCount(0);
     await page.getByRole("button", { name: "บันทึก", exact: true }).click();
     await expect(page.locator(".toast")).toContainText(
       "บันทึกสีและภาพลักษณ์ร้านแล้ว",
     );
+    expect(
+      (await (await page.request.get("/api/admin/commissions/settings")).json())
+        .commissionPercent,
+    ).toBe(initial.commissionPercent);
+    await page
+      .getByRole("link", { name: "ค่าคอมมิชชั่น", exact: true })
+      .click();
+    const rate = page.getByLabel("ค่าคอมมิชชั่นแนะนำเพื่อน");
+    await rate.fill("101");
+    await page
+      .getByRole("button", { name: "บันทึกอัตราค่าคอมมิชชั่น", exact: true })
+      .click();
+    await expect(rate).toBeFocused();
+    await rate.fill("7.25");
+    await page
+      .getByRole("button", { name: "บันทึกอัตราค่าคอมมิชชั่น", exact: true })
+      .click();
+    await expect(page.locator(".toast")).toContainText(
+      "บันทึกอัตราค่าคอมมิชชั่นแล้ว",
+    );
+    await page.reload();
+    await expect(page.getByLabel("ค่าคอมมิชชั่นแนะนำเพื่อน")).toHaveValue(
+      "7.25",
+    );
+    expect(
+      (await (await page.request.get("/api/admin/appearance")).json()).theme
+        .muted,
+    ).toBe("#675a75");
     await page.goto("/");
     await expect(page.locator(".store-header .custom-brand img")).toBeVisible();
     expect(await page.locator("link[rel=icon]").getAttribute("href")).toMatch(

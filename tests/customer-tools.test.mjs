@@ -354,6 +354,75 @@ test("social settings accept only exact platform HTTPS hosts and publish configu
     const pub = (await request(f.app).get("/api/public")).body;
     assert.deepEqual(pub.socials, socials);
     assert.equal(pub.easyslipApiKey, undefined);
+    assert.equal(
+      (
+        await mutate(
+          a,
+          "/api/admin/settings",
+          { ...s, socials, socialVisibility: { line: false, facebook: false } },
+          "put",
+        )
+      ).status,
+      200,
+    );
+    const hidden = (await request(f.app).get("/api/public")).body;
+    assert.equal(hidden.socials.line, undefined);
+    assert.equal(hidden.socials.facebook, undefined);
+    assert.equal(hidden.socials.telegram, socials.telegram);
+    const saved = (await a.agent.get("/api/admin/settings")).body;
+    assert.deepEqual(saved.socials, socials);
+    assert.equal(saved.botEnabled, s.botEnabled);
+    assert.equal(saved.lineLoginEnabled, s.lineLoginEnabled);
+    const { socialVisibility, ...legacy } = saved;
+    assert.equal(
+      (
+        await mutate(
+          a,
+          "/api/admin/settings",
+          { ...legacy, socialVisibility: { line: true } },
+          "put",
+        )
+      ).status,
+      200,
+    );
+    let current = (await a.agent.get("/api/admin/settings")).body;
+    assert.equal(current.socialVisibility.line, true);
+    assert.equal(current.socialVisibility.facebook, false);
+    assert.equal(
+      (await mutate(a, "/api/admin/settings", legacy, "put")).status,
+      200,
+    );
+    assert.equal(
+      (await a.agent.get("/api/admin/settings")).body.socialVisibility.facebook,
+      false,
+    );
+    for (const value of [{ line: "false" }, { unknown: true }, { line: 0 }]) {
+      assert.equal(
+        (
+          await mutate(
+            a,
+            "/api/admin/settings",
+            { ...legacy, socialVisibility: value },
+            "put",
+          )
+        ).status,
+        400,
+      );
+    }
+    current = (await a.agent.get("/api/admin/settings")).body;
+    assert.deepEqual(current.socials, socials);
+    assert.equal(current.socialVisibility.facebook, false);
+    assert.equal(
+      (
+        await mutate(
+          c,
+          "/api/admin/settings",
+          { ...legacy, socialVisibility: { line: false } },
+          "put",
+        )
+      ).status,
+      403,
+    );
   } finally {
     f.db.close();
   }

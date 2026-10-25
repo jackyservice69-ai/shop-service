@@ -18,6 +18,7 @@ const definitions = [
     art: "makeup",
   },
   { label: "สกินแคร์", match: /สกินแคร์|บำรุงผิว|skin/i, art: "skincare" },
+  { label: "บิวตี้", match: /บิวตี้|beauty/i, art: "beauty" },
   { label: "รองเท้า", match: /รองเท้า|shoe|footwear/i, art: "shoes" },
   { label: "นาฬิกา", match: /นาฬิกา|watch/i, art: "watch" },
   { label: "แว่นตา", match: /แว่น|glasses|eyewear/i, art: "eyewear" },
@@ -28,8 +29,13 @@ const definitions = [
   },
   {
     label: "อุปกรณ์ไอที",
-    match: /อุปกรณ์ไอที|อิเล็กทรอนิกส์|gadget|electronic/i,
+    match: /อุปกรณ์ไอที|อิเล็กทรอนิกส์|electronic/i,
     art: "tech",
+  },
+  {
+    label: "แก็ตเจ็ต",
+    match: /แก็ตเจ็ต|แก็ดเจ็ต|แกดเจ็ต|แกดเจท|gadget/i,
+    art: "gadgets",
   },
   {
     label: "ของสะสม",
@@ -44,6 +50,18 @@ export function categoryArtwork(name: string) {
   return art && ["bag", "perfume", "jewelry", "clothing"].includes(art)
     ? art
     : undefined;
+}
+
+function revealCategoryLink(node: HTMLUListElement, link: HTMLAnchorElement) {
+  const item = link.getBoundingClientRect();
+  const viewport = node.getBoundingClientRect();
+  const delta =
+    item.left < viewport.left + 6
+      ? item.left - viewport.left - 6
+      : item.right > viewport.right - 6
+        ? item.right - viewport.right + 6
+        : 0;
+  if (delta) node.scrollBy({ left: delta, behavior: "instant" });
 }
 
 export function QuickCategories({ categories }: { categories: string[] }) {
@@ -87,15 +105,20 @@ export function QuickCategories({ categories }: { categories: string[] }) {
       const middle = node.children[entryCount] as HTMLElement | undefined;
       if (!first || !middle) return;
       const width = middle.offsetLeft - first.offsetLeft;
-      if (width <= 0 || width === cycleWidth) return;
-      const relativePosition = cycleWidth
-        ? (node.scrollLeft - cycleWidth) / cycleWidth
-        : 0;
-      cycleWidth = width;
-      node.scrollTo({
-        left: width * (1 + relativePosition),
-        behavior: "instant",
-      });
+      if (width <= 0) return;
+      if (width !== cycleWidth) {
+        const relativePosition = cycleWidth
+          ? (node.scrollLeft - cycleWidth) / cycleWidth
+          : 0;
+        cycleWidth = width;
+        node.scrollTo({
+          left: width * (1 + relativePosition),
+          behavior: "instant",
+        });
+      }
+      const focused = document.activeElement;
+      if (focused instanceof HTMLAnchorElement && node.contains(focused))
+        revealCategoryLink(node, focused);
     };
     const wrap = () => {
       // Side copies provide room for a free native swipe. Recenter onto the
@@ -212,15 +235,7 @@ export function QuickCategories({ categories }: { categories: string[] }) {
           }
           keyboardLinkFocused.current =
             link.closest("li")?.dataset.categoryCopy === "1";
-          const item = link.getBoundingClientRect();
-          const viewport = node.getBoundingClientRect();
-          const delta =
-            item.left < viewport.left + 6
-              ? item.left - viewport.left - 6
-              : item.right > viewport.right - 6
-                ? item.right - viewport.right + 6
-                : 0;
-          if (delta) node.scrollBy({ left: delta, behavior: "instant" });
+          revealCategoryLink(node, link);
         }}
       >
         {[0, 1, 2].flatMap((copy) =>

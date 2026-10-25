@@ -14,6 +14,11 @@ import { fail } from "./commerce.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import { secret } from "./integrations.mjs";
 import { hasPermission } from "../shared/authorization.mjs";
+import {
+  merchantAccounts,
+  accountReceiver,
+  receivingPublicData,
+} from "./merchant-account-policy.mjs";
 import { receivingAccountKey, currentPaymentQr } from "./receiving-policy.mjs";
 export { receivingAccountKey, currentPaymentQr } from "./receiving-policy.mjs";
 
@@ -69,6 +74,7 @@ export function checkMedia(db, url, kind) {
 const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "ใช้รหัสสี HEX 6 หลัก เช่น #C4B5FD");
+const commissionRateSchema = z.number().min(0).max(100).multipleOf(0.01);
 export const appearanceSchema = z
   .object({
     theme: z.object({
@@ -82,7 +88,7 @@ export const appearanceSchema = z
     logo: z.string().default(""),
     favicon: z.string().default(""),
     slideSeconds: z.number().int().min(3).max(30),
-    commissionPercent: z.number().min(0).max(100).multipleOf(0.01).optional(),
+    commissionPercent: commissionRateSchema.optional(),
   })
   .strict();
 const bannerSchema = z
@@ -106,17 +112,18 @@ const bannerSchema = z
   .refine((v) => v.ends_at > v.starts_at, "วันสิ้นสุดต้องหลังวันเริ่ม");
 export function publicExperience(db, config) {
   const s = getSettings(db);
-  const paymentQr = currentPaymentQr(
-    s,
-    hash(secret(db, "easyslipApiKey", config)),
-  );
+  const key = secret(db, "easyslipApiKey", config);
   return {
     theme: s.theme,
     logo: s.logo,
     favicon: s.favicon,
-    paymentQr,
-    paymentQrFrame: paymentQr ? s.paymentQrVerification?.frame || null : null,
-    socials: s.socials || {},
+    ...receivingPublicData(s, hash(key), !!key),
+    socials: Object.fromEntries(
+      Object.entries(s.socials || {}).filter(
+        ([key]) => s.socialVisibility?.[key] !== false,
+      ),
+    ),
+    socialVisibility: s.socialVisibility || {},
     slideSeconds: s.slideSeconds,
     commissionPercent: s.commissionPercent,
     banners: db
@@ -217,15 +224,42 @@ export function attachExperience(
           ? !(await sharp(result.data).stats()).isOpaque
           : undefined;
       const mid = id();
-      const receiver = receivingAccountKey(getSettings(db));
+      const settings = getSettings(db);
+      const accountId =
+        typeof req.query.accountId === "string" ? req.query.accountId : "";
+      const selected = accountId
+        ? merchantAccounts(settings).find((a) => a.id === accountId)
+        : null;
+      if (kind === "paymentQr" && accountId && !selected)
+        fail(404, "ไม่พบบัญชีร้านค้า");
+      if (
+        kind === "paymentQr" &&
+        Array.isArray(settings.merchantAccounts) &&
+        !selected
+      )
+        fail(409, "เลือกบัญชีร้านค้าก่อนอัปโหลด QR");
+      const targetSettings = selected
+        ? accountReceiver(settings, selected)
+        : settings;
+      const receiver = receivingAccountKey(targetSettings);
       const verification =
         kind === "paymentQr"
-          ? await verifyPaymentQr(db, config, result.data, getSettings(db))
+          ? await verifyPaymentQr(db, config, result.data, targetSettings)
           : null;
       transaction(db, () => {
         if (
           verification &&
-          (receiver !== receivingAccountKey(getSettings(db)) ||
+          (receiver !==
+            receivingAccountKey(
+              selected
+                ? accountReceiver(
+                    getSettings(db),
+                    merchantAccounts(getSettings(db)).find(
+                      (a) => a.id === accountId,
+                    ),
+                  )
+                : getSettings(db),
+            ) ||
             verification.credentialHash !==
               hash(secret(db, "easyslipApiKey", config)))
         )
@@ -287,6 +321,37 @@ export function attachExperience(
           : {}),
         recommended: IMAGE_GUIDES[kind],
       });
+    }),
+  );
+  app.get(
+    "/api/admin/commissions/settings",
+    auth,
+    permission("settings"),
+    asyncRoute((req, res) =>
+      res.json({ commissionPercent: getSettings(db).commissionPercent }),
+    ),
+  );
+  app.put(
+    "/api/admin/commissions/settings",
+    auth,
+    csrf,
+    permission("settings"),
+    asyncRoute((req, res) => {
+      const v = z
+        .object({
+          commissionPercent: commissionRateSchema,
+        })
+        .strict()
+        .parse(req.body);
+      transaction(db, () => {
+        const previousPercent = getSettings(db).commissionPercent;
+        setSetting(db, "commissionPercent", v.commissionPercent);
+        audit(db, req.user.id, "commission.settings.updated", "shop", {
+          previousPercent,
+          commissionPercent: v.commissionPercent,
+        });
+      });
+      res.json(v);
     }),
   );
   app.get(
