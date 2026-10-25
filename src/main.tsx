@@ -17,6 +17,7 @@ import { AddressesPage } from "./address-book";
 import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
 import { AdminReviewsPage } from "./reviews";
 import { SocialLinks } from "./contacts";
+import { ContactPage } from "./contact-page";
 import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
@@ -31,6 +32,7 @@ import {
 } from "react-router-dom";
 import {
   ShoppingBag,
+  ShoppingCart,
   Wallet,
   Package,
   Users,
@@ -276,7 +278,7 @@ function StoreLayout() {
               "ตะกร้า " + cart.reduce((s, i) => s + i.quantity, 0) + " ชิ้น"
             }
           >
-            <ShoppingBag size={20} />
+            <ShoppingCart size={20} aria-hidden="true" />
             <span>{cart.reduce((s, i) => s + i.quantity, 0)}</span>
           </Link>
           <NavLink
@@ -499,6 +501,7 @@ function App() {
           <Route element={<StoreLayout />}>
             <Route index element={<StoreHome />} />
             <Route path="products" element={<CatalogPage />} />
+            <Route path="contact" element={<ContactPage />} />
             <Route
               path="how-to-order"
               element={

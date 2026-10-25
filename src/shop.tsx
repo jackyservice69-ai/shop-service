@@ -91,12 +91,12 @@ export function StorePage() {
       <section className="store-hero reference-hero">
         <img
           className="pastel-hero-illustration"
-          src="/assets/iya-refresh-v5/hero.webp"
-          srcSet="/assets/iya-refresh-v5/hero-small.webp 720w, /assets/iya-refresh-v5/hero.webp 1440w"
+          src="/assets/storefront/hero-compact-v6.webp"
+          srcSet="/assets/storefront/hero-compact-small-v6.webp 768w, /assets/storefront/hero-compact-v6.webp 1536w"
           sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           alt=""
-          width="1440"
-          height="1198"
+          width="1536"
+          height="1024"
           fetchPriority="high"
         />
         <h1 className="sr-only">ของที่ชอบ ให้เราหิ้วมาให้</h1>
@@ -114,8 +114,8 @@ export function StorePage() {
         aria-labelledby="pastel-promotion-title"
       >
         <img
-          src="/assets/storefront/promotion-no-button-v3.webp"
-          srcSet="/assets/storefront/promotion-no-button-small-v3.webp 768w, /assets/storefront/promotion-no-button-v3.webp 1536w"
+          src="/assets/storefront/promotion-compact-v6.webp"
+          srcSet="/assets/storefront/promotion-compact-small-v6.webp 768w, /assets/storefront/promotion-compact-v6.webp 1536w"
           sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           alt=""
           width="1536"
@@ -272,26 +272,19 @@ export function StorePage() {
       </section>
       <section className="pastel-contact reference-contact">
         <img
-          src="/assets/storefront/contact-no-button-v3.webp"
-          srcSet="/assets/storefront/contact-no-button-small-v3.webp 1084w, /assets/storefront/contact-no-button-v3.webp 2169w"
+          src="/assets/storefront/contact-palette-v6.webp"
+          srcSet="/assets/storefront/contact-palette-small-v6.webp 1084w, /assets/storefront/contact-palette-v6.webp 2169w"
           sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           width={2169}
-          height={348}
+          height={723}
           alt=""
           loading="lazy"
         />
         <h2 className="sr-only">IYA HIEW · Your everyday personal shopper</h2>
         <p className="sr-only">ให้ทุกความชอบของคุณอยู่ใกล้ขึ้น</p>
-        {publicData && publicData.socialVisibility?.line !== false && (
-          <a
-            href="https://lin.ee/rwcULIh"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="button primary reference-contact-cta"
-          >
-            ติดต่อเรา <ArrowUpRight size={17} aria-hidden="true" />
-          </a>
-        )}
+        <Link to="/contact" className="button primary reference-contact-cta">
+          ติดต่อเรา <ArrowUpRight size={17} aria-hidden="true" />
+        </Link>
         <Link
           to="/referrals"
           className="pastel-text-link reference-referral-link"

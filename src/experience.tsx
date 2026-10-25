@@ -410,13 +410,13 @@ export function StorePaymentQr({
   const alt = "QR รับเงินของ " + shopName;
   return (
     <div className="payment-qr">
-      {failed ? (
-        <ErrorBox
-          error="โหลด QR ไม่สำเร็จ กรุณาลองใหม่หรือใช้ข้อมูลบัญชีร้าน"
-          retry={() => setFailed(false)}
-        />
-      ) : (
-        <>
+      <div className="payment-qr-visual">
+        {failed ? (
+          <ErrorBox
+            error="โหลด QR ไม่สำเร็จ กรุณาลองใหม่หรือใช้ข้อมูลบัญชีร้าน"
+            retry={() => setFailed(false)}
+          />
+        ) : (
           <button
             type="button"
             className="payment-qr-trigger"
@@ -450,6 +450,10 @@ export function StorePaymentQr({
               />
             </span>
           </button>
+        )}
+      </div>
+      {!failed && (
+        <div className="payment-qr-details">
           <p className="muted">
             {exportMode
               ? "สแกน QR เพื่อโอนเงิน"
@@ -466,7 +470,7 @@ export function StorePaymentQr({
               </a>
             </div>
           )}
-        </>
+        </div>
       )}
       {open && (
         <Modal title="QR รับเงินของร้าน" onClose={() => setOpen(false)}>

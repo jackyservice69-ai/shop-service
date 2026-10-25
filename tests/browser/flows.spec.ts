@@ -565,7 +565,9 @@ test("shop payment QR uploads under merchant accounts and customers can enlarge/
       expect(right.x, `QR beside account at ${width}px`).toBeGreaterThanOrEqual(
         left.x + left.width,
       );
-      expect(Math.abs(right.y - left.y)).toBeLessThan(2);
+      expect(
+        Math.abs(right.y + right.height / 2 - (left.y + left.height / 2)),
+      ).toBeLessThan(2);
       expect(Math.abs(right.width - right.height)).toBeLessThan(1);
       expect(right.width).toBeGreaterThanOrEqual(104);
       expect(
@@ -801,6 +803,7 @@ test("social contact settings display local full-color logos and safe contact li
       ["Telegram", "https://t.me/example"],
       ["TikTok", "https://tiktok.com/@example"],
       ["Instagram", "https://instagram.com/example"],
+      ["Shopee", "https://shopee.co.th/iya-test"],
     ])
       await page.getByLabel(label, { exact: true }).fill(url);
     await page.getByRole("button", { name: "บันทึก", exact: true }).click();
@@ -809,7 +812,7 @@ test("social contact settings display local full-color logos and safe contact li
     const contacts = page.getByRole("navigation", {
       name: "ช่องทางติดต่อร้าน",
     });
-    await expect(contacts.getByRole("link")).toHaveCount(5);
+    await expect(contacts.getByRole("link")).toHaveCount(6);
     expect(
       await contacts
         .locator("img")
@@ -849,14 +852,24 @@ test("social contact settings display local full-color logos and safe contact li
       "https://facebook.com/example",
     );
     await page.goto("/");
-    await expect(contacts.getByRole("link")).toHaveCount(3);
+    await expect(contacts.getByRole("link")).toHaveCount(4);
     await expect(
       contacts.getByRole("link", { name: "ติดต่อทาง LINE", exact: true }),
     ).toHaveCount(0);
     await expect(page.locator(".floating-line-contact")).toHaveCount(0);
-    await expect(page.locator(".reference-contact-cta")).toHaveCount(0);
+    await expect(page.locator(".reference-contact-cta")).toHaveAttribute(
+      "href",
+      "/contact",
+    );
     await page.goto("/admin/settings");
-    for (const label of ["LINE", "Facebook", "Telegram", "TikTok", "Instagram"])
+    for (const label of [
+      "LINE",
+      "Facebook",
+      "Telegram",
+      "TikTok",
+      "Instagram",
+      "Shopee",
+    ])
       await page
         .getByRole("checkbox", { name: "แสดง " + label, exact: true })
         .uncheck();

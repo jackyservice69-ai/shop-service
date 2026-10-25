@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-26",
+  "reference": "1-2133.jpg",
+  "paletteReferences": [
+    "hero-compact-v6.webp",
+    "promotion-compact-v6.webp"
+  ],
+  "jobs": [
+    {
+      "id": "hero",
+      "prompt": "Use case: illustration-story. Create a decorative website CONTACT PAGE HERO BACKGROUND for Thai boutique Iya. The supplied screenshot is a layout and mood reference only; the other images are color references. Wide horizontal 3:1, full-bleed. Harmonize with glossy pastel blush pink, pale mint and champagne gold Iya storefront banners. Soft fluffy white clouds at lower corners, small floating heart-shaped speech bubbles, tiny gold sparkles and an elegant pink shopping bag at far right edge. Center 65% must be calm pale pink negative space for real HTML heading. Crisp softly luminous boutique illustration. NO letters, text, logos, UI, screenshots, buttons, cards, social platform marks, contact handles, links, QR or watermark. No white outer padding band, no purple."
+    },
+    {
+      "id": "footer",
+      "prompt": "Use case: illustration-story. Create one decorative CONTACT PAGE CLOSING BANNER background for Iya pastel boutique. Wide 3:1 continuous full-bleed horizontal composition. Warm blush pink and pale mint clouds with a few floating heart shapes and tiny champagne-gold stars. Elegant pink ribbon gift boxes at far lower right, small cloud at lower left. Keep middle 65% empty and pale for real HTML thank-you text. Match the supplied storefront palette and contact reference mood. No words, logos, cards, buttons, screenshots, social icons, handles, numbers, QR, watermark, white outer border or purple."
+    },
+    {
+      "id": "gifts",
+      "transparent": true,
+      "prompt": "Use case: product-mockup. Create one isolated small premium pastel-boutique gift illustration: blush-pink shopping bag, neatly wrapped pink gift with silk bow, small warm-gold parcel and a tiny gold sparkle. Compact arrangement, entire objects visible with safe padding, glossy charming 3D material matching Iya pink/mint/gold theme. True transparent background. No text, brands, logos, coupons, numbers, percentage symbols, buttons, UI, QR or watermark. Reference screenshot only for shopping mood, not copied page content."
+    }
+  ]
+}

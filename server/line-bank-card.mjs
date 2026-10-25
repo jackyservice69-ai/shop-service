@@ -42,7 +42,7 @@ export function currentBankCard(db, config) {
     data,
     snapshot: bankDetailsSnapshot(data),
     fingerprint: hash(
-      bankDetailsSnapshot(data) + ":" + credentialHash + ":bank-surface-v5",
+      bankDetailsSnapshot(data) + ":" + credentialHash + ":bank-align-v7",
     ),
   };
 }

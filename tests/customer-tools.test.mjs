@@ -342,7 +342,25 @@ test("social settings accept only exact platform HTTPS hosts and publish configu
       telegram: "https://t.me/example",
       tiktok: "https://www.tiktok.com/@example",
       instagram: "https://www.instagram.com/example",
+      shopee: "https://shopee.co.th/iya-test",
     };
+    for (const link of [
+      "http://shopee.co.th/iya",
+      "https://shopee.co.th.evil.test/iya",
+      "https://user:pass@shopee.co.th/iya",
+    ]) {
+      assert.equal(
+        (
+          await mutate(
+            a,
+            "/api/admin/settings",
+            { ...s, socials: { shopee: link } },
+            "put",
+          )
+        ).status,
+        400,
+      );
+    }
     assert.equal(
       (await mutate(c, "/api/admin/settings", { ...s, socials }, "put")).status,
       403,
@@ -359,7 +377,11 @@ test("social settings accept only exact platform HTTPS hosts and publish configu
         await mutate(
           a,
           "/api/admin/settings",
-          { ...s, socials, socialVisibility: { line: false, facebook: false } },
+          {
+            ...s,
+            socials,
+            socialVisibility: { line: false, facebook: false, shopee: false },
+          },
           "put",
         )
       ).status,
@@ -368,6 +390,7 @@ test("social settings accept only exact platform HTTPS hosts and publish configu
     const hidden = (await request(f.app).get("/api/public")).body;
     assert.equal(hidden.socials.line, undefined);
     assert.equal(hidden.socials.facebook, undefined);
+    assert.equal(hidden.socials.shopee, undefined);
     assert.equal(hidden.socials.telegram, socials.telegram);
     const saved = (await a.agent.get("/api/admin/settings")).body;
     assert.deepEqual(saved.socials, socials);

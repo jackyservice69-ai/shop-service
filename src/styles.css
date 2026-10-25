@@ -1,4 +1,5 @@
 @import url("/fonts/noto-sans-thai.css");
+@import url("/fonts/manrope-wallet.css");
 :root {
   --primary: var(--palette-primary);
   --primary-hover: var(--palette-primary-hover);
@@ -2303,10 +2304,10 @@ td small {
   display: block;
   font-size: clamp(27px, 2.8vw, 34px);
   line-height: 1.35;
-  letter-spacing: -1px;
-  font-family: system-ui, sans-serif;
+  font-family: "Manrope Wallet", "Noto Sans Thai", system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.025em;
   overflow-wrap: anywhere;
 }
 .wallet-card-footer {
@@ -2361,11 +2362,30 @@ td small {
   overflow-wrap: anywhere;
   container-type: inline-size;
 }
+/* Account details and the QR square share row 1; captions/actions own row 2. */
 .bank-receiver.has-payment-qr {
   grid-template-columns: minmax(0, 1fr) minmax(104px, 40%);
   grid-template-columns: minmax(0, 1fr) clamp(104px, 45cqw, 180px);
   align-items: start;
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: 0;
+}
+.bank-receiver.has-payment-qr > .bank-account-info {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+}
+.bank-receiver.has-payment-qr > .payment-qr {
+  display: contents;
+}
+.bank-receiver.has-payment-qr .payment-qr-visual {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+.bank-receiver.has-payment-qr .payment-qr-details {
+  grid-column: 2;
+  grid-row: 2;
 }
 .bank-details h2 {
   font-size: 16px;
@@ -2443,7 +2463,7 @@ td small {
 }
 @container receiving-card (max-width: 320px) {
   .bank-receiver.has-payment-qr {
-    gap: 8px;
+    column-gap: 8px;
   }
   .bank-account-info .bank-number-row {
     gap: 6px;
@@ -3608,7 +3628,7 @@ td small {
 .customer-shell .product-copy strong,
 .customer-shell .product-title:hover,
 .customer-shell .text-button,
-.customer-shell a:not(.button):not(.brand):not(.avatar) {
+.customer-shell a:not(.button):not(.brand):not(.avatar):not(.contact-brand-button) {
   color: var(--link-ink);
 }
 .customer-shell .store-header nav a {
@@ -4795,19 +4815,23 @@ td small {
 
 /* Iya Imagegen refresh v5: generated surfaces, live text and payment pixels. */
 .wallet-card {
-  background: #fde8e8 url("/assets/iya-refresh-v5/wallet-background.webp")
-    center / cover no-repeat;
+  background: #fde8e8 url("/assets/wallet/wallet-surface-v7.webp") center /
+    cover no-repeat;
 }
 .wallet-card-balance strong {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  gap: 8px;
+  gap: 5px;
 }
-.wallet-gold-coin {
-  width: clamp(26px, 3vw, 36px);
-  height: auto;
+.wallet-currency {
+  font-size: 0.72em;
+  line-height: 1;
   flex: none;
+}
+.wallet-card-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .bank-details {
   background: #fff url("/assets/iya-refresh-v5/bank-background.webp") center /

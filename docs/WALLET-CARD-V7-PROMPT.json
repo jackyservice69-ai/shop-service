@@ -1,0 +1,6 @@
+{
+  "mode": "built-in Imagegen edit",
+  "editTarget": "public/assets/iya-refresh-v5/wallet-background.webp",
+  "screenshotRole": "Card bounds reference only; no personal or payment data reproduced",
+  "prompt": "Use case: precise-object-edit / background-extraction. Image 1 is the EDIT TARGET: Iya wallet card's pale pink botanical texture. Image 2 is reference ONLY for the live website card bounds; do NOT reproduce its UI, bank details, QR, logo, names or balance. Modify ONLY the background artwork: remove the entire baked-in rounded-card rim, white edge, double border, bevel and external padding from Image 1. Extend the same blush-pink pearlescent satin texture right to ALL FOUR canvas edges as a full-bleed rectangular texture. Preserve its fine champagne-gold botanical stems and embossed leaves at the far right and lower corners, but do not retain ANY continuous perimeter line. Keep the central/left 75% quiet and pale for live logo and text. A true cropped-to-edge card SURFACE, not a photo of a card, no perspective. Same approximate 1.65:1 wide composition. No outer frame, no corner whitening, no shadow outside card, no text, no currency, no coin, no chip, no numbers, no logo, no QR, no button, no purple. The website will apply its own rounded clipping; the raster itself must have square full-bleed edges."
+}

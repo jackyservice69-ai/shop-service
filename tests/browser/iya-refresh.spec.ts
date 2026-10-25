@@ -6,6 +6,10 @@ test("restored category art, compact rounded hero and themed wallet stay usable 
   page,
 }) => {
   await page.goto("/");
+  await expect(
+    page.locator(".cart-button .lucide-shopping-cart"),
+  ).toBeVisible();
+  await expect(page.locator(".cart-button")).toHaveAttribute("href", "/cart");
   await expect(page.locator(".pastel-browse-card .art-beauty")).toHaveCount(1);
   await expect(page.locator(".pastel-browse-card .art-gadgets")).toHaveCount(1);
   const paths = await page
@@ -102,11 +106,49 @@ test("restored category art, compact rounded hero and themed wallet stay usable 
       button = (await page.locator(".reference-hero-cta").boundingBox())!;
     expect(button.y).toBeGreaterThan(card.y);
     expect(button.y + button.height).toBeLessThan(card.y + card.height);
+    expect(card.height / card.width).toBeCloseTo(2 / 3, 2);
+    expect(button.height).toBeGreaterThanOrEqual(44);
+    const promotion = page.locator(".reference-promotion"),
+      promoBox = (await promotion.boundingBox())!,
+      promoButton = (await page
+        .locator(".reference-promotion-cta")
+        .boundingBox())!;
+    const previousHeight =
+      width <= 700 ? Math.max(promoBox.width / 3, 128) : promoBox.width / 3;
+    expect(promoBox.height).toBeLessThan(previousHeight * 0.91);
+    expect(promoButton.y).toBeGreaterThanOrEqual(promoBox.y);
+    expect(promoButton.y + promoButton.height).toBeLessThanOrEqual(
+      promoBox.y + promoBox.height + 1,
+    );
+    expect(promoButton.height).toBeGreaterThanOrEqual(44);
+
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
+    const contact = page.locator(".reference-contact");
+    await contact.scrollIntoViewIfNeeded();
+    await contact
+      .locator("img")
+      .evaluate((image: HTMLImageElement) => image.decode());
+    await expect(contact.locator("img")).toHaveAttribute(
+      "src",
+      /contact-palette-v6/,
+    );
+    const contactBox = (await contact.boundingBox())!,
+      contactButton = (await contact
+        .locator(".reference-contact-cta")
+        .boundingBox())!;
+    expect(contactBox.width / contactBox.height).toBeCloseTo(449 / 72, 1);
+    expect(contactButton.height).toBeGreaterThanOrEqual(44);
+    await expect(contact.locator(".reference-contact-cta")).toHaveAttribute(
+      "href",
+      "/contact",
+    );
+    await contact.screenshot({
+      path: `output/playwright/contact-palette-v6-${width}.png`,
+    });
     await page.screenshot({
       path: `output/playwright/iya-refresh-home-${width}.png`,
       fullPage: true,
@@ -119,9 +161,16 @@ test("restored category art, compact rounded hero and themed wallet stay usable 
   await expect(
     page.getByRole("heading", { name: "บัญชีรับเงินของร้าน Iya", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".wallet-gold-coin")).toBeVisible();
-  expect(await page.locator(".wallet-card strong").textContent()).not.toContain(
-    "฿",
+  await expect(page.locator(".wallet-gold-coin")).toHaveCount(0);
+  await expect(page.locator(".wallet-card strong")).toContainText("฿");
+  await page.evaluate(() => document.fonts.load('600 34px "Manrope Wallet"'));
+  await expect(page.locator(".wallet-card strong")).toHaveCSS(
+    "font-family",
+    /Manrope Wallet/,
+  );
+  await expect(page.locator(".wallet-card-chip rect")).toHaveAttribute(
+    "fill",
+    /^url\(#/,
   );
   await page.setViewportSize({ width: 412, height: 1000 });
   await page.screenshot({

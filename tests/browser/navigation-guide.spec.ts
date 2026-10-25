@@ -105,6 +105,9 @@ test("public ordering guide has keyboard FAQ and follows the configured deposit 
     "จองมัดจำ 25%",
   );
   await page.getByRole("link", { name: "ติดต่อร้าน", exact: true }).click();
-  await expect(page).toHaveURL("/#store-contact");
-  await expect(page.locator("#store-contact")).toBeFocused();
+  await expect(page).toHaveURL("/contact");
+  await expect(page.locator("#main-content")).toBeFocused();
+  await expect(
+    page.getByRole("heading", { name: "ช่องทางการติดต่อ", exact: true }),
+  ).toBeVisible();
 });

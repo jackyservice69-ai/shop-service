@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { AccountNavigation } from "./account-navigation";
 import "./store-navigation.css";
 
@@ -132,7 +132,7 @@ export function StoreNavigation({ showAccount }: { showAccount: boolean }) {
         <NavLink to="/promotions">โปรโมชั่น</NavLink>
         <NavLink to="/how-to-order">วิธีสั่งซื้อ</NavLink>
         {showAccount && <AccountNavigation />}
-        <Link to="/#store-contact">ติดต่อเรา</Link>
+        <NavLink to="/contact">ติดต่อเรา</NavLink>
       </div>
     </nav>
   );

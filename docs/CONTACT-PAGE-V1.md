@@ -1,0 +1,13 @@
+# Iya contact page — local, 2026-10-26
+
+Public route `/contact` follows the supplied 2133.jpg composition: generated decorative hero, chat cards, social cards, marketplace card, four customer-service tiles and closing artwork. Pink, mint and gold match the compact Hero and promotion. All headings, descriptions and buttons are real HTML; images contain no text, embedded buttons, fake usernames or social marks. Buttons remain in normal document flow and use pastel gradients inspired by each platform: blue for Facebook, mint for LINE, sky blue for Telegram, pink/peach for Instagram, mint/pink for TikTok and peach/coral for Shopee. Dark foregrounds retain readable contrast across both gradient stops; hover reverses the blend. Official logo colors remain intact. No CSS shadows.
+
+The navigation, home contact banner and ordering-guide contact links lead here. The old `/#store-contact` footer anchor remains compatible. The footer and floating LINE controls retain their existing visibility rules.
+
+Channels come from existing public settings and visibility flags. Facebook, LINE, Telegram, Instagram, TikTok and Shopee use local brand symbols. Shopee URL/visibility controls are added through the shared platform catalog; accepted HTTPS hosts are `shopee.co.th`, `s.shopee.co.th` and `shp.ee`, with the same strict URL validation as existing channels. No account or link is invented. An unconfigured section shows an explanation without a dummy button. Owner settings remain permission-protected. No credentials, payment data or real customer records were changed.
+
+Customer-service tiles link to existing order, wallet and guide routes and preserve their login gates. They do not claim unconfigured service hours, response times or product guarantees. External links disclose a new tab and use `noopener noreferrer`.
+
+Generated web assets: `public/assets/contact-page-v1/hero.webp`, `hero-small.webp`, `footer.webp`, `footer-small.webp`, `gifts.webp`. Imagegen PNG originals are retained in ignored `output/imagegen/contact-page-v1/`. Exact prompts and reference names are in `CONTACT-PAGE-V1-PROMPTS.json`. Sharp resizing/WebP encoding preserves artwork; gifts retain alpha transparency.
+
+Verification: TypeScript/Vite build, isolated API tests, browser checks at 320/390/768/1440px, links and active navigation, image decoding, platform colors, 48px targets, public visibility/empty marketplace state, login gate and WCAG Axe. Screenshots: `output/playwright/contact-page-v1-*.png`. Local only; no push or deployment.

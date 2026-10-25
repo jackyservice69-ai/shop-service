@@ -1,0 +1,8 @@
+/* Self-hosted Manrope Latin 600; SIL OFL 1.1, see OFL-Manrope.txt. */
+@font-face {
+  font-family: "Manrope Wallet";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/manrope-latin-600.woff2") format("woff2");
+}

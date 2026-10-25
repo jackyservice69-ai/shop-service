@@ -1103,10 +1103,16 @@
   margin-bottom: 40px;
   background: var(--home-blush);
 }
+/* The generated v6 art occupies the central 350px of its 2172×724 canvas.
+   Preserve the established banner frame and crop only the outer white bands. */
 .customer-shell .pastel-storefront .reference-contact > img {
   display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
   border-radius: inherit;
 }
 .customer-shell .pastel-storefront .reference-contact .reference-contact-cta {
@@ -1234,16 +1240,15 @@
   }
 }
 
-/* Crop only the generated ivory bands: 72px top + 48px bottom from 1440×1198.
-   Keep all artwork and the real CTA at their original visual scale. */
+/* Compact v6 Imagegen compositions: full-bleed art and real HTML CTAs. */
 .customer-shell .pastel-storefront .reference-hero {
   margin-block: 8px;
   border-radius: clamp(18px, 3vw, 32px);
   overflow: hidden;
 }
 .customer-shell .pastel-storefront .reference-hero-cta {
-  top: 70.5575%;
-  height: 13.8915%;
+  top: 67.5%;
+  height: 15.6%;
 }
 .customer-shell .pastel-storefront .pastel-browse-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1255,13 +1260,43 @@
 }
 
 .customer-shell .pastel-storefront .reference-hero {
-  aspect-ratio: 1440 / 1078;
+  aspect-ratio: 3 / 2;
 }
 .customer-shell .pastel-storefront .reference-hero .pastel-hero-illustration {
-  inset: -6.679% 0 auto;
-  height: 111.1317%;
-  object-fit: fill;
+  inset: 0;
+  height: 100%;
+  object-fit: contain;
 }
 .customer-shell .pastel-storefront .reference-hero-cta {
   bottom: auto;
+}
+
+.customer-shell .pastel-storefront .reference-promotion {
+  aspect-ratio: 24 / 7;
+}
+.customer-shell .pastel-storefront .reference-promotion > img {
+  object-fit: cover;
+}
+@media (max-width: 700px) {
+  .customer-shell .pastel-storefront .reference-promotion {
+    min-height: 112px;
+  }
+}
+@media (max-width: 480px) {
+  .customer-shell .pastel-storefront .reference-promotion > img {
+    object-fit: contain;
+    object-position: center top;
+  }
+}
+@media (forced-colors: active) {
+  .customer-shell
+    .pastel-storefront
+    :is(.reference-hero, .reference-promotion) {
+    aspect-ratio: auto;
+  }
+  .customer-shell
+    .pastel-storefront
+    :is(.reference-hero-cta, .reference-promotion-cta) {
+    height: auto;
+  }
 }

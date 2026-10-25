@@ -232,7 +232,7 @@ export function ShoppingGuidePage() {
                 ให้ติดต่อร้านพร้อมรายละเอียดการโอนและข้อความที่พบ
                 โดยเช็กยอดและประวัติกระเป๋าก่อนโอนเพิ่ม
               </p>
-              <Link to="/#store-contact" className="shopping-guide-link">
+              <Link to="/contact" className="shopping-guide-link">
                 ดูช่องทางติดต่อร้าน <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </div>
@@ -316,7 +316,7 @@ export function ShoppingGuidePage() {
             เตรียมเลขคำสั่งซื้อไว้ด้วย
           </p>
         </div>
-        <Link to="/#store-contact" className="button secondary">
+        <Link to="/contact" className="button secondary">
           ติดต่อร้าน <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </aside>

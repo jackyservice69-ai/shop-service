@@ -4,7 +4,7 @@ import {
   useNavigationType,
   useSearchParams,
 } from "react-router-dom";
-import { ChevronDown, Plus, ShoppingBag } from "lucide-react";
+import { ChevronDown, Plus, ShoppingCart } from "lucide-react";
 import {
   ApiError,
   money,
@@ -455,7 +455,7 @@ export function CatalogPage() {
               setSelected(null);
             }}
           >
-            เพิ่มลงตะกร้า <ShoppingBag size={18} aria-hidden="true" />
+            เพิ่มลงตะกร้า <ShoppingCart size={18} aria-hidden="true" />
           </button>
           <ProductReviews productId={selected.id} onChanged={reload} />
         </Modal>

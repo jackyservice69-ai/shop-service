@@ -1,11 +1,32 @@
 [
-  { "key": "line", "label": "LINE", "hosts": ["line.me", "lin.ee"] },
+  {
+    "key": "line",
+    "label": "LINE",
+    "hosts": ["line.me", "lin.ee"]
+  },
   {
     "key": "facebook",
     "label": "Facebook",
     "hosts": ["facebook.com", "fb.com"]
   },
-  { "key": "telegram", "label": "Telegram", "hosts": ["t.me"] },
-  { "key": "tiktok", "label": "TikTok", "hosts": ["tiktok.com"] },
-  { "key": "instagram", "label": "Instagram", "hosts": ["instagram.com"] }
+  {
+    "key": "telegram",
+    "label": "Telegram",
+    "hosts": ["t.me"]
+  },
+  {
+    "key": "tiktok",
+    "label": "TikTok",
+    "hosts": ["tiktok.com"]
+  },
+  {
+    "key": "instagram",
+    "label": "Instagram",
+    "hosts": ["instagram.com"]
+  },
+  {
+    "key": "shopee",
+    "label": "Shopee",
+    "hosts": ["shopee.co.th", "s.shopee.co.th", "shp.ee"]
+  }
 ]

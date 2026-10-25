@@ -1,0 +1,9 @@
+{
+  "mode": "built-in Imagegen edit",
+  "editTarget": "public/assets/storefront/contact-no-button-v3.webp",
+  "paletteReferences": [
+    "public/assets/storefront/hero-compact-v6.webp",
+    "public/assets/storefront/promotion-compact-v6.webp"
+  ],
+  "prompt": "Use case: style-transfer, COLOR GRADING ONLY. Image 1 is the EDIT TARGET: the existing Iya contact footer banner. Images 2 and 3 are PALETTE/LIGHTING references only: the current Iya hero and promotion. Recolor Image 1 to match their warmer luminous blush-pink, soft coral pink, pale mint and champagne-gold accents. Preserve the exact original 2169×348 ultra-wide 6.23:1 aspect ratio, original composition, positions, proportions, heart doodle left and outlined shopping bag right, round corners, text hierarchy, and all wording. Text must remain exactly \"IYA HIEW\", \"YOUR EVERYDAY PERSONAL SHOPPER\", and \"ให้ทุกความชอบใกล้คุณมากขึ้น\" with the little heart beside it. Keep lettering dark soft ink for contrast. Update the background pink and mint blobs and sparkle highlights to harmonize with the two reference banners; existing illustration silhouettes and clean line work remain unchanged. Keep x61%–83%, y25%–75% EMPTY as before for the real HTML ติดต่อเรา button. Do NOT draw a button, button label, new logo, new products, new text, or white padding bands. No purple, no watermark. This is the same contact banner with harmonious refreshed colors, NOT a redesigned layout."
+}
