@@ -124,7 +124,10 @@
   color: var(--ink);
 }
 
-.customer-shell .store-tools .cart-button {
+.customer-shell .store-tools :is(.cart-button, .admin-link) {
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 50%;
 }
@@ -240,15 +243,6 @@
     gap: 4px;
   }
 
-  .customer-shell .store-header .admin-link > span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
   .customer-shell .store-header-search {
     gap: 4px;
     padding-left: 12px;
@@ -285,7 +279,7 @@
 @media (forced-colors: active) {
   .customer-shell .store-header-search,
   .customer-shell .store-header,
-  .customer-shell .store-tools .cart-button {
+  .customer-shell .store-tools :is(.cart-button, .admin-link) {
     border-color: CanvasText;
   }
 }

@@ -2,7 +2,6 @@ import { StoreBanners, Carousel } from "./experience";
 import "./storefront-home.css";
 import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
 import { BankDetailsPanel } from "./bank-details";
-import { ProductReviews, Stars } from "./reviews";
 import { WalletCard } from "./wallet-card";
 import { GoogleButton } from "./google-auth";
 import { LineButton, SocialConnections } from "./line-auth";
@@ -44,7 +43,6 @@ import {
   useData,
   money,
   date,
-  type Product,
   type PageData,
 } from "./api";
 import {
@@ -66,14 +64,7 @@ import {
 } from "./ui";
 
 export function StorePage() {
-  const { publicData, cart, setCart, notify } = useApp();
-  const list = useListQuery();
-  const [params, setParams] = useSearchParams();
-  const category = params.get("category") || "";
-  const { data, error, loading, reload } = useData<PageData<Product>>(
-    "/products?" + list.query + "&category=" + encodeURIComponent(category),
-  );
-  const [selected, setSelected] = useState<Product | null>(null);
+  const { publicData } = useApp();
   const quickCategories = [
     { label: "กระเป๋า", match: /กระเป๋า|bag/i, art: "bag" },
     { label: "น้ำหอม", match: /น้ำหอม|perfume|fragrance/i, art: "perfume" },
@@ -93,41 +84,18 @@ export function StorePage() {
     name,
     art: quickCategories.find((item) => item.match.test(name))?.art,
   }));
-  const chooseCategory = (value: string, scroll = false) => {
-    const next = new URLSearchParams(params);
-    value ? next.set("category", value) : next.delete("category");
-    next.delete("page");
-    setParams(next);
-    if (scroll)
-      document.getElementById("catalog")?.scrollIntoView({ block: "start" });
-  };
-  const add = (p: Product) => {
-    const old = cart.find((i) => i.product.id === p.id);
-    if ((old?.quantity || 0) >= p.stock) {
-      notify("จำนวนสินค้าในตะกร้าถึงสต็อกที่มีแล้ว");
-      return;
-    }
-    setCart((items) =>
-      old
-        ? items.map((i) =>
-            i.product.id === p.id
-              ? { product: p, quantity: i.quantity + 1 }
-              : i,
-          )
-        : [...items, { product: p, quantity: 1 }],
-    );
-    notify("เพิ่ม " + p.name + " ในตะกร้าแล้ว");
-  };
   return (
     <div className="pastel-storefront">
       <StoreBanners />
       <section className="store-hero reference-hero">
         <img
           className="pastel-hero-illustration"
-          src="/assets/storefront/reference-hero.webp"
+          src="/assets/storefront/hero-hd-v2.webp"
+          srcSet="/assets/storefront/hero-hd-small-v2.webp 688w, /assets/storefront/hero-hd-v2.webp 1376w"
+          sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           alt=""
-          width="455"
-          height="378"
+          width="1376"
+          height="1143"
           fetchPriority="high"
         />
         <h1 className="sr-only">ของที่ชอบ ให้เราหิ้วมาให้</h1>
@@ -135,19 +103,18 @@ export function StorePage() {
           รวมของน่ารัก ของน่าใช้ และของที่คุณเล็งไว้ สั่งง่าย จ่ายสะดวก
           ติดตามได้ทุกขั้นตอน ตรวจสลิปอัตโนมัติ จ่ายได้หลายช่องทาง จัดส่งทั่วไทย
         </p>
-        <a className="button primary reference-hero-cta" href="#catalog">
+        <Link className="button primary reference-hero-cta" to="/products">
           เลือกช้อปของที่ชอบ <ArrowRight aria-hidden="true" size={18} />
-        </a>
+        </Link>
       </section>
       <nav className="pastel-quick-categories" aria-label="เลือกหมวดหมู่สินค้า">
         {quickCategories.map((item) => {
           const value =
             categories.find((name) => item.match.test(name)) || item.label;
           return (
-            <button
+            <Link
               key={item.art}
-              type="button"
-              onClick={() => chooseCategory(value, true)}
+              to={"/products?category=" + encodeURIComponent(value)}
             >
               <span
                 className={"pastel-category-art art-" + item.art}
@@ -156,7 +123,7 @@ export function StorePage() {
               <span>
                 {item.label} <ArrowRight size={15} aria-hidden="true" />
               </span>
-            </button>
+            </Link>
           );
         })}
       </nav>
@@ -165,10 +132,12 @@ export function StorePage() {
         aria-labelledby="pastel-promotion-title"
       >
         <img
-          src="/assets/storefront/reference-promotion.webp"
+          src="/assets/storefront/promotion-hd-v2.webp"
+          srcSet="/assets/storefront/promotion-hd-small-v2.webp 894w, /assets/storefront/promotion-hd-v2.webp 1788w"
+          sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           alt=""
-          width="447"
-          height="141"
+          width="1788"
+          height="564"
           loading="lazy"
         />
         <h2 className="sr-only" id="pastel-promotion-title">
@@ -225,22 +194,17 @@ export function StorePage() {
             <span aria-hidden="true" />
             หมวดหมู่ที่น่าช้อป
           </h2>
-          <button
-            type="button"
-            className="pastel-text-link"
-            onClick={() => chooseCategory("", true)}
-          >
+          <Link to="/products" className="pastel-text-link">
             ดูทั้งหมด <ArrowRight size={16} />
-          </button>
+          </Link>
         </div>
         {browseCategories.length ? (
           <div className="pastel-browse-grid">
             {browseCategories.map((item) => (
-              <button
+              <Link
                 key={item.name}
-                type="button"
                 className="pastel-browse-card"
-                onClick={() => chooseCategory(item.name, true)}
+                to={"/products?category=" + encodeURIComponent(item.name)}
               >
                 <span
                   className={
@@ -257,12 +221,12 @@ export function StorePage() {
                   </span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </span>
-              </button>
+              </Link>
             ))}
           </div>
         ) : (
           <p className="pastel-section-help">
-            เลือกดูสินค้าที่มีได้จากรายการด้านล่าง
+            เลือกดูสินค้าได้ที่หน้าเลือกซื้อสินค้า
           </p>
         )}
       </section>
@@ -272,9 +236,9 @@ export function StorePage() {
             <ShoppingBag size={23} aria-hidden="true" />
             หิ้วง่าย ๆ ใน 4 ขั้นตอน
           </h2>
-          <a href="#catalog" className="pastel-text-link">
+          <Link to="/products" className="pastel-text-link">
             เริ่มเลือกสินค้า <ArrowRight size={16} />
-          </a>
+          </Link>
         </div>
         <ol>
           <li>
@@ -317,9 +281,11 @@ export function StorePage() {
       </section>
       <section className="pastel-contact reference-contact">
         <img
-          src="/assets/storefront/reference-contact.webp"
-          width={449}
-          height={72}
+          src="/assets/storefront/contact-hd-v2.webp"
+          srcSet="/assets/storefront/contact-hd-small-v2.webp 1084w, /assets/storefront/contact-hd-v2.webp 2169w"
+          sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
+          width={2169}
+          height={348}
           alt=""
           loading="lazy"
         />
@@ -340,119 +306,6 @@ export function StorePage() {
           ชวนเพื่อนมาช้อปด้วยกัน <ArrowRight size={16} />
         </Link>
       </section>
-      <section id="catalog" className="catalog">
-        <PageHeading
-          title="เลือกของที่ใช่ สำหรับคุณ"
-          sub="ของโปรดชิ้นต่อไป อาจอยู่ตรงนี้"
-          level={2}
-        />
-        <div className="category-tabs">
-          {["", ...(publicData?.categories || [])].map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={category === c ? "selected" : ""}
-              aria-pressed={category === c}
-              onClick={() => chooseCategory(c)}
-            >
-              {c || "สินค้าทั้งหมด"}
-            </button>
-          ))}
-        </div>
-        {error ? (
-          <ErrorBox error={error} retry={reload} />
-        ) : loading && !data ? (
-          <Loading />
-        ) : data?.items.length ? (
-          <>
-            <div className="product-grid">
-              {data.items.map((p) => (
-                <article className="product-card" key={p.id}>
-                  <button
-                    className="product-image"
-                    onClick={() => setSelected(p)}
-                    aria-label={"ดูรายละเอียด " + p.name}
-                  >
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      width="400"
-                      height="320"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.src = "/assets/placeholder.svg";
-                      }}
-                    />
-                    <span className="product-tag">{p.category}</span>
-                    {!p.stock && <span className="soldout">สินค้าหมด</span>}
-                  </button>
-                  <div className="product-copy">
-                    <small>{p.category}</small>
-                    <button
-                      className="product-title"
-                      onClick={() => setSelected(p)}
-                    >
-                      {p.name}
-                    </button>
-                    <p>{p.description}</p>
-                    <div className="review-summary">
-                      <Stars rating={p.rating_average || 0} />
-                      <small>{p.review_count || 0} รีวิว</small>
-                    </div>
-                    <div>
-                      <strong>{money(p.price)}</strong>
-                      <button
-                        className="add-cart"
-                        aria-label={"เพิ่ม " + p.name + " ลงตะกร้า"}
-                        disabled={!p.stock}
-                        onClick={() => add(p)}
-                      >
-                        <Plus size={19} />
-                      </button>
-                    </div>
-                    <small className="stock-label">
-                      <i className={p.stock ? "available" : "unavailable"} />{" "}
-                      {p.stock
-                        ? "พร้อมหิ้ว · เหลือ " + p.stock + " ชิ้น"
-                        : "รอเติมสินค้า"}
-                    </small>
-                  </div>
-                </article>
-              ))}
-            </div>
-            <Pagination data={data} onPage={list.setPage} />
-          </>
-        ) : (
-          <Empty
-            title="ยังไม่พบสินค้า"
-            description="ลองเปลี่ยนคำค้นหรือเลือกหมวดหมู่อื่น"
-          />
-        )}
-      </section>
-      {selected && (
-        <Modal title={selected.name} onClose={() => setSelected(null)}>
-          <img
-            className="detail-image"
-            src={selected.image}
-            alt={selected.name}
-          />
-          <Badge status={selected.category} />
-          <p>{selected.description}</p>
-          <h2>{money(selected.price)}</h2>
-          <p className="muted">คงเหลือ {selected.stock} ชิ้น</p>
-          <button
-            className="button primary"
-            disabled={!selected.stock}
-            onClick={() => {
-              add(selected);
-              setSelected(null);
-            }}
-          >
-            เพิ่มลงตะกร้า <ShoppingBag size={18} />
-          </button>
-          <ProductReviews productId={selected.id} onChanged={reload} />
-        </Modal>
-      )}
     </div>
   );
 }
@@ -749,7 +602,7 @@ export function CartPage() {
           title="ตะกร้ายังว่างอยู่"
           description="เลือกสินค้าที่ชอบ แล้วให้เราช่วยหิ้ว"
         >
-          <Link className="button primary" to="/">
+          <Link className="button primary" to="/products">
             ไปเลือกสินค้า <ArrowRight size={17} />
           </Link>
         </Empty>
@@ -798,7 +651,7 @@ export function CartPage() {
                 </div>
               </div>
             ))}
-            <Link to="/" className="text-button">
+            <Link to="/products" className="text-button">
               เลือกสินค้าเพิ่ม <ArrowRight size={16} />
             </Link>
           </section>
@@ -1178,7 +1031,7 @@ export function OrdersPage() {
         title="คำสั่งซื้อของฉัน"
         sub="ติดตามของที่ชอบ ตั้งแต่จองจนถึงมือคุณ"
       >
-        <Link to="/" className="button primary small">
+        <Link to="/products" className="button primary small">
           <Plus size={16} /> เลือกสินค้าเพิ่ม
         </Link>
       </PageHeading>
@@ -1271,7 +1124,7 @@ export function OrdersPage() {
           title="ยังไม่มีคำสั่งซื้อ"
           description="เริ่มเลือกของที่ชอบ แล้วให้เราช่วยหิ้ว"
         >
-          <Link to="/" className="button primary">
+          <Link to="/products" className="button primary">
             ไปเลือกสินค้า
           </Link>
         </Empty>

@@ -554,19 +554,69 @@ export function createApp(db, config) {
   app.get(
     "/api/products",
     asyncRoute((req, res) => {
-      const { q } = paging(req),
-        cat = String(req.query.category || ""),
-        ids = String(req.query.ids || "")
-          .split(",")
-          .filter(Boolean)
-          .slice(0, 50);
+      const rawQuery = new URL(req.originalUrl, "http://catalog.local")
+        .searchParams;
+      const scalar = (name) => {
+        const values = rawQuery.getAll(name);
+        if (
+          values.length > 1 ||
+          [...rawQuery.keys()].some((key) => key.startsWith(name + "["))
+        )
+          fail(400, "ตัวกรองสินค้าไม่ถูกต้อง");
+        return values[0] || "";
+      };
+      const price = (name) => {
+        const value = scalar(name);
+        if (value === "") return null;
+        if (
+          !/^\d+$/.test(value) ||
+          !Number.isSafeInteger(Number(value)) ||
+          Number(value) > 100000000
+        )
+          fail(400, "ช่วงราคาต้องเป็นจำนวนสตางค์ตั้งแต่ 0 ถึง 100000000");
+        return Number(value);
+      };
+      const minPrice = price("minPrice"),
+        maxPrice = price("maxPrice"),
+        inStock = scalar("inStock"),
+        sort = scalar("sort") || "newest",
+        cat = scalar("category"),
+        q = scalar("q").slice(0, 100),
+        ids = scalar("ids").split(",").filter(Boolean).slice(0, 50);
+      if (minPrice !== null && maxPrice !== null && minPrice > maxPrice)
+        fail(400, "ราคาสูงสุดต้องไม่น้อยกว่าราคาต่ำสุด");
+      if (!["", "0", "1"].includes(inStock))
+        fail(400, "ตัวกรองสต็อกไม่ถูกต้อง");
+      const sorts = {
+        newest: "created_at DESC,id ASC",
+        "price-asc": "price ASC,id ASC",
+        "price-desc": "price DESC,id ASC",
+        name: "name COLLATE NOCASE ASC,id ASC",
+      };
+      if (!Object.hasOwn(sorts, sort)) fail(400, "การเรียงสินค้าไม่ถูกต้อง");
+      const conditions = ["active=1", "name LIKE ?", "(?='' OR category=?)"],
+        values = ["%" + q + "%", cat, cat];
+      if (minPrice !== null) {
+        conditions.push("price>=?");
+        values.push(minPrice);
+      }
+      if (maxPrice !== null) {
+        conditions.push("price<=?");
+        values.push(maxPrice);
+      }
+      if (inStock === "1") conditions.push("stock>0");
+      if (ids.length) {
+        conditions.push(`id IN (${ids.map(() => "?").join(",")})`);
+        values.push(...ids);
+      }
       res.json(
         pageRows(
           db,
-          "SELECT id,name,description,category,price,stock,image,created_at,(SELECT COALESCE(AVG(rating),0) FROM reviews WHERE product_id=products.id AND visible=1) rating_average,(SELECT COUNT(*) FROM reviews WHERE product_id=products.id AND visible=1) review_count FROM products WHERE active=1 AND name LIKE ? AND (?='' OR category=?)" +
-            (ids.length ? ` AND id IN (${ids.map(() => "?").join(",")})` : "") +
-            " ORDER BY created_at DESC",
-          ["%" + q + "%", cat, cat, ...ids],
+          "SELECT id,name,description,category,price,stock,image,created_at,(SELECT COALESCE(AVG(rating),0) FROM reviews WHERE product_id=products.id AND visible=1) rating_average,(SELECT COUNT(*) FROM reviews WHERE product_id=products.id AND visible=1) review_count FROM products WHERE " +
+            conditions.join(" AND ") +
+            " ORDER BY " +
+            sorts[sort],
+          values,
           req,
         ),
       );

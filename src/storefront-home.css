@@ -137,7 +137,7 @@
   border-radius: 28px;
   background: var(--surface);
 }
-.customer-shell .pastel-storefront .pastel-quick-categories button {
+.customer-shell .pastel-storefront .pastel-quick-categories a {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -147,11 +147,16 @@
   border: 0;
   background: transparent;
   color: var(--ink);
+  text-decoration: none;
   cursor: pointer;
 }
 .customer-shell .pastel-storefront .pastel-category-art {
   display: block;
-  background-image: url("/assets/storefront/reference-categories.webp");
+  background-image: url("/assets/storefront/categories-hd-small-v2.webp");
+  background-image: image-set(
+    url("/assets/storefront/categories-hd-small-v2.webp") 1x,
+    url("/assets/storefront/categories-hd-v2.webp") 2x
+  );
   background-size: 400% auto;
   background-repeat: no-repeat;
   background-color: var(--home-blush);
@@ -186,7 +191,7 @@
 .customer-shell
   .pastel-storefront
   .pastel-quick-categories
-  button
+  a
   > span:last-child {
   display: flex;
   align-items: center;
@@ -201,14 +206,14 @@
 .customer-shell
   .pastel-storefront
   .pastel-quick-categories
-  button:hover
+  a:hover
   .pastel-category-art {
   transform: translateY(-4px);
 }
 .customer-shell
   .pastel-storefront
   .pastel-quick-categories
-  button:active
+  a:active
   .pastel-category-art {
   transform: scale(0.96);
 }
@@ -391,6 +396,7 @@
   background: var(--surface);
   color: var(--ink);
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition:
     border-color 160ms ease,
@@ -431,83 +437,6 @@
 }
 .customer-shell .pastel-storefront .pastel-section-help {
   color: var(--muted-text);
-}
-.customer-shell .pastel-storefront .catalog {
-  padding-top: 0;
-  scroll-margin-top: 24px;
-}
-.customer-shell .pastel-storefront .catalog .page-heading {
-  margin-bottom: 0;
-  align-items: center;
-}
-.customer-shell .pastel-storefront .catalog .page-heading h2 {
-  color: var(--ink);
-  font-size: 26px;
-  font-weight: 750;
-}
-.customer-shell .pastel-storefront .catalog .page-heading p {
-  color: var(--muted-text);
-  font-size: 13px;
-}
-.customer-shell .pastel-storefront .catalog .search-box {
-  border-radius: 99px;
-  min-height: 46px;
-  background: var(--surface);
-}
-.customer-shell .pastel-storefront .category-tabs {
-  margin: 22px 0 24px;
-  gap: 8px;
-}
-.customer-shell .pastel-storefront .category-tabs button {
-  min-height: 44px;
-  padding: 9px 20px;
-  border-radius: 99px;
-  color: var(--ink);
-}
-.customer-shell .pastel-storefront .category-tabs button.selected {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-.customer-shell .pastel-storefront .product-grid {
-  gap: 20px;
-}
-.customer-shell .pastel-storefront .product-card {
-  border: 1px solid var(--border);
-  border-radius: 18px;
-}
-.customer-shell .pastel-storefront .product-image {
-  aspect-ratio: 1.1;
-}
-.customer-shell .pastel-storefront .product-copy {
-  padding: 16px;
-}
-.customer-shell .pastel-storefront .product-copy > small {
-  font-size: 11px;
-}
-.customer-shell .pastel-storefront .product-title {
-  min-height: 44px;
-  font-size: 15px;
-  line-height: 1.6;
-  font-weight: 650;
-}
-.customer-shell .pastel-storefront .product-copy > p {
-  font-size: 12px;
-}
-.customer-shell .pastel-storefront .product-copy strong {
-  font-size: 21px;
-}
-.customer-shell .pastel-storefront .product-copy .stock-label {
-  font-size: 11px;
-  line-height: 1.6;
-}
-.customer-shell .pastel-storefront .add-cart {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-}
-.customer-shell .pastel-storefront .review-summary {
-  gap: 5px;
-  flex-wrap: wrap;
 }
 .customer-shell .pastel-storefront .pastel-steps {
   margin: 40px 0 24px;
@@ -737,18 +666,18 @@
     padding: 20px 14px;
     border-radius: 24px;
   }
-  .customer-shell .pastel-storefront .pastel-quick-categories button {
+  .customer-shell .pastel-storefront .pastel-quick-categories a {
     gap: 9px;
   }
   .customer-shell
     .pastel-storefront
     .pastel-quick-categories
-    button
+    a
     > span:last-child {
     font-size: 11px;
     gap: 3px;
   }
-  .customer-shell .pastel-storefront .pastel-quick-categories button svg {
+  .customer-shell .pastel-storefront .pastel-quick-categories a svg {
     width: 12px;
     height: 12px;
   }
@@ -817,49 +746,6 @@
   }
   .customer-shell .pastel-storefront .pastel-browse {
     margin-bottom: 30px;
-  }
-  .customer-shell .pastel-storefront .catalog .page-heading {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-  .customer-shell .pastel-storefront .catalog .page-heading h2 {
-    font-size: 23px;
-  }
-  .customer-shell .pastel-storefront .catalog .page-heading p {
-    font-size: 12px;
-  }
-  .customer-shell
-    .pastel-storefront
-    .catalog
-    :is(.heading-actions, .search-box) {
-    width: 100%;
-  }
-  .customer-shell .pastel-storefront .category-tabs {
-    margin: 18px 0 20px;
-  }
-  .customer-shell .pastel-storefront .category-tabs button {
-    padding: 9px 16px;
-    font-size: 12px;
-  }
-  .customer-shell .pastel-storefront .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-  .customer-shell .pastel-storefront .product-copy {
-    padding: 12px;
-  }
-  .customer-shell .pastel-storefront .product-title {
-    font-size: 13px;
-  }
-  .customer-shell .pastel-storefront .product-copy > p {
-    font-size: 11px;
-  }
-  .customer-shell .pastel-storefront .product-copy strong {
-    font-size: 18px;
-  }
-  .customer-shell .pastel-storefront .product-copy .stock-label {
-    font-size: 10px;
   }
   .customer-shell .pastel-storefront .pastel-steps {
     padding: 22px 18px;
@@ -935,11 +821,11 @@
   .customer-shell
     .pastel-storefront
     .pastel-quick-categories
-    button
+    a
     > span:last-child {
     font-size: 10px;
   }
-  .customer-shell .pastel-storefront .pastel-quick-categories button svg {
+  .customer-shell .pastel-storefront .pastel-quick-categories a svg {
     display: none;
   }
   .customer-shell .pastel-storefront .pastel-promotion {
@@ -950,15 +836,6 @@
   }
   .customer-shell .pastel-storefront .pastel-promotion > div {
     max-width: 80%;
-  }
-  .customer-shell .pastel-storefront .product-grid {
-    gap: 10px;
-  }
-  .customer-shell .pastel-storefront .product-copy {
-    padding: 10px;
-  }
-  .customer-shell .pastel-storefront .product-copy strong {
-    font-size: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1041,7 +918,11 @@
   gap: 14px;
 }
 .customer-shell .pastel-storefront .pastel-category-art {
-  background-image: url("/assets/storefront/reference-categories.webp");
+  background-image: url("/assets/storefront/categories-hd-small-v2.webp");
+  background-image: image-set(
+    url("/assets/storefront/categories-hd-small-v2.webp") 1x,
+    url("/assets/storefront/categories-hd-v2.webp") 2x
+  );
   background-size: 400% auto;
 }
 .customer-shell .pastel-storefront .art-generic {
@@ -1064,10 +945,10 @@
 }
 .customer-shell .pastel-storefront .reference-promotion-cta {
   position: absolute;
-  left: 18%;
-  top: 63%;
-  width: 34%;
-  height: 23%;
+  left: 17%;
+  top: 64%;
+  width: 34.3%;
+  height: 24%;
   min-height: 32px;
   border: 0;
   border-radius: 99px;
@@ -1087,7 +968,11 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .customer-shell .pastel-storefront .pastel-browse-card > .pastel-category-art {
-  background-image: url("/assets/storefront/reference-category-photos.webp");
+  background-image: url("/assets/storefront/category-photos-hd-small-v2.webp");
+  background-image: image-set(
+    url("/assets/storefront/category-photos-hd-small-v2.webp") 1x,
+    url("/assets/storefront/category-photos-hd-v2.webp") 2x
+  );
   background-size: 400% 100%;
   aspect-ratio: 99 / 80;
 }
@@ -1099,10 +984,6 @@
 }
 .customer-shell .pastel-storefront .pastel-contact {
   order: 7;
-}
-.customer-shell .pastel-storefront .catalog {
-  order: 8;
-  padding-top: 24px;
 }
 @media (max-width: 700px) {
   .customer-shell .pastel-storefront .reference-hero-cta {
@@ -1203,10 +1084,10 @@
 }
 .customer-shell .pastel-storefront .reference-contact .reference-contact-cta {
   position: absolute;
-  top: 25%;
-  left: 62%;
-  width: 22%;
-  height: 44%;
+  top: 27.6%;
+  left: 61.4%;
+  width: 21.5%;
+  height: 44.2%;
   min-height: 32px;
   padding: 0 6px;
   border-radius: 99px;

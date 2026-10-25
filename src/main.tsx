@@ -75,6 +75,7 @@ import {
 import "./brand.generated.css";
 import "./styles.css";
 import "./storefront-shell.css";
+import { CatalogPage } from "./catalog";
 const nav = [
   ["dashboard", "ภาพรวม", LayoutDashboard],
   ["orders", "คำสั่งซื้อ", Package],
@@ -126,13 +127,16 @@ function StoreLayout() {
     setSearch(currentSearch);
   }, [currentSearch, location.pathname]);
   React.useEffect(() => {
-    if (location.pathname !== "/" || search === currentSearch) return;
+    if (location.pathname !== "/products" || search === currentSearch) return;
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams(location.search);
       const query = search.trim();
       query ? params.set("q", query) : params.delete("q");
       params.delete("page");
-      navigate({ pathname: "/", search: params.toString() }, { replace: true });
+      navigate(
+        { pathname: "/products", search: params.toString() },
+        { replace: true },
+      );
     }, 300);
     return () => window.clearTimeout(timer);
   }, [search, currentSearch, location.pathname, location.search, navigate]);
@@ -152,10 +156,14 @@ function StoreLayout() {
           onSubmit={(event) => {
             event.preventDefault();
             const query = search.trim();
-            const params = new URLSearchParams();
+            const params = new URLSearchParams(
+              location.pathname === "/products" ? location.search : "",
+            );
             if (query) params.set("q", query);
+            else params.delete("q");
+            params.delete("page");
             setSearch(query);
-            navigate({ pathname: "/", search: params.toString() });
+            navigate({ pathname: "/products", search: params.toString() });
           }}
         >
           <Search size={20} aria-hidden="true" />
@@ -174,7 +182,7 @@ function StoreLayout() {
               aria-label="ล้างคำค้นหา"
               onClick={() => {
                 setSearch("");
-                navigate("/");
+                navigate("/products", { state: { resetCatalogFilters: true } });
                 searchInput.current?.focus();
               }}
             >
@@ -187,10 +195,10 @@ function StoreLayout() {
         </form>
         <nav aria-label="เมนูหน้าร้าน">
           <NavLink to="/" end>
-            เลือกซื้อสินค้า
+            หน้าหลัก
           </NavLink>
+          <NavLink to="/products">เลือกซื้อสินค้า</NavLink>
           <NavLink to="/promotions">โปรโมชั่น</NavLink>
-          <a href="#store-contact">ติดต่อเรา</a>
           {user && !user.mustChangePassword && (
             <>
               <NavLink to="/orders">คำสั่งซื้อ</NavLink>
@@ -201,15 +209,17 @@ function StoreLayout() {
               <NavLink to="/addresses">ที่อยู่จัดส่ง</NavLink>
             </>
           )}
+          <a href="#store-contact">ติดต่อเรา</a>
         </nav>
         <div className="store-tools">
           {user?.permissions.length ? (
             <Link
               to="/admin"
-              className="text-button admin-link"
+              className="admin-link"
               aria-label="หลังบ้าน"
+              title="หลังบ้าน"
             >
-              <LayoutDashboard size={18} /> <span>หลังบ้าน</span>
+              <LayoutDashboard size={20} aria-hidden="true" />
             </Link>
           ) : null}
           <Link
@@ -282,6 +292,24 @@ function StoreLayout() {
         </a>
       </nav>
     </div>
+  );
+}
+function StoreHome() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const hasCatalogQuery = [
+    "q",
+    "category",
+    "minPrice",
+    "maxPrice",
+    "inStock",
+    "sort",
+    "page",
+  ].some((key) => params.has(key));
+  return hasCatalogQuery ? (
+    <Navigate to={{ pathname: "/products", search: location.search }} replace />
+  ) : (
+    <StorePage />
   );
 }
 function AdminLayout() {
@@ -407,7 +435,8 @@ function App() {
         <Routes>
           <Route path="bank-details-card" element={<BankDetailsExportPage />} />
           <Route element={<StoreLayout />}>
-            <Route index element={<StorePage />} />
+            <Route index element={<StoreHome />} />
+            <Route path="products" element={<CatalogPage />} />
             <Route path="login" element={<AuthPage />} />
             <Route path="register" element={<AuthPage register />} />
             <Route path="google/complete" element={<GoogleCompletePage />} />

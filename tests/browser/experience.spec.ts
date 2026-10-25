@@ -365,7 +365,7 @@ test("admin uploads promotion image, member collects coupon then applies server-
       .getByRole("button", { name: "เก็บคูปองรับส่วนลด", exact: true })
       .click();
     await expect(card.getByRole("link", { name: "ใช้คูปองนี้" })).toBeVisible();
-    await customer.goto("/");
+    await customer.goto("/products");
     await customer
       .getByRole("button", { name: "เพิ่ม สินค้าทดสอบ ลงตะกร้า" })
       .click();

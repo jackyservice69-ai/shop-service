@@ -133,7 +133,7 @@ test("consignor applies and publishes after approval; paid completion settles th
       },
     });
     expect(topup.ok()).toBe(true);
-    await buyerPage.goto("/");
+    await buyerPage.goto("/products");
     const announcement = buyerPage.getByRole("dialog", {
       name: "ประกาศจากร้าน",
     });
@@ -173,7 +173,7 @@ test("consignor applies and publishes after approval; paid completion settles th
     await expect(
       sellerPage.getByText("฿25", { exact: true }).first(),
     ).toBeVisible();
-    await buyerPage.goto("/");
+    await buyerPage.goto("/products");
     await buyerPage
       .getByRole("button", { name: "ดูรายละเอียด สินค้าฝากขายรีวิว" })
       .click();

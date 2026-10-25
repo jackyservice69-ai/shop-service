@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 test("store, auth and dashboard pass automated accessibility checks", async ({
   page,
 }) => {
-  for (const path of ["/", "/login", "/register"]) {
+  for (const path of ["/", "/products", "/login", "/register"]) {
     await page.goto(path);
     await expect(page.locator("main")).toBeVisible();
     const scan = await new AxeBuilder({ page })

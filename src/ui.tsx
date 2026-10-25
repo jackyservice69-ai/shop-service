@@ -262,7 +262,7 @@ type FieldProps = {
   placeholder?: string;
   help?: string;
   autoComplete?: string;
-  inputMode?: "tel" | "email" | "text" | "numeric";
+  inputMode?: "tel" | "email" | "text" | "numeric" | "decimal";
   spellCheck?: boolean;
   autoCapitalize?: string;
   disabled?: boolean;

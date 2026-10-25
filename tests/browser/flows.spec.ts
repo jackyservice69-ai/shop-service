@@ -212,7 +212,7 @@ test("registration discovery dropdown requires a meaningful Other detail and sup
 });
 
 async function addAndCheckout(page: Page, payment = "deposit") {
-  await page.goto("/");
+  await page.goto("/products");
   await page
     .getByRole("button", { name: "เพิ่ม สินค้าทดสอบ ลงตะกร้า" })
     .click();
@@ -245,6 +245,12 @@ test("store search, detail dialog, keyboard dismissal, cart persistence and narr
   await expect(
     page.getByRole("heading", { name: "ของที่ชอบ ให้เราหิ้วมาให้" }),
   ).toBeVisible();
+  await expect(page.locator(".product-card")).toHaveCount(0);
+  await page
+    .getByRole("navigation", { name: "เมนูหน้าร้าน" })
+    .getByRole("link", { name: "เลือกซื้อสินค้า", exact: true })
+    .click();
+  await expect(page).toHaveURL("/products");
   await page.getByRole("button", { name: "ดูรายละเอียด สินค้าทดสอบ" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -675,7 +681,7 @@ test("address book supports map pin, multiple addresses, default selection, chec
   const items = (await (await page.request.get("/api/addresses")).json()).items;
   const primary = items.find((a) => a.is_default),
     home = items.find((a) => a.label === "บ้าน");
-  await page.goto("/");
+  await page.goto("/products");
   await page
     .getByRole("button", { name: "เพิ่ม สินค้าทดสอบ ลงตะกร้า" })
     .click();
@@ -787,6 +793,7 @@ test("mobile admin table, navigation, modal and all customer routes have no docu
     "/admin",
     "/admin/products",
     "/admin/settings",
+    "/products",
     "/wallet",
     "/orders",
     "/referrals",
