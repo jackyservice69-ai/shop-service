@@ -58,7 +58,7 @@ test("customer tops up 100 baht from a PromptPay slip when the registered shop Q
     });
     await page.request.post("/__test/promptpay-slip", { data: {} });
     await page.getByRole("button", { name: "ตรวจสอบสลิปและเติมเงิน" }).click();
-    await expect(page.locator(".wallet-card strong")).toHaveText("฿100");
+    await expect(page.locator(".wallet-card strong")).toHaveAttribute("aria-label", "฿100");
     await expect(
       page.getByRole("cell", { name: "เติมเงิน", exact: true }),
     ).toHaveCount(1);

@@ -268,6 +268,7 @@ type FieldProps = {
   readOnly?: boolean;
   defaultValue?: any;
   accept?: string;
+  multiple?: boolean;
   pattern?: string;
 };
 const FormErrors = createContext<{ path: string; message: string }[]>([]);

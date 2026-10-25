@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, ExternalLink } from "lucide-react";
 import { send, useApp, useData } from "./api";
 import { BankLogo } from "./contacts";
 import { ImageUpload } from "./experience";
@@ -251,6 +251,15 @@ export function MerchantAccountsPage() {
         title="บัญชีร้านค้า"
         sub="บัญชีรับเงินและ QR ของแต่ละธนาคาร · สูงสุด 20 บัญชี และ 10 QR ต่อบัญชี"
       >
+        <a
+          className="button secondary"
+          href="https://developer.easyslip.com/auth/sign-in"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="EasySlip (เปิดในแท็บใหม่)"
+        >
+          EasySlip <ExternalLink size={16} aria-hidden="true" />
+        </a>
         <button
           className="button primary"
           disabled={items.length >= 20 || loading}
@@ -288,7 +297,6 @@ export function MerchantAccountsPage() {
                 .map((a) => (
                   <article className="panel merchant-account" key={a.id}>
                     <div className="merchant-account-heading">
-                      <BankLogo code={a.bankCode} name={a.bankName} />
                       <div>
                         <h3>{a.label}</h3>
                         <Badge
@@ -302,7 +310,10 @@ export function MerchantAccountsPage() {
                         )}
                       </div>
                     </div>
-                    <p className="bank-number">{a.bankNumber}</p>
+                    <div className="bank-number-row">
+                      <BankLogo code={a.bankCode} name={a.bankName} />
+                      <p className="bank-number">{a.bankNumber}</p>
+                    </div>
                     <p>
                       {a.accountName}
                       <br />

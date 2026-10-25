@@ -1,6 +1,13 @@
 import platforms from "../shared/socials.json";
 import { useApp } from "./api";
 import { Landmark } from "lucide-react";
+import { useState } from "react";
+import bankLogos from "../shared/bank-logos.json";
+
+const bankAssets: Record<
+  string,
+  { file: string; background: string; name: string }
+> = bankLogos;
 
 export function SocialLinks() {
   const { publicData } = useApp();
@@ -33,17 +40,33 @@ export function SocialLinks() {
   ) : null;
 }
 export function BankLogo({ code, name }: { code?: string; name?: string }) {
-  return code === "014" ? (
-    <img
-      className="receiving-bank-logo"
-      src="/assets/brands/scb.svg"
-      alt={name || "ธนาคารไทยพาณิชย์"}
-      width={130}
-      height={48}
-    />
-  ) : (
-    <span className="bank-logo" role="img" aria-label={name || "ธนาคาร"}>
-      <Landmark size={28} aria-hidden="true" />
+  const [failedFile, setFailedFile] = useState("");
+  const logo =
+    bankAssets[
+      String(code || "")
+        .trim()
+        .padStart(3, "0")
+    ];
+  const available = logo && failedFile !== logo.file;
+  return (
+    <span
+      className="bank-logo receiving-bank-logo"
+      role="img"
+      aria-label={name || logo?.name || "ธนาคาร"}
+      style={available ? { backgroundColor: logo.background } : undefined}
+    >
+      {available ? (
+        <img
+          className={logo.file === "ttb.svg" ? "bank-logo-padded" : undefined}
+          src={"/assets/banks/" + logo.file}
+          alt=""
+          width={28}
+          height={28}
+          onError={() => setFailedFile(logo.file)}
+        />
+      ) : (
+        <Landmark size={24} aria-hidden="true" />
+      )}
     </span>
   );
 }

@@ -1,3 +1,4 @@
+import campaignTemplates from "../shared/campaign-templates.json";
 import {
   useEffect,
   useId,
@@ -36,6 +37,7 @@ import {
 } from "./api";
 import {
   Field,
+  cents,
   Form,
   PageHeading,
   ErrorBox,
@@ -235,6 +237,39 @@ export function ImageUpload({
     [size, setSize] = useState("");
   const inputId = useId(),
     guide = IMAGE_SIZES[kind];
+  async function uploadFile(file: File) {
+    setError("");
+    if (file.size > 5 * 1024 * 1024) {
+      setError("ไฟล์ต้องไม่เกิน 5 MB");
+      return;
+    }
+    setBusy(true);
+    onBusyChange?.(true);
+    try {
+      const body = new FormData();
+      body.append("image", file);
+      const r = await api(uploadPath || "/admin/media/" + kind, {
+        method: "POST",
+        body,
+      });
+      onChange(r.url);
+      setSize(
+        `จัดเก็บ ${r.width} × ${r.height} px` +
+          (kind === "favicon"
+            ? r.hasTransparency
+              ? " · มีส่วนโปร่งใส"
+              : " · พื้นหลังทึบ"
+            : kind === "paymentQr" && r.verified
+              ? " · " + r.message
+              : ""),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+      onBusyChange?.(false);
+    }
+  }
   return (
     <div className="image-uploader">
       <div
@@ -276,38 +311,8 @@ export function ImageUpload({
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
-            setError("");
-            if (file.size > 5 * 1024 * 1024) {
-              setError("ไฟล์ต้องไม่เกิน 5 MB");
-              return;
-            }
-            setBusy(true);
-            onBusyChange?.(true);
-            try {
-              const body = new FormData();
-              body.append("image", file);
-              const r = await api(uploadPath || "/admin/media/" + kind, {
-                method: "POST",
-                body,
-              });
-              onChange(r.url);
-              setSize(
-                `จัดเก็บ ${r.width} × ${r.height} px` +
-                  (kind === "favicon"
-                    ? r.hasTransparency
-                      ? " · มีส่วนโปร่งใส"
-                      : " · พื้นหลังทึบ"
-                    : kind === "paymentQr" && r.verified
-                      ? " · " + r.message
-                      : ""),
-              );
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-              onBusyChange?.(false);
-              e.target.value = "";
-            }
+            await uploadFile(file);
+            e.target.value = "";
           }}
         />
         <small role="status">{busy ? "กำลังตรวจสอบและอัปโหลด…" : size}</small>
@@ -326,6 +331,51 @@ export function ImageUpload({
         )}
       </div>
       {error && <ErrorBox error={error} />}
+      {["announcement", "promotion"].includes(kind) && (
+        <details className="campaign-templates">
+          <summary>เลือกรูป{guide.label}ที่เตรียมไว้ (4 แบบ)</summary>
+          <p className="muted">
+            {kind === "promotion"
+              ? "ภาพโปรโมชั่นเป็นแนวคิด ยังไม่ได้เปิดใช้ส่วนลด ต้องตั้งเงื่อนไขให้ตรงกับภาพก่อนเผยแพร่"
+              : "เลือกภาพแล้วตรวจเนื้อหาและช่วงเวลาที่ต้องการแสดงก่อนบันทึก"}
+          </p>
+          <div className="campaign-template-grid">
+            {campaignTemplates
+              .filter((item) => item.kind === kind)
+              .map((item) => (
+                <button
+                  type="button"
+                  className="campaign-template"
+                  key={item.id}
+                  disabled={busy}
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(
+                        `/assets/iya-refresh-v5/${item.id}.jpg`,
+                      );
+                      if (!response.ok)
+                        throw new Error("โหลดภาพไม่สำเร็จ กรุณาลองอีกครั้ง");
+                      await uploadFile(
+                        new File([await response.blob()], item.id + ".jpg", {
+                          type: "image/jpeg",
+                        }),
+                      );
+                    } catch (error) {
+                      setError((error as Error).message);
+                    }
+                  }}
+                >
+                  <img
+                    src={`/assets/iya-refresh-v5/${item.id}.jpg`}
+                    alt={item.title}
+                    loading="lazy"
+                  />
+                  <span>ใช้ภาพ: {item.title}</span>
+                </button>
+              ))}
+          </div>
+        </details>
+      )}
     </div>
   );
 }
@@ -1120,6 +1170,7 @@ export function PromotionsPage({ coupons = false }: { coupons?: boolean }) {
 function CommissionRateSettings() {
   const { data, error, loading, reload } = useData<{
     commissionPercent: number;
+    commissionCap: number | null;
   }>("/admin/commissions/settings");
   const { notify, refresh } = useApp();
   return (
@@ -1139,6 +1190,10 @@ function CommissionRateSettings() {
                 "/admin/commissions/settings",
                 {
                   commissionPercent: Number(formObject(form).commissionPercent),
+                  commissionCap:
+                    formObject(form).commissionCap === ""
+                      ? null
+                      : cents(formObject(form).commissionCap),
                 },
                 "PUT",
               );
@@ -1158,11 +1213,23 @@ function CommissionRateSettings() {
               defaultValue={data.commissionPercent}
               help="ตั้งได้ 0–100% ทศนิยมไม่เกิน 2 ตำแหน่ง"
             />
+            <Field
+              label="ค่าคอมมิชชั่นสูงสุดต่อบิล (บาท)"
+              name="commissionCap"
+              type="number"
+              min={0}
+              max={1000000}
+              step="0.01"
+              defaultValue={
+                data.commissionCap == null ? "" : data.commissionCap / 100
+              }
+              help="เว้นว่าง = ไม่จำกัดเพดาน · 0 = ไม่จ่ายค่าคอม · เช่น 5% สูงสุด 500 บาทต่อบิล"
+            />
             <div className="info-box">
               <p>
-                คิดจากยอดบิลหลังหักส่วนลด
+                คิดจากยอดบิลหลังหักส่วนลดและไม่เกินเพดานที่กำหนด
                 จ่ายเข้ากระเป๋าเงินผู้แนะนำเมื่อออร์เดอร์สำเร็จ ล็อก %
-                ตอนสร้างบิล ปัดลงเป็นสตางค์ และไม่จ่ายบิลยกเลิก ค่า 0%
+                และเพดานตอนสร้างบิล ปัดลงเป็นสตางค์ และไม่จ่ายบิลยกเลิก ค่า 0%
                 คือปิดค่าคอมสำหรับบิลใหม่ การเปลี่ยนอัตราไม่กระทบบิลเดิม
               </p>
             </div>

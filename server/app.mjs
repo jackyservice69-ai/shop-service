@@ -1,4 +1,9 @@
 import {
+  productImageUrl,
+  productDto,
+  prepareProductImages,
+} from "./product-images.mjs";
+import {
   attachExperience,
   publicExperience,
   checkMedia,
@@ -147,6 +152,9 @@ function pageRows(db, sql, params, req) {
     size,
   };
 }
+function productPage(result) {
+  return { ...result, items: result.items.map(productDto) };
+}
 const boundedText = z.string().trim().min(1).max(200);
 const productSchema = z.object({
   name: boundedText,
@@ -165,6 +173,12 @@ const productSchema = z.object({
         /^https:\/\//.test(v),
       "รูปภาพต้องเป็น HTTPS หรือ /assets/",
     ),
+  images: z
+    .array(productImageUrl)
+    .min(1)
+    .max(8)
+    .refine((v) => new Set(v).size === v.length, "รูปภาพซ้ำ")
+    .optional(),
   active: z.boolean(),
   version: z.number().int().optional(),
 });
@@ -603,14 +617,16 @@ export function createApp(db, config) {
         values.push(...ids);
       }
       res.json(
-        pageRows(
-          db,
-          "SELECT id,name,description,category,price,stock,image,created_at,(SELECT COALESCE(AVG(rating),0) FROM reviews WHERE product_id=products.id AND visible=1) rating_average,(SELECT COUNT(*) FROM reviews WHERE product_id=products.id AND visible=1) review_count FROM products WHERE " +
-            conditions.join(" AND ") +
-            " ORDER BY " +
-            sorts[sort],
-          values,
-          req,
+        productPage(
+          pageRows(
+            db,
+            "SELECT id,name,description,category,price,stock,image,images,created_at,(SELECT COALESCE(AVG(rating),0) FROM reviews WHERE product_id=products.id AND visible=1) rating_average,(SELECT COUNT(*) FROM reviews WHERE product_id=products.id AND visible=1) review_count FROM products WHERE " +
+              conditions.join(" AND ") +
+              " ORDER BY " +
+              sorts[sort],
+            values,
+            req,
+          ),
         ),
       );
     }),
@@ -702,6 +718,7 @@ export function createApp(db, config) {
       res.json({
         code: req.user.referral_code,
         commissionPercent: getSettings(db).commissionPercent,
+        commissionCap: getSettings(db).commissionCap ?? null,
         commissions: pageRows(
           db,
           "SELECT order_id,rate_bps,base,amount,status,created_at,paid_at FROM commissions WHERE referrer_id=? ORDER BY created_at DESC",
@@ -896,6 +913,18 @@ export function createApp(db, config) {
       });
     }),
   );
+  app.get(
+    "/api/admin/product-categories",
+    permission("products"),
+    asyncRoute((req, res) => {
+      res.json(
+        db
+          .prepare("SELECT DISTINCT category FROM products ORDER BY category")
+          .all()
+          .map((r) => r.category),
+      );
+    }),
+  );
   for (const [resource, table, schema, search] of [
     ["products", "products", productSchema, "name"],
     ["promotions", "promotions", promoSchema, "code"],
@@ -904,22 +933,22 @@ export function createApp(db, config) {
     app.get(
       `/api/admin/${resource}`,
       permission(resource),
-      asyncRoute((req, res) =>
-        res.json(
-          pageRows(
-            db,
-            `SELECT * FROM ${table} WHERE ${search} LIKE ? ORDER BY rowid DESC`,
-            ["%" + paging(req).q + "%"],
-            req,
-          ),
-        ),
-      ),
+      asyncRoute((req, res) => {
+        const rows = pageRows(
+          db,
+          `SELECT * FROM ${table} WHERE ${search} LIKE ? ORDER BY rowid DESC`,
+          ["%" + paging(req).q + "%"],
+          req,
+        );
+        res.json(table === "products" ? productPage(rows) : rows);
+      }),
     );
     app.post(
       `/api/admin/${resource}`,
       permission(resource),
       asyncRoute((req, res) => {
         const v = parse(schema, req.body);
+        if (table === "products") prepareProductImages(db, v);
         if (table === "promotions") checkMedia(db, v.image, "promotion");
         if (table === "announcements") checkMedia(db, v.image, "announcement");
         delete v.version;
@@ -949,6 +978,7 @@ export function createApp(db, config) {
       asyncRoute((req, res) => {
         const v = parse(schema, req.body),
           version = v.version;
+        if (table === "products") prepareProductImages(db, v);
         if (table === "promotions") checkMedia(db, v.image, "promotion");
         if (table === "announcements") checkMedia(db, v.image, "announcement");
         delete v.version;

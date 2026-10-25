@@ -209,10 +209,14 @@ export function createOrder(db, userId, input, key) {
         .get(userId),
       rate = Math.round(getSettings(db).commissionPercent * 100);
     if (buyer.referred_by && buyer.referred_by !== userId) {
-      const commission = Math.floor((q.total * rate) / 10000);
+      const cap = getSettings(db).commissionCap ?? null;
+      const commission = Math.min(
+        Math.floor((q.total * rate) / 10000),
+        cap ?? Number.MAX_SAFE_INTEGER,
+      );
       db.prepare(
-        "UPDATE orders SET referrer_id=?,commission_bps=?,commission_amount=? WHERE id=?",
-      ).run(buyer.referred_by, rate, commission, orderId);
+        "UPDATE orders SET referrer_id=?,commission_bps=?,commission_amount=?,commission_cap=? WHERE id=?",
+      ).run(buyer.referred_by, rate, commission, cap, orderId);
       if (commission > 0)
         db.prepare("INSERT INTO commissions VALUES(?,?,?,?,?,?,?,?)").run(
           orderId,

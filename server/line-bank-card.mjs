@@ -41,7 +41,9 @@ export function currentBankCard(db, config) {
   return {
     data,
     snapshot: bankDetailsSnapshot(data),
-    fingerprint: hash(bankDetailsSnapshot(data) + ":" + credentialHash),
+    fingerprint: hash(
+      bankDetailsSnapshot(data) + ":" + credentialHash + ":bank-surface-v5",
+    ),
   };
 }
 

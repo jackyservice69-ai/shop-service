@@ -45,11 +45,7 @@ const definitions = [
 ];
 
 export function categoryArtwork(name: string) {
-  // The separate browse section owns a four-photo atlas, not these new icons.
-  const art = definitions.find((item) => item.match.test(name))?.art;
-  return art && ["bag", "perfume", "jewelry", "clothing"].includes(art)
-    ? art
-    : undefined;
+  return definitions.find((item) => item.match.test(name))?.art;
 }
 
 function revealCategoryLink(node: HTMLUListElement, link: HTMLAnchorElement) {

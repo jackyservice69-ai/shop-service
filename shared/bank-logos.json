@@ -1,0 +1,172 @@
+{
+  "002": {
+    "file": "bbl.svg",
+    "background": "#1e4598",
+    "name": "Bangkok Bank"
+  },
+  "004": {
+    "file": "kbank.svg",
+    "background": "#138f2d",
+    "name": "Kasikorn Bank"
+  },
+  "005": {
+    "file": "rbs.svg",
+    "background": "#032952",
+    "name": "Royal Bank of Scotland"
+  },
+  "006": {
+    "file": "ktb.svg",
+    "background": "#1ba5e1",
+    "name": "Krungthai Bank"
+  },
+  "008": {
+    "file": "jpm.svg",
+    "background": "#321c10",
+    "name": "J.P. Morgan"
+  },
+  "010": {
+    "file": "mufg.svg",
+    "background": "#d61323",
+    "name": "Bank of Tokyo-Mitsubishi UFJ"
+  },
+  "011": {
+    "file": "ttb.svg",
+    "background": "#ffffff",
+    "name": "TMBThanachart Bank"
+  },
+  "014": {
+    "file": "scb.svg",
+    "background": "#4e2e7f",
+    "name": "Siam Commercial Bank"
+  },
+  "017": {
+    "file": "citi.svg",
+    "background": "#1583c7",
+    "name": "Citibank"
+  },
+  "018": {
+    "file": "smbc.svg",
+    "background": "#a0d235",
+    "name": "Sumitomo Mitsui Banking Corporation"
+  },
+  "020": {
+    "file": "sc.svg",
+    "background": "#0f6ea1",
+    "name": "Standard Chartered (Thai)"
+  },
+  "022": {
+    "file": "cimb.svg",
+    "background": "#7e2f36",
+    "name": "CIMB Thai Bank"
+  },
+  "024": {
+    "file": "uob.svg",
+    "background": "#0b3979",
+    "name": "United Overseas Bank (Thai)"
+  },
+  "025": {
+    "file": "bay.svg",
+    "background": "#fec43b",
+    "name": "Bank of Ayudhya (Krungsri)"
+  },
+  "026": {
+    "file": "mega.svg",
+    "background": "#815e3b",
+    "name": "Mega International Commercial Bank"
+  },
+  "027": {
+    "file": "boa.svg",
+    "background": "#e11e3c",
+    "name": "Bank of America"
+  },
+  "028": {
+    "file": "cacib.svg",
+    "background": "#0e765b",
+    "name": "Crédit Agricole"
+  },
+  "030": {
+    "file": "gsb.svg",
+    "background": "#eb198d",
+    "name": "Government Savings Bank"
+  },
+  "031": {
+    "file": "hsbc.svg",
+    "background": "#fd0d1b",
+    "name": "Hongkong and Shanghai Banking Corporation"
+  },
+  "032": {
+    "file": "db.svg",
+    "background": "#0522a5",
+    "name": "Deutsche Bank"
+  },
+  "033": {
+    "file": "ghb.svg",
+    "background": "#f57d23",
+    "name": "Government Housing Bank"
+  },
+  "034": {
+    "file": "baac.svg",
+    "background": "#4b9b1d",
+    "name": "Bank for Agriculture and Agricultural Cooperatives"
+  },
+  "039": {
+    "file": "mb.svg",
+    "background": "#150b78",
+    "name": "Mizuho Bank"
+  },
+  "045": {
+    "file": "bnp.svg",
+    "background": "#14925e",
+    "name": "BNP Paribas"
+  },
+  "052": {
+    "file": "boc.svg",
+    "background": "#ffffff",
+    "name": "Bank of China (Thai)"
+  },
+  "065": {
+    "file": "tbank.svg",
+    "background": "#fc4f1f",
+    "name": "Thanachart Bank"
+  },
+  "066": {
+    "file": "ibank.svg",
+    "background": "#184615",
+    "name": "Islamic Bank of Thailand"
+  },
+  "067": {
+    "file": "tisco.svg",
+    "background": "#12549f",
+    "name": "Tisco Bank"
+  },
+  "069": {
+    "file": "kkp.png",
+    "background": "#ffffff",
+    "name": "Kiatnakin Phatra Bank"
+  },
+  "070": {
+    "file": "icbc.svg",
+    "background": "#c50f1c",
+    "name": "Industrial and Commercial Bank of China (Thai)"
+  },
+  "071": {
+    "file": "tcrb.svg",
+    "background": "#0a4ab3",
+    "name": "Thai Credit Retail Bank"
+  },
+  "073": {
+    "file": "lhb.svg",
+    "background": "#6d6e71",
+    "name": "Land and Houses Bank"
+  },
+  "076": {
+    "file": "ttb.svg",
+    "background": "#ffffff",
+    "name": "TMBThanachart Bank"
+  },
+  "088": {
+    "file": "clicx.ico",
+    "background": "#ffffff",
+    "name": "CLICX Bank"
+  }
+}

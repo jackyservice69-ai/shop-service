@@ -68,7 +68,20 @@ import {
 export function StorePage() {
   const { publicData } = useApp();
   const categories: string[] = publicData?.categories || [];
-  const browseCategories = categories.slice(0, 4).map((name) => ({
+  const browseNames = [
+    "กระเป๋า",
+    "น้ำหอม",
+    "เครื่องประดับ",
+    "เสื้อผ้า",
+    "บิวตี้",
+    "แก็ดเจ็ต",
+  ].map(
+    (defaultName) =>
+      categories.find(
+        (name) => categoryArtwork(name) === categoryArtwork(defaultName),
+      ) || defaultName,
+  );
+  const browseCategories = browseNames.map((name) => ({
     name,
     art: categoryArtwork(name),
   }));
@@ -78,12 +91,12 @@ export function StorePage() {
       <section className="store-hero reference-hero">
         <img
           className="pastel-hero-illustration"
-          src="/assets/storefront/hero-no-button-v3.webp"
-          srcSet="/assets/storefront/hero-no-button-small-v3.webp 688w, /assets/storefront/hero-no-button-v3.webp 1376w"
+          src="/assets/iya-refresh-v5/hero.webp"
+          srcSet="/assets/iya-refresh-v5/hero-small.webp 720w, /assets/iya-refresh-v5/hero.webp 1440w"
           sizes="(max-width: 700px) calc(100vw - 30px), (max-width: 1100px) calc(100vw - 64px), 1000px"
           alt=""
-          width="1376"
-          height="1143"
+          width="1440"
+          height="1198"
           fetchPriority="high"
         />
         <h1 className="sr-only">ของที่ชอบ ให้เราหิ้วมาให้</h1>
@@ -178,6 +191,15 @@ export function StorePage() {
                 <span
                   className={
                     "pastel-category-art art-" + (item.art || "generic")
+                  }
+                  style={
+                    item.art && ["beauty", "gadgets"].includes(item.art)
+                      ? {
+                          backgroundImage: `url(/assets/storefront/category-${item.art}-v4.webp)`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : undefined
                   }
                   aria-hidden="true"
                 >
@@ -1249,6 +1271,9 @@ export function ReferralPage() {
             <Gift size={22} />
             <p>
               อัตราสำหรับบิลใหม่ {data?.commissionPercent || 0}%
+              {data?.commissionCap != null && (
+                <> · สูงสุด {money(data.commissionCap)} ต่อบิล</>
+              )}
               จากยอดหลังส่วนลด จ่ายเข้ากระเป๋าเมื่อออร์เดอร์สำเร็จ
               อัตราของบิลเดิมใช้ค่าที่ล็อกไว้ตอนสั่งซื้อ
             </p>

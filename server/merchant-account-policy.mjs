@@ -10,13 +10,25 @@ export const bankFields = [
 const bankData = (a) =>
   Object.fromEntries(bankFields.map((k) => [k, a?.[k] || ""]));
 export function merchantAccounts(s) {
-  if (Array.isArray(s.merchantAccounts)) return s.merchantAccounts;
+  if (Array.isArray(s.merchantAccounts)) {
+    // Settings are parsed afresh per read. Rename only generated migration
+    // labels, preserving owner labels, receiving details and verification data.
+    for (const a of s.merchantAccounts) {
+      if (a.id !== "legacy" || !a.legacy) continue;
+      if (a.label === "บัญชีเดิมของร้าน") a.label = "บัญชีรับเงินของร้าน";
+      for (const q of a.qrs || []) {
+        if (q.id === "legacy-qr" && q.label === "QR เดิมของร้าน")
+          q.label = "QR รับเงินของร้าน";
+      }
+    }
+    return s.merchantAccounts;
+  }
   if (!s.bankCode || !s.bankNumber || !s.accountName) return [];
   return [
     {
       ...bankData(s),
       id: "legacy",
-      label: "บัญชีเดิมของร้าน",
+      label: "บัญชีรับเงินของร้าน",
       visible: true,
       isPrimary: true,
       version: 1,
@@ -25,7 +37,7 @@ export function merchantAccounts(s) {
         ? [
             {
               id: "legacy-qr",
-              label: "QR เดิมของร้าน",
+              label: "QR รับเงินของร้าน",
               image: s.paymentQr,
               visible: true,
               isPrimary: true,

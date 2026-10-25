@@ -1,0 +1,133 @@
+[
+  {
+    "id": "bag",
+    "prompt": "Use case: product-mockup. Create one square category image for a Thai pastel personal-shopping boutique named Iya. Category: handbags. A single elegant blush-pink structured mini handbag with heart charm, tiny silk bow and polished champagne-gold fittings, centered, full object visible with generous safe margins. Premium charming 3D product illustration, softly lit, crisp finely detailed material, warm ivory to pale pink backdrop, restrained small gold sparkle accents. Palette #f6c2c2, #fde8e8, warm ivory #fcfdfa, rose gold. Square composition suitable for circular crop at 84px and larger rectangular category card. No lettering, no logo, no watermark, no button, no border, no purple, no hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "perfume",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category perfume. Subject: a faceted blush-pink glass perfume bottle with a champagne gold cap and a delicate ribbon. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "jewelry",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category jewelry. Subject: a fine gold necklace with a heart pendant, small pearl earrings on warm ivory velvet. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "clothing",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category clothing. Subject: an elegant cream blouse with pale pink trim on a minimal gold hanger. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "makeup",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category makeup. Subject: a rose-pink lipstick, compact blush and fluffy makeup brush arranged neatly. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "skincare",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category skincare. Subject: a frosted pink serum bottle, an ivory cream jar and a tiny fresh botanical leaf. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "beauty",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category beauty. Subject: a blush-pink hair dryer, an ivory facial beauty roller and a luxurious folded spa towel. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "shoes",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category shoes. Subject: a pair of elegant blush-pink low heel shoes with fine gold buckles. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "watch",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category watch. Subject: an elegant small rose-gold wristwatch with an ivory dial and pale pink leather strap, no numerals. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "eyewear",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category eyewear. Subject: rose-gold round sunglasses with blush gradient lenses and an ivory case. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "home",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category home. Subject: a beautiful ivory scented candle in glass, a pink ceramic vase and tiny dried flowers. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "tech",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category tech. Subject: a pale pink tablet with blank screen and an ivory wireless keyboard. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "gadgets",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category gadgets. Subject: blush-pink over-ear headphones, an ivory wireless earbud case and a small rose-gold portable charger. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "collectibles",
+    "prompt": "Use case: product-mockup. Create ONE square category image for Thai personal-shopping boutique Iya. Category collectibles. Subject: an original adorable cream teddy bear figurine with a pastel pink bow on a small pedestal, no copyrighted character. Full objects centered with generous 15% safe margins, readable at 84px and suitable for circular crop or larger category card. Premium charming realistic 3D product illustration, polished materials, softly luminous highlights, warm ivory to very pale pink studio backdrop, restrained tiny gold sparkle accents. Palette blush #f6c2c2, ivory #fcfdfa, rose gold, pale mint if useful. Consistent collectible boutique visual style. No lettering, logo, watermark, buttons, border, purple, or hard cast shadow.",
+    "transparent": false
+  },
+  {
+    "id": "hero",
+    "prompt": "Use case: precise-object-edit. Edit the supplied Iya storefront hero, retain the original Thai wording, hierarchy, pink and mint palette, cute shopping products, gold accents, and composition. Refresh the image into crisp premium soft 3D boutique illustration. Round all FOUR outer corners visibly, radius about 5% of width. Add plain warm ivory #fcfdfa clear breathing room of 4% image height ABOVE and BELOW the rounded pink artwork, corners outside artwork also ivory. No rectangular hard pink corners. Preserve open space on lower left for a real website CTA. Do NOT draw any clickable button. No new claims or extra words. Same approximate 6:5 aspect.",
+    "transparent": false,
+    "editTarget": "public/assets/storefront/hero-no-button-v3.webp"
+  },
+  {
+    "id": "wallet-background",
+    "prompt": "Use case: product-mockup. Create ONE wide straight-on flat artwork surface of a premium blush-pink digital boutique wallet card, aspect 1.65:1, entire canvas is card texture, NO surrounding scene or perspective or cast shadow. Pale pink pearlescent satin with subtle embossed botanical leaves and extremely fine champagne-gold curved lines confined to the far right edge and lower corners, softly luminous edges. Huge calm nearly ivory/pale-pink negative space across left 80% for actual HTML logo, real balance and holder information. Realistic physical card material, elegant Iya boutique feeling. No letters, numbers, currency signs, chip, QR, logo, buttons, purple or watermark.",
+    "transparent": false
+  },
+  {
+    "id": "bank-background",
+    "prompt": "Use case: product-mockup. Create ONE subtle pale blush and warm ivory luxury paper background for an Iya bank-details payment information panel. Square canvas, fine champagne-gold botanical foliage only at top left and bottom left edges, pale rose marble wisps restricted to outermost margins, softly luminous satin paper, very low contrast. Leave central 90% near-white, perfectly uncluttered for actual bank text and original QR code. No text, no numbers, no logo, no QR code, no banking symbols, no button, no purple, no shadow. Delicate refined pastel boutique aesthetic.",
+    "transparent": false
+  },
+  {
+    "id": "gold-coin",
+    "prompt": "Use case: product-mockup. One isolated elegant gold coin icon for a pastel boutique digital wallet. Front-facing round polished champagne-gold coin, warm honey gold rim, softly luminous embossed tiny heart in the center. Readable bold silhouette at 32px, premium realistic 3D material, subtle pink reflected highlights. True transparent background, full coin with safe padding. No letters, no currency symbols, no extra coins, no cast shadow, no watermark.",
+    "transparent": true
+  },
+  {
+    "id": "announcement-topup",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique announcement poster, portrait 4:5, blush pink ivory champagne-gold, premium cute 3D phone with blank slip sheet and gold coin lower half. Clear spacious typographic layout. Exact Thai text only: \"เติมเงินง่าย ใช้สลิปได้เลย\" and \"โอนเงิน • แนบสลิป • รอผลตรวจสอบ\" and small \"ยอดเงินเข้าหลังตรวจสอบผ่าน\". Small brand \"Iya\". No QR, no account details, no button, no purple, no exaggerated guarantee.",
+    "transparent": false
+  },
+  {
+    "id": "announcement-reserve",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique announcement poster, portrait 4:5, soft pink warm ivory pale mint, elegant 3D shopping bag with heart charm and reserved parcel. Clear large Thai text exactly \"จองของที่ชอบ มัดจำเริ่ม 0%\" and subheading \"หรือเลือกชำระเต็มผ่านกระเป๋าเงิน\" and small \"ชำระยอดคงเหลือก่อนจัดส่ง ตามเงื่อนไขร้าน\". Small brand \"Iya\". No button, no QR, no purple.",
+    "transparent": false
+  },
+  {
+    "id": "announcement-line",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique announcement poster portrait 4:5, blush pink ivory mint and gold, charming smartphone with friendly green speech bubbles and a small slip envelope, no official logo. Large clear Thai text exactly \"เชื่อมต่อ LINE ไว้ อุ่นใจกว่า\" subheading \"ผูกบัญชีก่อนส่งสลิปผ่านแชต\" small \"เชื่อมต่อได้ที่ บัญชีของฉัน\". Small brand \"Iya\". No account data, no QR, no button, no purple.",
+    "transparent": false
+  },
+  {
+    "id": "announcement-address",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique announcement poster portrait 4:5, pink ivory champagne-gold, premium cute parcel and rose-gold map location pin on a minimal pale map. Large exact Thai headline \"ส่งถึงที่อยู่ที่ใช่\" subheading \"บันทึกหลายที่อยู่ พร้อมเลือกที่อยู่หลัก\" small \"ตรวจสอบชื่อ เบอร์โทร และพิกัดก่อนสั่งซื้อ\". Small brand \"Iya\". No fake address, no button, no QR, no purple.",
+    "transparent": false
+  },
+  {
+    "id": "promotion-welcome",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique promotion concept poster landscape 3:2 blush pink ivory gold, cute pink shopping bag and gift ribbon. Exact clear Thai text: \"ยินดีต้อนรับสมาชิกใหม่\" and large \"ลด 5% สูงสุด 100 บาท\" and \"เมื่อซื้อครบ 500 บาท\" and \"ตัวอย่างโปรโมชั่น • รอร้านเปิดใช้งาน\". Small brand \"Iya\". No coupon code, no dates, no button, no purple.",
+    "transparent": false
+  },
+  {
+    "id": "promotion-beauty",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique promotion concept poster landscape 3:2 pale blush ivory peach gold. Premium pink serum, lip gloss and perfume gift arrangement. Exact Thai text: \"เติมความสวยให้ทุกวัน\" and large \"บิวตี้ลด 10% สูงสุด 150 บาท\" and \"เมื่อซื้อครบ 1,000 บาท\" and \"ตัวอย่างโปรโมชั่น • รอร้านเปิดใช้งาน\". Small brand \"Iya\". No coupon code, no dates, no button, no purple.",
+    "transparent": false
+  },
+  {
+    "id": "promotion-bag",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique promotion concept poster landscape 3:2 pale pink mint ivory gold. Hero luxurious pink handbag with silk ribbon and golden heart charm. Exact Thai text: \"กระเป๋าใบโปรด ดีลที่ชอบ\" and large \"ลด 200 บาท\" and \"เมื่อซื้อครบ 2,000 บาท\" and \"ตัวอย่างโปรโมชั่น • รอร้านเปิดใช้งาน\". Small brand \"Iya\". No coupon code, no dates, no button, no purple.",
+    "transparent": false
+  },
+  {
+    "id": "promotion-weekend",
+    "prompt": "Use case: ads-marketing. One finished Thai boutique promotion concept poster landscape 3:2 pink ivory peach gold with gift box and stylish headphones. Exact Thai text: \"วีคเอนด์นี้ มีของน่าช้อป\" and large \"ลด 8% สูงสุด 250 บาท\" and \"เมื่อซื้อครบ 1,500 บาท\" and \"ตัวอย่างโปรโมชั่น • รอร้านเปิดใช้งาน\". Small brand \"Iya\". No coupon code, no dates, no button, no purple.",
+    "transparent": false
+  }
+]

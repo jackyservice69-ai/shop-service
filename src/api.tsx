@@ -32,6 +32,7 @@ export type Product = {
   cost?: number;
   stock: number;
   image: string;
+  images?: string[];
   active?: number;
   version?: number;
   rating_average?: number;

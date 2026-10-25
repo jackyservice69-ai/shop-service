@@ -143,6 +143,8 @@ export function openDb(path) {
       ["orders", "referrer_id", "TEXT REFERENCES users(id)"],
       ["orders", "commission_bps", "INTEGER NOT NULL DEFAULT 0"],
       ["orders", "commission_amount", "INTEGER NOT NULL DEFAULT 0"],
+      ["orders", "commission_cap", "INTEGER"],
+      ["products", "images", "TEXT NOT NULL DEFAULT '[]'"],
       ["products", "consignor_id", "TEXT REFERENCES users(id)"],
       ["products", "consignment_status", "TEXT NOT NULL DEFAULT 'none'"],
     ])
@@ -241,6 +243,7 @@ export function openDb(path) {
     shopName: "หิ้วลี่",
     depositPercent: 0,
     commissionPercent: 0,
+    commissionCap: null,
     consignmentFeePercent: 0,
     theme: Object.fromEntries(
       ["primary", "ink", "muted", "background", "surface", "positive"].map(

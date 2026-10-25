@@ -441,12 +441,7 @@ export function CatalogPage() {
       </div>
       {selected && (
         <Modal title={selected.name} onClose={() => setSelected(null)}>
-          <img
-            className="detail-image"
-            src={selected.image}
-            alt={selected.name}
-            onError={imageFallback}
-          />
+          <ProductGallery product={selected} />
           <Badge status={selected.category} />
           <p>{selected.description}</p>
           <h2>{money(selected.price)}</h2>
@@ -464,6 +459,36 @@ export function CatalogPage() {
           </button>
           <ProductReviews productId={selected.id} onChanged={reload} />
         </Modal>
+      )}
+    </div>
+  );
+}
+
+function ProductGallery({ product }: { product: Product }) {
+  const images = product.images?.length ? product.images : [product.image];
+  const [active, setActive] = useState(0);
+  return (
+    <div className="product-gallery">
+      <img
+        className="detail-image"
+        src={images[active] || product.image}
+        alt={`${product.name} รูปที่ ${active + 1}`}
+        onError={imageFallback}
+      />
+      {images.length > 1 && (
+        <div className="product-gallery-thumbnails" aria-label="เลือกรูปสินค้า">
+          {images.map((image, index) => (
+            <button
+              type="button"
+              key={image}
+              aria-label={`ดูรูปสินค้า ${index + 1}`}
+              aria-pressed={active === index}
+              onClick={() => setActive(index)}
+            >
+              <img src={image} alt="" width={64} height={64} />
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

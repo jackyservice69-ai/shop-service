@@ -996,7 +996,10 @@
   .customer-shell .pastel-storefront .reference-promotion {
     min-height: 128px;
   }
-  .customer-shell .pastel-storefront .reference-promotion .reference-promotion-cta {
+  .customer-shell
+    .pastel-storefront
+    .reference-promotion
+    .reference-promotion-cta {
     bottom: 8px;
     padding: 0 5px;
     font-size: clamp(10px, 3.2vw, 12px);
@@ -1166,7 +1169,11 @@
 }
 
 @media (max-width: 700px) {
-  .customer-shell .pastel-storefront .pastel-quick-categories a > span:last-child {
+  .customer-shell
+    .pastel-storefront
+    .pastel-quick-categories
+    a
+    > span:last-child {
     font-size: 12px;
     line-height: 1.65;
     text-align: center;
@@ -1225,4 +1232,36 @@
     position: static;
     transform: none;
   }
+}
+
+/* Crop only the generated ivory bands: 72px top + 48px bottom from 1440×1198.
+   Keep all artwork and the real CTA at their original visual scale. */
+.customer-shell .pastel-storefront .reference-hero {
+  margin-block: 8px;
+  border-radius: clamp(18px, 3vw, 32px);
+  overflow: hidden;
+}
+.customer-shell .pastel-storefront .reference-hero-cta {
+  top: 70.5575%;
+  height: 13.8915%;
+}
+.customer-shell .pastel-storefront .pastel-browse-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 700px) {
+  .customer-shell .pastel-storefront .pastel-browse-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.customer-shell .pastel-storefront .reference-hero {
+  aspect-ratio: 1440 / 1078;
+}
+.customer-shell .pastel-storefront .reference-hero .pastel-hero-illustration {
+  inset: -6.679% 0 auto;
+  height: 111.1317%;
+  object-fit: fill;
+}
+.customer-shell .pastel-storefront .reference-hero-cta {
+  bottom: auto;
 }

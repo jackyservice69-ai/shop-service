@@ -134,13 +134,14 @@ export function attachConsignments(
           const pid = old?.id || id();
           if (old)
             db.prepare(
-              "UPDATE products SET name=?,description=?,category=?,price=?,stock=?,image=?,active=0,consignment_status='pending',version=version+1 WHERE id=? AND consignor_id=?",
+              "UPDATE products SET name=?,description=?,category=?,price=?,stock=?,images=CASE WHEN image=? THEN images ELSE '[]' END,image=?,active=0,consignment_status='pending',version=version+1 WHERE id=? AND consignor_id=?",
             ).run(
               v.name,
               v.description,
               v.category,
               v.price,
               v.stock,
+              v.image,
               v.image,
               pid,
               req.user.id,

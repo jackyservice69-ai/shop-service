@@ -207,6 +207,27 @@ test("consignor applies, admin approves, seller uploads own product, publication
     let p = f.db.prepare("SELECT * FROM products WHERE name=?").get(body.name);
     assert.equal(p.consignor_id, f.other.id);
     assert.equal(p.active, 0);
+    f.db
+      .prepare("UPDATE products SET image=?,images=? WHERE id=?")
+      .run(
+        "/assets/bag.svg",
+        JSON.stringify(["/assets/bag.svg", "/assets/perfume.svg"]),
+        p.id,
+      );
+    assert.equal(
+      (
+        await mutate(
+          v,
+          "/api/consignment/products/" + p.id,
+          { ...body, version: p.version },
+          "put",
+        )
+      ).status,
+      200,
+    );
+    p = f.db.prepare("SELECT * FROM products WHERE id=?").get(p.id);
+    assert.equal(p.images, "[]");
+    assert.equal(p.image, body.image);
     assert.equal(
       (
         await mutate(

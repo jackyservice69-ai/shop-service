@@ -324,12 +324,18 @@ test("slip topup, full-wallet purchase and exact refund run through customer UI"
     .getByLabel("เลือกรูปสลิป")
     .setInputFiles({ name: "slip.png", mimeType: "image/png", buffer: png });
   await page.getByRole("button", { name: "ตรวจสอบสลิปและเติมเงิน" }).click();
-  await expect(page.locator(".wallet-card strong")).toHaveText("฿250");
+  await expect(page.locator(".wallet-card strong")).toHaveAttribute(
+    "aria-label",
+    "฿250",
+  );
   await expect(page.getByText("เติมเงิน", { exact: true })).toBeVisible();
   await addAndCheckout(page, "full");
   await expect(page.getByText("ชำระแล้ว", { exact: true })).toBeVisible();
   await page.goto("/wallet");
-  await expect(page.locator(".wallet-card strong")).toHaveText("฿150");
+  await expect(page.locator(".wallet-card strong")).toHaveAttribute(
+    "aria-label",
+    "฿150",
+  );
   await page.goto("/orders");
   await page
     .getByRole("button", { name: "ยกเลิกคำสั่งซื้อ", exact: true })
@@ -339,7 +345,10 @@ test("slip topup, full-wallet purchase and exact refund run through customer UI"
     .getByRole("button", { name: "ยกเลิกคำสั่งซื้อ", exact: true })
     .click();
   await page.goto("/wallet");
-  await expect(page.locator(".wallet-card strong")).toHaveText("฿250");
+  await expect(page.locator(".wallet-card strong")).toHaveAttribute(
+    "aria-label",
+    "฿250",
+  );
   await expect(page.getByText("คืนเงิน", { exact: true })).toBeVisible();
 });
 test("admin visits every module and creates/updates product, promotion, announcement, finance and role", async ({
@@ -362,6 +371,19 @@ test("admin visits every module and creates/updates product, promotion, announce
   await page.getByLabel("รายละเอียด").fill("รายละเอียดทดสอบ");
   await page.getByLabel("จำนวนคงเหลือ").fill("2");
   await page.getByLabel("ราคาขาย (บาท)").fill("199");
+  await page.getByLabel("เพิ่มรูปภาพสินค้า").setInputFiles({
+    name: "product.png",
+    mimeType: "image/png",
+    buffer: await sharp({
+      create: { width: 64, height: 64, channels: 3, background: "pink" },
+    })
+      .png()
+      .toBuffer(),
+  });
+  await expect(page.locator(".product-image-item")).toHaveCount(1);
+  await expect(
+    page.getByRole("button", { name: "บันทึก", exact: true }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: "บันทึก", exact: true }).click();
   await expect(
     page.getByText("ใหม่จากบราวเซอร์", { exact: true }),
@@ -431,9 +453,7 @@ test("shop payment QR uploads under merchant accounts and customers can enlarge/
   const initial = await (
     await page.request.post("/__test/merchant-state")
   ).json();
-  await page
-    .getByRole("link", { name: "จัดการบัญชีร้านค้า", exact: true })
-    .click();
+  await page.getByRole("link", { name: "บัญชีร้านค้า", exact: true }).click();
   await page
     .getByRole("button", { name: "เพิ่ม QR", exact: true })
     .first()
@@ -536,6 +556,43 @@ test("shop payment QR uploads under merchant accounts and customers can enlarge/
         }
       }
     expect(maxX - minX).toBeGreaterThan(130);
+    for (const width of [320, 360, 375, 412, 690, 768, 900, 1024, 1440]) {
+      await customer.setViewportSize({ width, height: 1000 });
+      const info = customer.locator(".bank-account-info");
+      const frame = customer.locator(".payment-qr-frame");
+      const left = (await info.boundingBox())!,
+        right = (await frame.boundingBox())!;
+      expect(right.x, `QR beside account at ${width}px`).toBeGreaterThanOrEqual(
+        left.x + left.width,
+      );
+      expect(Math.abs(right.y - left.y)).toBeLessThan(2);
+      expect(Math.abs(right.width - right.height)).toBeLessThan(1);
+      expect(right.width).toBeGreaterThanOrEqual(104);
+      expect(
+        await info.evaluate((node) => node.scrollWidth <= node.clientWidth),
+      ).toBe(true);
+      expect(
+        await customer.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      const pixels = await sharp(await frame.screenshot())
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      expect(
+        jsQR(
+          new Uint8ClampedArray(pixels.data),
+          pixels.info.width,
+          pixels.info.height,
+        )?.data,
+        `Scannable QR at ${width}px`,
+      ).toBe(paymentPayload());
+      if (width === 412 || width === 690)
+        await customer.locator(".bank-details").screenshot({
+          path: `output/playwright/wallet-qr-beside-account-${width}.png`,
+        });
+    }
     await customer.screenshot({
       path: "output/playwright/wallet-qr-beside-account.png",
       fullPage: true,

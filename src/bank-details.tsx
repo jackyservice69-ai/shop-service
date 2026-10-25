@@ -34,7 +34,7 @@ export function BankDetailsPanel({
       className="panel bank-details"
       data-bank-card-state={bankDetailsSnapshot(data)}
     >
-      <h2>บัญชีรับเงินของร้าน</h2>
+      <h2>บัญชีรับเงินของร้าน Iya</h2>
       {accounts?.length === 0 ? (
         <p className="muted">
           ยังไม่มีบัญชีที่เปิดแสดง กรุณาติดต่อร้านก่อนโอนเงิน
@@ -82,11 +82,20 @@ export function BankDetailsPanel({
               ))}
             </Field>
           )}
-          <div className="bank-receiver">
+          <div
+            className={
+              "bank-receiver" +
+              (selected?.topupReady && selected?.paymentQr
+                ? " has-payment-qr"
+                : "")
+            }
+          >
             <div className="bank-account-info">
-              <BankLogo code={selected?.bankCode} name={selected?.bankName} />
               <strong>{selected?.bankName || "ยังไม่ได้ตั้งค่าธนาคาร"}</strong>
-              <h2 className="bank-number">{selected?.bankNumber || "—"}</h2>
+              <div className="bank-number-row">
+                <BankLogo code={selected?.bankCode} name={selected?.bankName} />
+                <h2 className="bank-number">{selected?.bankNumber || "—"}</h2>
+              </div>
               <p>{selected?.accountName}</p>
               <p className="muted">{selected?.accountNameEn}</p>
             </div>

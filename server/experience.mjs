@@ -126,6 +126,7 @@ export function publicExperience(db, config) {
     socialVisibility: s.socialVisibility || {},
     slideSeconds: s.slideSeconds,
     commissionPercent: s.commissionPercent,
+    commissionCap: s.commissionCap ?? null,
     banners: db
       .prepare(
         "SELECT id,title,image,link FROM banners WHERE active=1 AND starts_at<=? AND ends_at>=? ORDER BY position,rowid DESC LIMIT 30",
@@ -328,7 +329,10 @@ export function attachExperience(
     auth,
     permission("settings"),
     asyncRoute((req, res) =>
-      res.json({ commissionPercent: getSettings(db).commissionPercent }),
+      res.json({
+        commissionPercent: getSettings(db).commissionPercent,
+        commissionCap: getSettings(db).commissionCap ?? null,
+      }),
     ),
   );
   app.put(
@@ -340,14 +344,27 @@ export function attachExperience(
       const v = z
         .object({
           commissionPercent: commissionRateSchema,
+          commissionCap: z
+            .number()
+            .int()
+            .min(0)
+            .max(100000000)
+            .nullable()
+            .optional(),
         })
         .strict()
         .parse(req.body);
       transaction(db, () => {
         const previousPercent = getSettings(db).commissionPercent;
+        const previousCap = getSettings(db).commissionCap ?? null;
         setSetting(db, "commissionPercent", v.commissionPercent);
+        if (v.commissionCap !== undefined)
+          setSetting(db, "commissionCap", v.commissionCap);
         audit(db, req.user.id, "commission.settings.updated", "shop", {
           previousPercent,
+          previousCap,
+          commissionCap:
+            v.commissionCap === undefined ? previousCap : v.commissionCap,
           commissionPercent: v.commissionPercent,
         });
       });

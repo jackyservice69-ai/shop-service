@@ -1,3 +1,4 @@
+import { ProductCategoryField, ProductImages } from "./product-editor-fields";
 import { ImageUpload } from "./experience";
 import { CustomerManagement } from "./member-management";
 import socialPlatforms from "../shared/socials.json";
@@ -703,6 +704,9 @@ function ResourceEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [images, setImages] = useState<string[]>(
+    r.images?.length ? r.images : r.image ? [r.image] : [],
+  );
   const [image, setImage] = useState(r.image || ""),
     [uploading, setUploading] = useState(false);
   return (
@@ -726,6 +730,14 @@ function ResourceEditor({
           v.active = v.active === "on";
           if (resource === "announcements") v.position = Number(v.position);
           if (resource === "products") {
+            if (!images.length)
+              throw new Error("กรุณาเพิ่มรูปภาพสินค้าอย่างน้อย 1 รูป");
+            v.image = images[0];
+            v.images = images;
+            if (v.category === "__new_category__")
+              v.category = String(v.newCategory || "").trim();
+            delete v.newCategory;
+            delete v.productFiles;
             for (const k of ["price", "cost"]) v[k] = cents(v[k]);
             v.stock = Number(v.stock);
           } else {
@@ -762,12 +774,7 @@ function ResourceEditor({
               defaultValue={r.description || ""}
             />
             <div className="form-grid">
-              <Field
-                label="หมวดหมู่"
-                name="category"
-                required
-                defaultValue={r.category || "ไลฟ์สไตล์"}
-              />
+              <ProductCategoryField value={r.category} />
               <Field
                 label="จำนวนคงเหลือ"
                 name="stock"
@@ -797,12 +804,10 @@ function ResourceEditor({
                 defaultValue={(r.cost || 0) / 100}
               />
             </div>
-            <Field
-              label="URL รูปภาพ"
-              name="image"
-              required
-              defaultValue={r.image || "/assets/placeholder.svg"}
-              help="ใช้ URL แบบ https:// หรือภาพใน /assets/"
+            <ProductImages
+              images={images}
+              onChange={setImages}
+              onBusyChange={setUploading}
             />
           </>
         ) : resource === "promotions" ? (
@@ -1745,17 +1750,6 @@ export function SettingsPage() {
                     defaultValue={s.depositPercent}
                     help="0 = จองได้โดยไม่หักเงิน ต้องจ่ายส่วนที่เหลือก่อนจัดส่ง"
                   />
-                  <h3 className="section-space">บัญชีรับเงินของร้าน</h3>
-                  <p className="muted">
-                    จัดการหลายบัญชีธนาคารและหลาย QR
-                    เลือกรายการหลักและเปิด–ปิดการแสดงได้ที่หน้าบัญชีร้านค้า
-                  </p>
-                  <Link
-                    className="button secondary"
-                    to="/admin/merchant-accounts"
-                  >
-                    จัดการบัญชีร้านค้า
-                  </Link>
                 </section>
                 <section className="panel section-space">
                   <h2>ช่องทางติดต่อร้าน</h2>

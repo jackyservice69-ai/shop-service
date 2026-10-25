@@ -1,0 +1,42 @@
+[
+  {
+    "id": "announcement-topup",
+    "kind": "announcement",
+    "title": "เติมเงินง่าย ใช้สลิปได้เลย"
+  },
+  {
+    "id": "announcement-reserve",
+    "kind": "announcement",
+    "title": "จองของที่ชอบ มัดจำเริ่ม 0%"
+  },
+  {
+    "id": "announcement-line",
+    "kind": "announcement",
+    "title": "เชื่อมต่อ LINE ไว้ อุ่นใจกว่า"
+  },
+  {
+    "id": "announcement-address",
+    "kind": "announcement",
+    "title": "ส่งถึงที่อยู่ที่ใช่"
+  },
+  {
+    "id": "promotion-welcome",
+    "kind": "promotion",
+    "title": "สมาชิกใหม่ ลด 5% สูงสุด 100 บาท"
+  },
+  {
+    "id": "promotion-beauty",
+    "kind": "promotion",
+    "title": "บิวตี้ ลด 10% สูงสุด 150 บาท"
+  },
+  {
+    "id": "promotion-bag",
+    "kind": "promotion",
+    "title": "กระเป๋า ลด 200 บาท เมื่อซื้อครบ 2,000 บาท"
+  },
+  {
+    "id": "promotion-weekend",
+    "kind": "promotion",
+    "title": "วีคเอนด์ ลด 8% สูงสุด 250 บาท"
+  }
+]

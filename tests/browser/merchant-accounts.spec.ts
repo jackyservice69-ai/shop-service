@@ -194,14 +194,12 @@ test("owner imports a bank, manages multiple primary QR images and visibility; w
     await wallet.reload();
     await expect(wallet.locator(".bank-number")).toHaveText("1234567890");
     await expect(wallet.getByLabel("เลือกบัญชีรับเงิน")).toHaveCount(0);
-    const legacyCard = page
-      .locator(".merchant-account")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "บัญชีเดิมของร้าน",
-          exact: true,
-        }),
-      });
+    const legacyCard = page.locator(".merchant-account").filter({
+      has: page.getByRole("heading", {
+        name: "บัญชีรับเงินของร้าน",
+        exact: true,
+      }),
+    });
     await legacyCard
       .getByRole("button", { name: "แก้ไขบัญชี", exact: true })
       .click();

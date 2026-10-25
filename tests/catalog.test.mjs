@@ -134,6 +134,7 @@ test("catalog supports whitelisted stable sorting and preserves the default publ
       "price",
       "stock",
       "image",
+      "images",
       "created_at",
       "rating_average",
       "review_count",
