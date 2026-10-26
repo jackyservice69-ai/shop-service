@@ -63,6 +63,8 @@ const kinds = [
   "refund",
   "commission",
   "consignment",
+  "withdrawal_hold",
+  "withdrawal_release",
 ];
 export function attachAdminWallet(
   app,

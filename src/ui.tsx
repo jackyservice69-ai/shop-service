@@ -126,6 +126,8 @@ export function Badge({ status, label }: { status: string; label?: string }) {
     refund: "คืนเงิน",
     commission: "ค่าคอมมิชชั่น",
     consignment: "รายรับฝากขาย",
+    withdrawal_hold: "กันยอดแจ้งถอน",
+    withdrawal_release: "คืนยอดแจ้งถอน",
     credited: "จ่ายแล้ว",
     void: "ยกเลิกสิทธิ์",
     income: "รายรับ",

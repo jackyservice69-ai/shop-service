@@ -20,6 +20,7 @@ import {
 } from "./ui";
 import { ProductCategoryField, ProductImages } from "./product-editor-fields";
 import { ProductGallery } from "./product-gallery";
+import { SellerWithdrawals } from "./withdrawals";
 import {
   ShopProfileFields,
   ShopProfileEditor,
@@ -197,6 +198,7 @@ export function ConsignmentPage() {
               </div>
             </div>
           </section>
+          <SellerWithdrawals refreshKey={notificationKey} />
           <ShopProfileEditor
             key={me.membership.version}
             membership={me.membership}

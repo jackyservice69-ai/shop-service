@@ -18,6 +18,7 @@ import { getBankCard } from "./line-bank-card.mjs";
 import { attachAdminWallet } from "./admin-wallet.mjs";
 import { attachAddresses } from "./addresses.mjs";
 import { attachConsignments } from "./consignments.mjs";
+import { attachWithdrawals } from "./withdrawals.mjs";
 import { attachProfileMedia, publicProductShops } from "./profile-media.mjs";
 import { attachPublicShops, findPublicShop } from "./public-shops.mjs";
 import {
@@ -1623,6 +1624,7 @@ export function createApp(db, config) {
     asyncRoute,
     pageRows,
   });
+  attachWithdrawals(app, db, { auth, csrf, permission, asyncRoute, pageRows });
   attachReviews(app, db, config, {
     auth,
     csrf,

@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 
 // Read-only source connection: never open the application or worker before the
 // versioned snapshot is complete. A failed backup blocks the release.
-export async function backupBeforeMigration(databasePath, targetVersion = 15) {
+export async function backupBeforeMigration(databasePath, targetVersion = 16) {
   if (databasePath === ":memory:" || !existsSync(databasePath)) return null;
   const source = new DatabaseSync(databasePath, { readOnly: true });
   let target;

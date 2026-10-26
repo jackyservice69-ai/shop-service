@@ -31,6 +31,8 @@ const kinds: Record<string, string> = {
   refund: "คืนเงิน",
   commission: "ค่าคอมมิชชั่น",
   consignment: "รายรับฝากขาย",
+  withdrawal_hold: "กันยอดแจ้งถอน",
+  withdrawal_release: "คืนยอดแจ้งถอน",
 };
 export function AdminWalletPage() {
   const list = useListQuery(),

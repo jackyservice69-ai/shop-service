@@ -524,7 +524,7 @@ test("v13 migration preserves customer funds, products, per-shop fees and read n
     );
     db.close();
     db = openDb(file);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 15);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 16);
     assert.equal(
       db.prepare("SELECT balance FROM users WHERE id=?").get(user.id).balance,
       50000,

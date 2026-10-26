@@ -78,6 +78,27 @@
       "ownerOnly": false
     },
     {
+      "id": "withdrawals",
+      "label": "ดูคำขอถอนเงินตัวแทน",
+      "group": "การเงิน",
+      "requires": ["finance"],
+      "ownerOnly": false
+    },
+    {
+      "id": "withdrawals_approve",
+      "label": "อนุมัติหรือปฏิเสธคำขอถอนเงินตัวแทน",
+      "group": "การเงิน",
+      "requires": ["finance", "withdrawals"],
+      "ownerOnly": false
+    },
+    {
+      "id": "withdrawals_pay",
+      "label": "บันทึกโอนเงินตามคำขอถอนที่อนุมัติแล้ว",
+      "group": "การเงิน",
+      "requires": ["finance", "withdrawals"],
+      "ownerOnly": false
+    },
+    {
       "id": "members",
       "label": "ดูสมาชิกและข้อมูลติดต่อ",
       "group": "สมาชิก",

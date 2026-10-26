@@ -13,6 +13,7 @@ import { BrowserRecoveryPage } from "./auth-browser";
 import { BankDetailsExportPage } from "./bank-details";
 import { MerchantAccountsPage } from "./merchant-accounts";
 import { AdminWalletPage } from "./admin-wallet";
+import { AdminWithdrawalsPage } from "./withdrawals";
 import { AddressesPage } from "./address-book";
 import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
 import { AdminReviewsPage } from "./reviews";
@@ -97,6 +98,7 @@ const nav = [
   ["members", "สมาชิก", Users],
   ["finance", "รายรับ–รายจ่าย", Receipt],
   ["wallet", "ธุรกรรมกระเป๋าเงิน", Wallet],
+  ["withdrawals", "คำขอถอนตัวแทน", Wallet],
   ["promotions", "โปรโมชั่น", Ticket],
   ["announcements", "ประกาศ", Megaphone],
   ["roles", "สิทธิ์การใช้งาน", ShieldCheck],
@@ -548,6 +550,14 @@ function App() {
                 element={
                   <Permission name="consignments">
                     <AdminConsignmentsPage />
+                  </Permission>
+                }
+              />
+              <Route
+                path="withdrawals"
+                element={
+                  <Permission name="withdrawals">
+                    <AdminWithdrawalsPage />
                   </Permission>
                 }
               />

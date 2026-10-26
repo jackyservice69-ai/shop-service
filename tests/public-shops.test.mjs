@@ -280,9 +280,9 @@ test("v15 migration generates unique durable public aliases and backs up v14 wit
     );
     db.close();
     db = null;
-    assert.match(await backupBeforeMigration(file), /before-schema-14-to-15/);
+    assert.match(await backupBeforeMigration(file), /before-schema-14-to-16/);
     db = openDb(file);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 15);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 16);
     const aliases = db
       .prepare("SELECT user_id,public_id FROM consignors ORDER BY user_id")
       .all();

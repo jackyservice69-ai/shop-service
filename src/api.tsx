@@ -97,7 +97,7 @@ export async function api<T = any>(
   if (
     options.method &&
     options.method !== "GET" &&
-    /^\/(consignment\/(apply|products)|admin\/(consignments|consignment-products|products))(\/|$)/.test(
+    /^\/(consignment\/(apply|products|withdrawals)|admin\/(consignments|consignment-products|products|withdrawals))(\/|$)/.test(
       path,
     )
   ) {

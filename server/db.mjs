@@ -1,4 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
+import { enableWithdrawals } from "./withdrawal-schema.mjs";
 import socialPlatforms from "../shared/socials.json" with { type: "json" };
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -285,6 +286,15 @@ export function openDb(path) {
       audit(db, null, "consignment.public_shops_enabled", "system");
     }
   });
+  // A separate transaction keeps existing wallet balances and immutable ledger intact.
+  if (schemaVersion < 16)
+    transaction(db, () => {
+      enableWithdrawals(db);
+      audit(db, null, "withdrawals.enabled", "system", {
+        defaultStaffGranted: false,
+      });
+      db.exec("PRAGMA user_version=16");
+    });
   const defaults = {
     shopName: "หิ้วลี่",
     depositPercent: 0,

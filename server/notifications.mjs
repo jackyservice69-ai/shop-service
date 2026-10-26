@@ -5,7 +5,17 @@ import { fail } from "./commerce.mjs";
 
 function notice(
   db,
-  { topic, entityId, version, kind, recipientId = null, title, body, href },
+  {
+    topic,
+    entityId,
+    version,
+    kind,
+    recipientId = null,
+    requiredPermission = "consignments",
+    title,
+    body,
+    href,
+  },
 ) {
   db.prepare(
     `INSERT OR IGNORE INTO notifications(event_key,recipient_id,required_permission,topic,entity_id,kind,title,body,href,created_at)
@@ -13,7 +23,7 @@ function notice(
   ).run(
     `${topic}:${entityId}:${version}:${kind}:${recipientId || "approvers"}`,
     recipientId,
-    recipientId ? "" : "consignments",
+    recipientId ? "" : requiredPermission,
     topic,
     entityId,
     kind,
@@ -126,6 +136,48 @@ export function notifyProductDecision(db, product, approved, version) {
   });
 }
 
+export function notifyWithdrawal(db, withdrawal, action) {
+  const common = {
+    topic: "consignment.withdrawal",
+    entityId: withdrawal.id,
+    version: withdrawal.version,
+  };
+  resolveApprovalNotices(db, common.topic, common.entityId);
+  const amount = new Intl.NumberFormat("th-TH", {
+    style: "currency",
+    currency: "THB",
+  }).format(withdrawal.amount / 100);
+  const labels = {
+    submitted: "ส่งคำขอถอนเงินแล้ว",
+    approved: "คำขอถอนเงินได้รับอนุมัติแล้ว",
+    processing: "ร้านกำลังดำเนินการโอนเงิน",
+    rejected: "คำขอถอนเงินไม่ผ่านอนุมัติ",
+    cancelled: "ยกเลิกคำขอถอนเงินแล้ว",
+    paid: "ร้านบันทึกโอนเงินให้แล้ว",
+  };
+  notice(db, {
+    ...common,
+    recipientId: withdrawal.user_id,
+    kind: action,
+    title: labels[action],
+    body: `ยอด ${amount} · ดูรายละเอียดและสถานะในหน้าตัวแทนฝากขาย`,
+    href: "/consignment?tab=withdrawals",
+  });
+  if (["submitted", "approved"].includes(action))
+    notice(db, {
+      ...common,
+      kind: "request",
+      requiredPermission:
+        action === "submitted" ? "withdrawals_approve" : "withdrawals_pay",
+      title:
+        action === "submitted"
+          ? "มีคำขอถอนเงินรออนุมัติ"
+          : "มีคำขอถอนที่อนุมัติแล้ว รอโอนเงิน",
+      body: `ยอด ${amount} · ตรวจสอบคำขอในระบบหลังบ้าน`,
+      href: "/admin/withdrawals",
+    });
+}
+
 const positiveId = z.coerce
   .number()
   .int()
@@ -133,8 +185,13 @@ const positiveId = z.coerce
   .max(Number.MAX_SAFE_INTEGER);
 function visible(user) {
   return {
-    sql: "(n.recipient_id=? OR (n.recipient_id IS NULL AND n.required_permission='consignments' AND ?=1 AND n.resolved_at IS NULL))",
-    params: [user.id, +hasPermission(user, "consignments")],
+    sql: "(n.recipient_id=? OR (n.recipient_id IS NULL AND n.resolved_at IS NULL AND ((n.required_permission='consignments' AND ?=1) OR (n.required_permission='withdrawals_approve' AND ?=1) OR (n.required_permission='withdrawals_pay' AND ?=1))))",
+    params: [
+      user.id,
+      +hasPermission(user, "consignments"),
+      +hasPermission(user, "withdrawals_approve"),
+      +hasPermission(user, "withdrawals_pay"),
+    ],
   };
 }
 function summary(db, user) {
