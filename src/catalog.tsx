@@ -25,6 +25,8 @@ import {
   Pagination,
 } from "./ui";
 import { ProductReviews, Stars } from "./reviews";
+import { ShopInformation } from "./profiles";
+import { ProductGallery } from "./product-gallery";
 import "./catalog.css";
 
 const MAX_PRICE = 100000000;
@@ -444,6 +446,9 @@ export function CatalogPage() {
           <ProductGallery product={selected} />
           <Badge status={selected.category} />
           <p>{selected.description}</p>
+          {selected.shop && (
+            <ShopInformation key={selected.id} shop={selected.shop} />
+          )}
           <h2>{money(selected.price)}</h2>
           <p className="muted">คงเหลือ {selected.stock} ชิ้น</p>
           <button
@@ -459,36 +464,6 @@ export function CatalogPage() {
           </button>
           <ProductReviews productId={selected.id} onChanged={reload} />
         </Modal>
-      )}
-    </div>
-  );
-}
-
-function ProductGallery({ product }: { product: Product }) {
-  const images = product.images?.length ? product.images : [product.image];
-  const [active, setActive] = useState(0);
-  return (
-    <div className="product-gallery">
-      <img
-        className="detail-image"
-        src={images[active] || product.image}
-        alt={`${product.name} รูปที่ ${active + 1}`}
-        onError={imageFallback}
-      />
-      {images.length > 1 && (
-        <div className="product-gallery-thumbnails" aria-label="เลือกรูปสินค้า">
-          {images.map((image, index) => (
-            <button
-              type="button"
-              key={image}
-              aria-label={`ดูรูปสินค้า ${index + 1}`}
-              aria-pressed={active === index}
-              onClick={() => setActive(index)}
-            >
-              <img src={image} alt="" width={64} height={64} />
-            </button>
-          ))}
-        </div>
       )}
     </div>
   );

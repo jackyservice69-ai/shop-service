@@ -21,7 +21,20 @@ test("restored category art, compact rounded hero and themed wallet stay usable 
     );
   expect(
     paths.filter((path) => path.includes("/assets/storefront/")),
-  ).toHaveLength(14);
+  ).toHaveLength(15);
+  await expect(
+    page.locator(
+      '.quick-categories-track li[data-category-copy="1"] .art-food',
+    ),
+  ).toHaveCSS("background-image", /category-food(?:-small)?-v9/);
+  await expect(
+    page
+      .locator('.quick-categories-track li[data-category-copy="1"]')
+      .getByRole("link", { name: "อาหาร", exact: true }),
+  ).toHaveAttribute(
+    "href",
+    "/products?category=" + encodeURIComponent("อาหาร"),
+  );
   for (const path of paths.filter((path) =>
     path.includes("/assets/storefront/"),
   )) {
@@ -47,11 +60,11 @@ test("restored category art, compact rounded hero and themed wallet stay usable 
   );
   await expect(page.locator(".pastel-browse-card .art-beauty")).toHaveCSS(
     "background-image",
-    /category-beauty-v4/,
+    /browse-beauty-photo(?:-small)?-v8/,
   );
   await expect(page.locator(".pastel-browse-card .art-gadgets")).toHaveCSS(
     "background-image",
-    /category-gadgets-v4/,
+    /browse-gadgets-photo(?:-small)?-v8/,
   );
   const publicData = await (await page.request.get("/api/public")).json();
   if (publicData.announcements?.length)

@@ -14,6 +14,8 @@ export type User = {
   phone: string;
   discoverySource: string;
   lineId: string;
+  avatar: string;
+  avatarVersion: number;
   email: string;
   roleId: string;
   roleName: string;
@@ -37,6 +39,7 @@ export type Product = {
   version?: number;
   rating_average?: number;
   review_count?: number;
+  shop?: { name: string; image: string; serviceArea: string };
 };
 export type PageData<T = any> = {
   items: T[];
@@ -76,6 +79,15 @@ export async function api<T = any>(
       data.fields,
     );
   if ("csrf" in data) csrf = data.csrf || "";
+  if (
+    options.method &&
+    options.method !== "GET" &&
+    /^\/(consignment\/(apply|products)|admin\/(consignments|consignment-products|products))(\/|$)/.test(
+      path,
+    )
+  ) {
+    window.dispatchEvent(new Event("notifications:refresh"));
+  }
   return data;
 }
 export const send = (path: string, data: any, method = "POST", key?: string) =>
@@ -250,7 +262,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     </Context.Provider>
   );
 }
-export function useData<T = any>(path: string) {
+export function useData<T = any>(path: string, refreshKey?: string) {
   const [result, setResult] = useState<{ path: string; value: T } | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
@@ -270,7 +282,7 @@ export function useData<T = any>(path: string) {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [path, version]);
+  }, [path, version, refreshKey]);
   return {
     data: result?.path === path ? result.value : null,
     error,

@@ -117,8 +117,8 @@
   gap: 14px;
 }
 .contact-channel-card {
-  --contact-brand: #fde8e8;
-  --contact-brand-end: #f6c2c2;
+  --contact-brand: #f9d9df;
+  --contact-brand-end: #efb6c2;
   --contact-on-brand: #723446;
   min-width: 0;
   display: flex;
@@ -180,14 +180,18 @@
   min-height: 48px;
   margin-top: auto;
   padding: 10px 14px;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: 99px;
   background: var(--contact-brand);
   background-image: linear-gradient(
-    120deg,
+    110deg,
     var(--contact-brand),
     var(--contact-brand-end)
   );
+  background-origin: border-box;
+  background-size: 150% 100%;
+  background-position: 0% 50%;
+  transition: background-position 180ms ease-out;
   color: var(--contact-on-brand);
   font-size: 14px;
   font-weight: 600;
@@ -203,11 +207,7 @@
   flex: none;
 }
 .contact-brand-button:hover {
-  background-image: linear-gradient(
-    120deg,
-    var(--contact-brand-end),
-    var(--contact-brand)
-  );
+  background-position: 100% 50%;
   color: var(--contact-on-brand);
 }
 .contact-brand-button:active {
@@ -218,33 +218,33 @@
   outline-offset: 3px;
 }
 .contact-platform-facebook {
-  --contact-brand: #dceaff;
-  --contact-brand-end: #b9d4ff;
+  --contact-brand: #cbdfff;
+  --contact-brand-end: #abcaf6;
   --contact-on-brand: #183e78;
 }
 .contact-platform-line {
-  --contact-brand: #ddf7e8;
-  --contact-brand-end: #b2e8cd;
+  --contact-brand: #c7efdb;
+  --contact-brand-end: #9fdcbc;
   --contact-on-brand: #145936;
 }
 .contact-platform-telegram {
-  --contact-brand: #dff5fd;
-  --contact-brand-end: #b9e5f7;
+  --contact-brand: #c9edf9;
+  --contact-brand-end: #a8d9ed;
   --contact-on-brand: #164d66;
 }
 .contact-platform-instagram {
-  --contact-brand: #ffe0eb;
-  --contact-brand-end: #ffdbc1;
+  --contact-brand: #fbd0df;
+  --contact-brand-end: #f5c6af;
   --contact-on-brand: #813255;
 }
 .contact-platform-tiktok {
-  --contact-brand: #d8f5f1;
-  --contact-brand-end: #f8d7e2;
+  --contact-brand: #c6e9e3;
+  --contact-brand-end: #edc6d3;
   --contact-on-brand: #253e45;
 }
 .contact-platform-shopee {
-  --contact-brand: #ffe9d5;
-  --contact-brand-end: #ffc5b3;
+  --contact-brand: #ffdcc1;
+  --contact-brand-end: #f5b8a3;
   --contact-on-brand: #853d26;
 }
 .contact-section-marketplace .contact-channel-grid {
@@ -485,6 +485,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .contact-brand-button {
+    transition: none;
+  }
   .contact-brand-button:active {
     transform: none;
   }

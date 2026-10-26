@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { Plus, Store, Pencil } from "lucide-react";
 import { useApp, useData, send, money, date, can, type PageData } from "./api";
 import {
@@ -18,7 +18,13 @@ import {
   cents,
   useListQuery,
 } from "./ui";
-import { ImageUpload } from "./experience";
+import { ProductCategoryField, ProductImages } from "./product-editor-fields";
+import { ProductGallery } from "./product-gallery";
+import {
+  ShopProfileFields,
+  ShopProfileEditor,
+  ShopInformation,
+} from "./profiles";
 const status = (v: string) =>
   ({
     pending: "รออนุมัติ",
@@ -70,12 +76,24 @@ function SalesTable({
   );
 }
 export function ConsignmentPage() {
-  const { data: me, error, loading, reload } = useData<any>("/consignment"),
+  const location = useLocation(),
+    notificationKey = location.state?.notificationId ? location.key : undefined;
+  const {
+      data: me,
+      error,
+      loading,
+      reload,
+    } = useData<any>("/consignment", notificationKey),
     [params, setParams] = useSearchParams(),
     list = useListQuery(),
     tab = params.get("tab") === "sales" ? "sales" : "products",
-    rows = useData<PageData>(`/consignment/${tab}?` + list.query),
+    rows = useData<PageData>(
+      `/consignment/${tab}?` + list.query,
+      notificationKey,
+    ),
     [editing, setEditing] = useState<any>(null),
+    [applicationImage, setApplicationImage] = useState(""),
+    [uploadingProfile, setUploadingProfile] = useState(false),
     { notify } = useApp();
   if (loading) return <Loading />;
   if (error) return <ErrorBox error={error} retry={reload} />;
@@ -98,11 +116,14 @@ export function ConsignmentPage() {
           <Form
             noValidate
             submit="ส่งคำขอสมัคร"
+            blocked={uploadingProfile}
             onSubmit={async (f) => {
               const v = formObject(f);
               await send("/consignment/apply", {
                 shopName: v.shopName,
                 acceptTerms: v.acceptTerms === "on",
+                image: applicationImage,
+                serviceArea: v.serviceArea,
               });
               reload();
               notify("ส่งคำขอแล้ว รอร้านอนุมัติ");
@@ -114,6 +135,11 @@ export function ConsignmentPage() {
               required
               minLength={2}
               maxLength={100}
+            />
+            <ShopProfileFields
+              image={applicationImage}
+              onImage={setApplicationImage}
+              onBusy={setUploadingProfile}
             />
             <label className="checkbox">
               <input name="acceptTerms" type="checkbox" required />
@@ -133,7 +159,10 @@ export function ConsignmentPage() {
             {me.membership.note && <p>{me.membership.note}</p>}
             <p>
               ค่าฝากขายปัจจุบัน <b>{me.feePercent}%</b> ·
-              การเปลี่ยนอัตรามีผลเฉพาะออร์เดอร์ใหม่
+              {me.membership.fee_bps != null
+                ? " อัตราเฉพาะร้าน"
+                : " ใช้อัตรากลาง"}{" "}
+              · การเปลี่ยนอัตรามีผลเฉพาะออร์เดอร์ใหม่
             </p>
             <div className="consignment-totals">
               <div>
@@ -150,6 +179,11 @@ export function ConsignmentPage() {
               </div>
             </div>
           </section>
+          <ShopProfileEditor
+            key={me.membership.version}
+            membership={me.membership}
+            onSaved={reload}
+          />
           <div className="section-tabs">
             {["products", "sales"].map((key) => (
               <button
@@ -254,7 +288,9 @@ function ConsignmentProductEditor({
   onClose: () => void;
   saved: () => void;
 }) {
-  const [image, setImage] = useState(row.image || ""),
+  const [images, setImages] = useState<string[]>(
+      row.images?.length ? row.images : row.image ? [row.image] : [],
+    ),
     [busy, setBusy] = useState(false);
   return (
     <Modal
@@ -271,13 +307,24 @@ function ConsignmentProductEditor({
         onCancel={onClose}
         onSubmit={async (f) => {
           const v = formObject(f);
+          if (!images.length)
+            throw new Error("กรุณาเพิ่มรูปสินค้าอย่างน้อย 1 รูป");
+          const category = String(
+            v.category === "__new_category__"
+              ? v.newCategory || ""
+              : v.category || "",
+          ).trim();
+          if (!category) throw new Error("กรุณาระบุชื่อหมวดหมู่");
           await send(
             "/consignment/products" + (row.id ? "/" + row.id : ""),
             {
-              ...v,
+              name: v.name,
+              description: v.description,
+              category,
               price: cents(v.price),
               stock: Number(v.stock),
-              image,
+              image: images[0],
+              images,
               version: row.version,
             },
             row.id ? "PUT" : "POST",
@@ -300,12 +347,9 @@ function ConsignmentProductEditor({
           required
           maxLength={2000}
         />
-        <Field
-          label="หมวดหมู่"
-          name="category"
-          defaultValue={row.category}
-          required
-          maxLength={200}
+        <ProductCategoryField
+          value={row.category}
+          categoriesPath="/consignment/product-categories"
         />
         <div className="form-grid">
           <Field
@@ -329,10 +373,9 @@ function ConsignmentProductEditor({
             help="ไม่นับจำนวนที่อยู่ในออร์เดอร์จองแล้ว"
           />
         </div>
-        <ImageUpload
-          kind="product"
-          value={image}
-          onChange={setImage}
+        <ProductImages
+          images={images}
+          onChange={setImages}
           onBusyChange={setBusy}
           uploadPath="/consignment/media"
         />
@@ -341,13 +384,17 @@ function ConsignmentProductEditor({
   );
 }
 export function AdminConsignmentsPage() {
+  const location = useLocation(),
+    notificationKey = location.state?.notificationId ? location.key : undefined;
   const [params, setParams] = useSearchParams(),
     tab = ["products", "sales"].includes(params.get("tab") || "")
       ? params.get("tab")!
       : "members",
     list = useListQuery(),
     { user, notify } = useApp(),
-    { data, error, loading, reload } = useData<PageData>(
+    { data, error, loading, reload } = useData<
+      PageData & { defaultFeePercent?: number }
+    >(
       (tab === "members"
         ? "/admin/consignments"
         : tab === "products"
@@ -355,6 +402,7 @@ export function AdminConsignmentsPage() {
           : "/admin/consignment-sales") +
         "?" +
         list.query,
+      notificationKey,
     ),
     [editing, setEditing] = useState<any>(null),
     [product, setProduct] = useState<any>(null);
@@ -364,7 +412,7 @@ export function AdminConsignmentsPage() {
         title="ตัวแทนฝากขาย"
         sub="อนุมัติสมาชิกและสินค้า พร้อมตรวจยอดหลังหักค่าฝากขาย"
       />
-      {can(user, "settings") && <ConsignmentFeeSettings />}
+      {can(user, "settings") && <ConsignmentFeeSettings onSaved={reload} />}
       <div className="section-tabs">
         {[
           ["members", "สมาชิกตัวแทน"],
@@ -394,7 +442,13 @@ export function AdminConsignmentsPage() {
               <Table
                 headers={
                   tab === "members"
-                    ? ["ชื่อร้าน / สมาชิก", "ติดต่อ", "สถานะ", "จัดการ"]
+                    ? [
+                        "ชื่อร้าน / สมาชิก",
+                        "ติดต่อ",
+                        "ค่าฝากขาย",
+                        "สถานะ",
+                        "จัดการ",
+                      ]
                     : [
                         "สินค้า / ร้านตัวแทน",
                         "ราคา / พร้อมขาย",
@@ -414,6 +468,18 @@ export function AdminConsignmentsPage() {
                         <td>
                           {r.email}
                           <small className="block muted">{r.phone}</small>
+                        </td>
+                        <td className="consignment-fee-cell">
+                          <b>
+                            {r.fee_bps != null
+                              ? `${r.fee_bps / 100}%`
+                              : typeof data.defaultFeePercent === "number"
+                                ? `${data.defaultFeePercent}%`
+                                : "อัตรากลาง"}
+                          </b>
+                          <small className="block muted">
+                            {r.fee_bps != null ? "เฉพาะร้าน" : "ใช้อัตรากลาง"}
+                          </small>
                         </td>
                         <td>{status(r.status)}</td>
                         <td>
@@ -460,6 +526,13 @@ export function AdminConsignmentsPage() {
       {editing && (
         <Modal title="จัดการสมาชิกตัวแทน" onClose={() => setEditing(null)}>
           <h3>{editing.shop_name}</h3>
+          <ShopInformation
+            shop={{
+              name: editing.shop_name,
+              image: editing.image || "",
+              serviceArea: editing.service_area || "",
+            }}
+          />
           <p>
             การระงับหรือไม่อนุมัติจะปิดสินค้าของตัวแทน
             ยอดออร์เดอร์เดิมยังใช้เงื่อนไขที่บันทึกไว้
@@ -469,14 +542,34 @@ export function AdminConsignmentsPage() {
             submit="ยืนยันสถานะตัวแทน"
             onCancel={() => setEditing(null)}
             onSubmit={async (f) => {
+              const values = formObject(f);
+              const payload: {
+                status: string;
+                note: string;
+                version: number;
+                feePercent?: number | null;
+              } = {
+                status: String(values.status || ""),
+                note: String(values.note || ""),
+                version: editing.version,
+              };
+              if (can(user, "settings")) {
+                if (values.shopFeeOverride === "on") {
+                  const raw = String(values.feePercent || "").trim(),
+                    percent = Number(raw);
+                  if (!raw || !Number.isFinite(percent))
+                    throw new Error("กรุณาระบุค่าฝากขายเฉพาะร้าน");
+                  payload.feePercent = percent;
+                } else payload.feePercent = null;
+              }
               await send(
                 "/admin/consignments/" + editing.user_id,
-                { ...formObject(f), version: editing.version },
+                payload,
                 "PUT",
               );
               setEditing(null);
               reload();
-              notify("บันทึกสถานะตัวแทนแล้ว");
+              notify("บันทึกข้อมูลตัวแทนแล้ว");
             }}
           >
             <Field
@@ -490,6 +583,12 @@ export function AdminConsignmentsPage() {
               <option value="suspended">ระงับ</option>
               <option value="rejected">ไม่อนุมัติ</option>
             </Field>
+            {can(user, "settings") && (
+              <ShopFeeFields
+                feeBps={editing.fee_bps}
+                defaultFeePercent={data?.defaultFeePercent}
+              />
+            )}
             <Field
               label="หมายเหตุถึงตัวแทน"
               name="note"
@@ -502,11 +601,7 @@ export function AdminConsignmentsPage() {
       )}
       {product && (
         <Modal title="ตรวจสินค้าฝากขาย" onClose={() => setProduct(null)}>
-          <img
-            className="detail-image"
-            src={product.image}
-            alt={product.name}
-          />
+          <ProductGallery key={product.id} product={product} />
           <h3>{product.name}</h3>
           <p className="review-comment">{product.description}</p>
           <p>
@@ -540,13 +635,68 @@ export function AdminConsignmentsPage() {
     </>
   );
 }
-function ConsignmentFeeSettings() {
+function ShopFeeFields({
+  feeBps,
+  defaultFeePercent,
+}: {
+  feeBps: number | null;
+  defaultFeePercent?: number;
+}) {
+  const [override, setOverride] = useState(feeBps != null);
+  const [rate, setRate] = useState(
+    feeBps != null
+      ? String(feeBps / 100)
+      : defaultFeePercent != null
+        ? String(defaultFeePercent)
+        : "",
+  );
+  return (
+    <fieldset className="shop-fee-fields">
+      <legend>ค่าฝากขายของร้านนี้</legend>
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          name="shopFeeOverride"
+          checked={override}
+          onChange={(e) => setOverride(e.target.checked)}
+        />
+        กำหนดค่าฝากขายเฉพาะร้านนี้
+      </label>
+      {override ? (
+        <Field
+          label="ค่าฝากขาย (%)"
+          name="feePercent"
+          type="number"
+          inputMode="decimal"
+          required
+          min={0}
+          max={100}
+          step="0.01"
+          value={rate}
+          onChange={(event) => setRate(event.target.value)}
+          help="0–100% ทศนิยมได้ 2 ตำแหน่ง มีผลกับออร์เดอร์ใหม่เท่านั้น"
+        />
+      ) : (
+        <p className="muted">
+          {typeof defaultFeePercent === "number"
+            ? `ใช้อัตรากลาง ${defaultFeePercent}%`
+            : "ใช้อัตรากลางของร้าน"}{" "}
+          และเปลี่ยนตามการตั้งค่าอัตรากลาง
+        </p>
+      )}
+    </fieldset>
+  );
+}
+
+function ConsignmentFeeSettings({ onSaved }: { onSaved: () => void }) {
   const { data, error, loading, reload } = useData<any>(
       "/admin/consignment-settings",
     ),
     { notify } = useApp();
   return (
     <section className="panel">
+      <h2>ค่าฝากขายอัตรากลาง</h2>
+      <p className="muted">ใช้กับร้านตัวแทนที่ไม่ได้กำหนดค่าฝากขายเฉพาะร้าน</p>
       {loading ? (
         <Loading />
       ) : error ? (
@@ -564,6 +714,7 @@ function ConsignmentFeeSettings() {
                 "PUT",
               );
               reload();
+              onSaved();
               notify("บันทึกอัตราสำหรับออร์เดอร์ใหม่แล้ว");
             }}
           >

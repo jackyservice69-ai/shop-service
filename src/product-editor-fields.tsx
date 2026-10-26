@@ -19,10 +19,14 @@ export const defaultCategories = [
   "ของสะสม",
 ];
 
-export function ProductCategoryField({ value }: { value?: string }) {
-  const { data, error, reload } = useData<string[]>(
-    "/admin/product-categories",
-  );
+export function ProductCategoryField({
+  value,
+  categoriesPath = "/admin/product-categories",
+}: {
+  value?: string;
+  categoriesPath?: string;
+}) {
+  const { data, error, reload } = useData<string[]>(categoriesPath);
   const [selected, setSelected] = useState(value || defaultCategories[0]);
   const options = [
     ...new Set([
@@ -66,10 +70,12 @@ export function ProductImages({
   images,
   onChange,
   onBusyChange,
+  uploadPath = "/admin/media/product",
 }: {
   images: string[];
   onChange: (images: string[]) => void;
   onBusyChange: (busy: boolean) => void;
+  uploadPath?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
@@ -117,7 +123,7 @@ export function ProductImages({
                   throw new Error("ไฟล์ต้องมีขนาด 1 ไบต์–5 MB");
                 const body = new FormData();
                 body.append("image", file);
-                const result = await api("/admin/media/product", {
+                const result = await api(uploadPath, {
                   method: "POST",
                   body,
                 });

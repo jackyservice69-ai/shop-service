@@ -3628,7 +3628,8 @@ td small {
 .customer-shell .product-copy strong,
 .customer-shell .product-title:hover,
 .customer-shell .text-button,
-.customer-shell a:not(.button):not(.brand):not(.avatar):not(.contact-brand-button) {
+.customer-shell
+  a:not(.button):not(.brand):not(.avatar):not(.contact-brand-button) {
   color: var(--link-ink);
 }
 .customer-shell .store-header nav a {
@@ -4610,6 +4611,34 @@ td small {
 }
 .review-upload-label input {
   max-width: 100%;
+}
+.shop-fee-fields {
+  min-width: 0;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.shop-fee-fields legend {
+  padding: 0 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.shop-fee-fields .checkbox {
+  min-height: 44px;
+  line-height: 1.7;
+}
+.shop-fee-fields .field {
+  margin-top: 12px;
+}
+.shop-fee-fields > p {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.consignment-fee-cell {
+  min-width: 110px;
 }
 .consignment-totals {
   display: grid;

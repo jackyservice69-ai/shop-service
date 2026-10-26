@@ -62,6 +62,8 @@ export const IMAGE_SIZES: Record<
   promotion: { w: 1200, h: 800, label: "โปรโมชั่น" },
   logo: { w: 640, h: 240, label: "โลโก้" },
   favicon: { w: 256, h: 256, label: "Favicon" },
+  avatar: { w: 512, h: 512, label: "รูปโปรไฟล์" },
+  shop: { w: 1200, h: 800, label: "รูปหน้าร้าน" },
 };
 function luminance(hex: string) {
   const rgb = hex

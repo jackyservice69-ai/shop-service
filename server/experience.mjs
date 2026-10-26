@@ -14,6 +14,7 @@ import { fail } from "./commerce.mjs";
 import { verifyPaymentQr } from "./payment-qr.mjs";
 import { secret } from "./integrations.mjs";
 import { hasPermission } from "../shared/authorization.mjs";
+import { canReadProfileMedia } from "./profile-media.mjs";
 import {
   merchantAccounts,
   accountReceiver,
@@ -149,13 +150,18 @@ export function attachExperience(
     asyncRoute((req, res) => {
       if (!/^[a-f0-9]{32}$/.test(req.params.id)) fail(404, "ไม่พบรูปภาพ");
       const m = db
-        .prepare("SELECT mime,body FROM media WHERE id=?")
+        .prepare("SELECT id,kind,actor_id,mime,body FROM media WHERE id=?")
         .get(req.params.id);
       if (!m) fail(404, "ไม่พบรูปภาพ");
+      const profile = ["avatar", "shop"].includes(m.kind);
+      if (profile && !canReadProfileMedia(db, m, req.user))
+        fail(404, "ไม่พบรูปภาพ");
       res
         .set({
           "Content-Type": m.mime,
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": profile
+            ? "private, no-store"
+            : "public, max-age=31536000, immutable",
           "X-Content-Type-Options": "nosniff",
         })
         .send(Buffer.from(m.body));

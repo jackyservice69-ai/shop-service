@@ -185,6 +185,18 @@
   outline-offset: 2px;
   border-radius: 10px;
 }
+.customer-shell
+  .pastel-storefront
+  .quick-categories-strip
+  .pastel-category-art.art-food {
+  background-image: url("/assets/storefront/category-food-small-v9.webp");
+  background-image: image-set(
+    url("/assets/storefront/category-food-small-v9.webp") 1x,
+    url("/assets/storefront/category-food-v9.webp") 2x
+  );
+  background-size: 100% 100%;
+  background-position: center;
+}
 @media (max-width: 700px) {
   .customer-shell
     .pastel-storefront

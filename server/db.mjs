@@ -113,6 +113,12 @@ export function openDb(path) {
  CREATE INDEX IF NOT EXISTS reviews_product ON reviews(product_id,visible,created_at);
  CREATE TABLE IF NOT EXISTS review_media(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),product_id TEXT NOT NULL REFERENCES products(id),review_id TEXT REFERENCES reviews(id),mime TEXT NOT NULL,width INTEGER NOT NULL,height INTEGER NOT NULL,duration REAL NOT NULL DEFAULT 0,bytes INTEGER NOT NULL,body BLOB NOT NULL,created_at TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS review_media_owner ON review_media(user_id,created_at);
+ CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,event_key TEXT NOT NULL UNIQUE,recipient_id TEXT REFERENCES users(id),required_permission TEXT NOT NULL DEFAULT '',topic TEXT NOT NULL,entity_id TEXT NOT NULL,kind TEXT NOT NULL,title TEXT NOT NULL,body TEXT NOT NULL,href TEXT NOT NULL CHECK(href IN ('/consignment','/consignment?tab=products','/admin/consignments','/admin/consignments?tab=products')),created_at TEXT NOT NULL,resolved_at TEXT,CHECK((recipient_id IS NOT NULL AND required_permission='') OR (recipient_id IS NULL AND required_permission='consignments')));
+ CREATE INDEX IF NOT EXISTS notifications_recipient ON notifications(recipient_id,id DESC);
+ CREATE INDEX IF NOT EXISTS notifications_approval ON notifications(required_permission,resolved_at,id DESC);
+ CREATE INDEX IF NOT EXISTS notifications_entity ON notifications(topic,entity_id,resolved_at);
+ CREATE TABLE IF NOT EXISTS notification_reads(notification_id INTEGER NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id),read_at TEXT NOT NULL,PRIMARY KEY(notification_id,user_id));
+ CREATE INDEX IF NOT EXISTS notification_reads_user ON notification_reads(user_id,notification_id);
  `);
   const schemaVersion = db.prepare("PRAGMA user_version").get().user_version;
   // Additive, repeatable migration: preserve existing products, orders and balances.
@@ -124,6 +130,10 @@ export function openDb(path) {
       ["users", "discovery_source", "TEXT NOT NULL DEFAULT ''"],
       ["users", "line_id", "TEXT NOT NULL DEFAULT ''"],
       ["users", "member_version", "INTEGER NOT NULL DEFAULT 1"],
+      ["users", "avatar", "TEXT NOT NULL DEFAULT ''"],
+      ["users", "avatar_version", "INTEGER NOT NULL DEFAULT 1"],
+      ["consignors", "image", "TEXT NOT NULL DEFAULT ''"],
+      ["consignors", "service_area", "TEXT NOT NULL DEFAULT ''"],
       ["users", "must_change_password", "INTEGER NOT NULL DEFAULT 0"],
       ["users", "password_reset_expires_at", "TEXT"],
       ["users", "has_password", "INTEGER NOT NULL DEFAULT 1"],
@@ -147,6 +157,11 @@ export function openDb(path) {
       ["products", "images", "TEXT NOT NULL DEFAULT '[]'"],
       ["products", "consignor_id", "TEXT REFERENCES users(id)"],
       ["products", "consignment_status", "TEXT NOT NULL DEFAULT 'none'"],
+      [
+        "consignors",
+        "fee_bps",
+        "INTEGER CHECK(fee_bps IS NULL OR fee_bps BETWEEN 0 AND 10000)",
+      ],
     ])
       if (
         !db
@@ -237,6 +252,22 @@ export function openDb(path) {
     if (schemaVersion < 10) {
       audit(db, null, "auth.line_enabled_schema", "system");
       db.exec("PRAGMA user_version=10");
+    }
+    if (schemaVersion < 11) {
+      db.exec(`INSERT OR IGNORE INTO notifications(event_key,required_permission,topic,entity_id,kind,title,body,href,created_at)
+        SELECT 'consignment.membership:'||user_id||':'||version||':request:approvers','consignments','consignment.membership',user_id,'request','มีคำขอสมัครตัวแทนฝากขาย','ร้าน “'||shop_name||'” ส่งคำขอสมัคร รอการพิจารณา','/admin/consignments',created_at FROM consignors WHERE status='pending';
+        INSERT OR IGNORE INTO notifications(event_key,required_permission,topic,entity_id,kind,title,body,href,created_at)
+        SELECT 'consignment.product:'||id||':'||version||':request:approvers','consignments','consignment.product',id,'request','มีสินค้าฝากขายรออนุมัติ','สินค้า “'||name||'” ถูกส่งให้ร้านตรวจสอบ','/admin/consignments?tab=products',created_at FROM products WHERE consignor_id IS NOT NULL AND consignment_status='pending' AND active=0;
+        PRAGMA user_version=11;`);
+      audit(db, null, "notifications.enabled", "system");
+    }
+    if (schemaVersion < 12) {
+      audit(db, null, "consignment.shop_fee_enabled", "system");
+      db.exec("PRAGMA user_version=12");
+    }
+    if (schemaVersion < 13) {
+      audit(db, null, "profiles.enabled", "system");
+      db.exec("PRAGMA user_version=13");
     }
   });
   const defaults = {

@@ -80,7 +80,10 @@ test("consignor applies and publishes after approval; paid completion settles th
     await dialog
       .getByLabel("รายละเอียดสินค้า")
       .fill("สินค้าตัวแทนสำหรับตรวจครบวงจร");
-    await dialog.getByLabel("หมวดหมู่").fill("ฝากขาย");
+    await dialog
+      .getByRole("combobox", { name: "หมวดหมู่" })
+      .selectOption("__new_category__");
+    await dialog.getByLabel("ชื่อหมวดหมู่ใหม่").fill("ฝากขาย");
     await dialog.getByLabel("ราคาขาย (บาท)").fill("200");
     await dialog.getByLabel("จำนวนพร้อมขาย").fill("3");
     const picture = await sharp({
@@ -88,12 +91,16 @@ test("consignor applies and publishes after approval; paid completion settles th
     })
       .png()
       .toBuffer();
-    await dialog.getByLabel("ไฟล์สินค้า", { exact: true }).setInputFiles({
-      name: "product.png",
-      mimeType: "image/png",
-      buffer: picture,
-    });
-    await expect(dialog.locator(".image-uploader")).toContainText("จัดเก็บ");
+    await dialog
+      .getByLabel("เพิ่มรูปภาพสินค้า", { exact: true })
+      .setInputFiles({
+        name: "product.png",
+        mimeType: "image/png",
+        buffer: picture,
+      });
+    await expect(dialog.locator(".product-images-editor")).toContainText(
+      "อัปโหลดเรียบร้อยแล้ว",
+    );
     await dialog.getByRole("button", { name: "ส่งตรวจสินค้าฝากขาย" }).click();
     await expect(
       sellerPage.getByText("รออนุมัติ", { exact: true }),

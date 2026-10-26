@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-26",
+  "mode": "built-in Imagegen",
+  "reference": "1-2141.jpg",
+  "styleReference": "public/assets/storefront/categories-hd-v2.webp",
+  "prompt": "Use case: product-mockup. Generate ONE standalone square ecommerce FOOD category icon illustration for the Iya pastel boutique. Input image 1 is the user's storefront screenshot, a style and placement reference only. Input image 2 is the existing category icon atlas: match its handbag, perfume and gold heart necklace illustrations closely in visual finish, density and lighting. Subject: a charming complete hamburger with a golden sesame bun, lettuce, tomato and patty, one blush-pink takeaway drink cup with lid and straw, and golden French fries in a pastel pink paper carton. Arrange as one balanced compact trio, burger front-left, drink behind and fries front-right, all fully visible with natural spacing, no cropped food or straw. Match the glossy pastel illustrated/soft 3D boutique treatment, cream highlights, restrained warm gold details and soft deep-rose contours. One complete pale peach circular backdrop centered on a clean white square canvas, circle diameter about 95% of canvas; trio occupies about 72% of circle diameter, comfortably contained and recognizable at 84-100px. Two restrained four-point champagne-gold sparkles. Consistent soft upper-left lighting. No text, letters, numbers, logo, brand, watermark, price, buttons, UI, website layout, photorealistic scene, purple, outer shadow or glow. Deliver a single square icon, not a grid or atlas."
+}

@@ -986,6 +986,24 @@
 .customer-shell .pastel-storefront .pastel-browse-card > .art-generic {
   background-image: none;
 }
+.customer-shell .pastel-storefront .pastel-browse-card > .art-beauty {
+  background-image: url("/assets/storefront/browse-beauty-photo-small-v8.webp");
+  background-image: image-set(
+    url("/assets/storefront/browse-beauty-photo-small-v8.webp") 1x,
+    url("/assets/storefront/browse-beauty-photo-v8.webp") 2x
+  );
+  background-size: cover;
+  background-position: center;
+}
+.customer-shell .pastel-storefront .pastel-browse-card > .art-gadgets {
+  background-image: url("/assets/storefront/browse-gadgets-photo-small-v8.webp");
+  background-image: image-set(
+    url("/assets/storefront/browse-gadgets-photo-small-v8.webp") 1x,
+    url("/assets/storefront/browse-gadgets-photo-v8.webp") 2x
+  );
+  background-size: cover;
+  background-position: center;
+}
 .customer-shell .pastel-storefront .pastel-steps {
   order: 6;
 }

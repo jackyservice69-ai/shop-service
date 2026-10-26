@@ -18,6 +18,7 @@ import { ConsignmentPage, AdminConsignmentsPage } from "./consignments";
 import { AdminReviewsPage } from "./reviews";
 import { SocialLinks } from "./contacts";
 import { ContactPage } from "./contact-page";
+import { NotificationBell } from "./notifications";
 import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
@@ -46,7 +47,6 @@ import {
   ArrowUpRight,
   LogOut,
   Store,
-  UserRound,
   Star,
   ChevronRight,
   Headphones,
@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import { AppProvider, useApp, can, send } from "./api";
 import { Brand, Loading } from "./ui";
+import { ProfileAvatar } from "./profiles";
 import {
   StorePage,
   AuthPage,
@@ -291,8 +292,9 @@ function StoreLayout() {
           </NavLink>
           {user ? (
             <>
+              <NotificationBell />
               <Link className="avatar" to="/account" aria-label="บัญชีของฉัน">
-                <UserRound size={22} />
+                <ProfileAvatar image={user.avatar} />
               </Link>
               <button
                 type="button"
@@ -425,7 +427,12 @@ function AdminLayout() {
               navigate("/login");
             }}
           >
-            <span className="avatar">{user?.name.slice(0, 1)}</span>
+            <span className="avatar">
+              <ProfileAvatar
+                image={user?.avatar}
+                fallback={user?.name.slice(0, 1)}
+              />
+            </span>
             <span>
               <b>{user?.name}</b>
               <small>{user?.roleName}</small>
@@ -443,11 +450,12 @@ function AdminLayout() {
             <span className="system-online">
               <i /> ระบบพร้อมใช้งาน
             </span>
+            <NotificationBell />
             <Link to="/" className="button secondary small">
               <Store size={16} /> ดูหน้าร้าน <ArrowUpRight size={14} />
             </Link>
             <Link to="/account" className="avatar" aria-label="บัญชีของฉัน">
-              <UserRound size={22} />
+              <ProfileAvatar image={user?.avatar} />
             </Link>
           </div>
         </header>

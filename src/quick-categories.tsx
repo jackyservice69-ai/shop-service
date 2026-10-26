@@ -11,6 +11,11 @@ const definitions = [
     match: /เครื่องประดับ|จิวเวล|jewel|accessor/i,
     art: "jewelry",
   },
+  {
+    label: "อาหาร",
+    match: /อาหาร|เครื่องดื่ม|ของกิน|ขนม|food|beverage|snack/i,
+    art: "food",
+  },
   { label: "เสื้อผ้า", match: /เสื้อ|แฟชั่น|cloth|fashion/i, art: "clothing" },
   {
     label: "เครื่องสำอาง",

@@ -1,0 +1,14 @@
+# Consignor product editor parity
+
+Local change, no production deployment.
+
+- Sellers use the same `ProductCategoryField` and `ProductImages` controls as product administrators. Choose a category or **＋ เพิ่มหมวดหมู่ใหม่**; a new name is saved with the submitted product, without granting product administration access.
+- `GET /api/consignment/product-categories` requires an approved seller and returns public product categories plus that seller's own draft categories. Another seller's unpublished categories are excluded. The shared control still includes prepared categories and the edited product's current category.
+- Select multiple PNG/JPEG/JPG files at once, up to 8 pictures per product, each at most 5 MB. Preview all pictures, pick a primary image, remove pictures and retry failed uploads. Successful files remain after a partial failure. Saving is blocked during upload and requires at least one successful image. Existing upload sanitizing, quotas and image dimensions are preserved.
+- The shared controls accept an explicit category API/upload path, defaulting to the administrator endpoints for existing callers. Sellers use `/api/consignment/product-categories` and `/api/consignment/media`; no administrator permissions are added.
+- The product API validates 1–8 unique image paths and consistent primary-first ordering. Every newly attached image must be this seller's uploaded product media. On edits, owners may retain product images already attached to that same product by an authorized administrator. Other sellers' images cannot be attached as new references. Owner, approval and optimistic version guards remain in force.
+- Gallery JSON uses the existing `products.images` column; no migration. Own list, approval list and public product DTOs return ordered arrays. Both the approval dialog and storefront reuse the product gallery with selectable thumbnails.
+- Existing single-image API clients remain supported. If `images` is omitted and the primary image is unchanged, existing secondary pictures are preserved; a changed legacy primary resets the old gallery. Explicit arrays allow intentional removal. Any edit still closes sales and requires approval again.
+- Preserve existing financial snapshots, notification behavior, stock semantics and flat pastel styling.
+
+Verification: `tests/consignor-product-gallery.test.mjs` checks gallery persistence/reordering/removal, approvals, legacy preservation, all-image ownership, limits, primary consistency, scoped categories, conflicts and audit rollback. Browser tests cover seller category selection/new names, missing images, partial upload failures, primary selection, edit/reopen/removal, approver thumbnails, public thumbnails, 390/1440 px layouts and Axe. The existing consignment-to-review flow also uses the updated controls.

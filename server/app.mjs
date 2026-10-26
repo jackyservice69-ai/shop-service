@@ -18,6 +18,13 @@ import { getBankCard } from "./line-bank-card.mjs";
 import { attachAdminWallet } from "./admin-wallet.mjs";
 import { attachAddresses } from "./addresses.mjs";
 import { attachConsignments } from "./consignments.mjs";
+import { attachProfileMedia, publicProductShops } from "./profile-media.mjs";
+import {
+  attachNotifications,
+  notifyProductRequest,
+  notifyProductDecision,
+  resolveApprovalNotices,
+} from "./notifications.mjs";
 import { settleConsignments } from "./consignment-ledger.mjs";
 import { attachReviews } from "./reviews.mjs";
 import {
@@ -114,6 +121,8 @@ const safeUser = (u) =>
         phone: u.phone,
         discoverySource: u.discovery_source,
         lineId: u.line_id,
+        avatar: u.avatar,
+        avatarVersion: u.avatar_version,
         email: u.email,
         roleId: u.role_id,
         roleName: u.role_name,
@@ -152,8 +161,9 @@ function pageRows(db, sql, params, req) {
     size,
   };
 }
-function productPage(result) {
-  return { ...result, items: result.items.map(productDto) };
+function productPage(result, db) {
+  const items = result.items.map(productDto);
+  return { ...result, items: db ? publicProductShops(db, items) : items };
 }
 const boundedText = z.string().trim().min(1).max(200);
 const productSchema = z.object({
@@ -627,6 +637,7 @@ export function createApp(db, config) {
             values,
             req,
           ),
+          db,
         ),
       );
     }),
@@ -985,11 +996,13 @@ export function createApp(db, config) {
         if (!version) fail(400, "ไม่มีเวอร์ชันข้อมูล กรุณาโหลดใหม่");
         transaction(db, () => {
           const entries = Object.entries(v);
+          let consignmentProduct;
           if (table === "products") {
             const old = db
-              .prepare("SELECT consignor_id FROM products WHERE id=?")
+              .prepare("SELECT * FROM products WHERE id=?")
               .get(req.params.id);
             if (old?.consignor_id) {
+              consignmentProduct = old;
               const ps = JSON.parse(req.user.permissions);
               if (!ps.includes("*") && !ps.includes("consignments"))
                 fail(403, "ต้องมีสิทธิ์ฝากขายเพื่อแก้ไขสินค้าของตัวแทน");
@@ -1018,6 +1031,31 @@ export function createApp(db, config) {
               version,
             );
           if (!result.changes) fail(409, "ข้อมูลเปลี่ยนแล้ว กรุณาโหลดใหม่");
+          if (consignmentProduct) {
+            if (!v.active)
+              notifyProductRequest(db, {
+                ...consignmentProduct,
+                name: v.name,
+                version: version + 1,
+              });
+            else {
+              resolveApprovalNotices(
+                db,
+                "consignment.product",
+                consignmentProduct.id,
+              );
+              if (
+                consignmentProduct.consignment_status !== "approved" ||
+                !consignmentProduct.active
+              )
+                notifyProductDecision(
+                  db,
+                  { ...consignmentProduct, name: v.name },
+                  true,
+                  version + 1,
+                );
+            }
+          }
           audit(db, req.user.id, `${resource}.updated`, req.params.id);
         });
         res.json({ ok: true });
@@ -1567,6 +1605,8 @@ export function createApp(db, config) {
     asyncRoute,
   });
   attachAddresses(app, db, { auth, csrf, asyncRoute });
+  attachProfileMedia(app, db, config, { auth, csrf, asyncRoute });
+  attachNotifications(app, db, { auth, csrf, asyncRoute });
   attachMemberManagement(app, db, { permission, asyncRoute });
   attachConsignments(app, db, config, {
     auth,

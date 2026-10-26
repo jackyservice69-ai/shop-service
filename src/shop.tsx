@@ -5,6 +5,7 @@ import { QuickCategories, categoryArtwork } from "./quick-categories";
 import { AddressBook, MapPicker, SavedAddressSelect } from "./address-book";
 import { BankDetailsPanel } from "./bank-details";
 import { WalletCard } from "./wallet-card";
+import { AccountPhoto } from "./profiles";
 import { GoogleButton } from "./google-auth";
 import { LineButton, SocialConnections } from "./line-auth";
 import { DiscoverySourceField, registrationValues } from "./discovery-source";
@@ -191,15 +192,6 @@ export function StorePage() {
                 <span
                   className={
                     "pastel-category-art art-" + (item.art || "generic")
-                  }
-                  style={
-                    item.art && ["beauty", "gadgets"].includes(item.art)
-                      ? {
-                          backgroundImage: `url(/assets/storefront/category-${item.art}-v4.webp)`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                        }
-                      : undefined
                   }
                   aria-hidden="true"
                 >
@@ -1282,6 +1274,9 @@ export function AccountPage() {
   return (
     <div className="contained narrow">
       <PageHeading title="บัญชีของฉัน" sub="ดูแลข้อมูลการเข้าสู่ระบบของคุณ" />
+      {user && !user.mustChangePassword && (
+        <AccountPhoto key={user.id + ":" + user.avatarVersion} />
+      )}
       <section className="panel">
         <h2>{user?.name}</h2>
         <p>{user?.email}</p>

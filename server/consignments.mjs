@@ -3,13 +3,34 @@ import sharp from "sharp";
 import { z } from "zod";
 import { id, now, transaction, audit, getSettings, setSetting } from "./db.mjs";
 import { fail, money } from "./commerce.mjs";
+import { hasPermission } from "../shared/authorization.mjs";
+import { productDto } from "./product-images.mjs";
+import { shopProfileFields, checkOwnedProfileImage } from "./profile-media.mjs";
+import {
+  notifyMembershipRequest,
+  notifyProductRequest,
+  notifyMembershipDecision,
+  notifyProductDecision,
+  resolveApprovalNotices,
+} from "./notifications.mjs";
 const productSchema = z.object({
   name: z.string().trim().min(1).max(200),
   description: z.string().trim().min(1).max(2000),
-  category: z.string().trim().min(1).max(200),
+  category: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .refine((v) => v !== "__new_category__", "กรุณาระบุชื่อหมวดหมู่"),
   price: money.refine((n) => n > 0),
   stock: z.number().int().min(0).max(100000),
   image: z.string().regex(/^\/api\/media\/[a-f0-9]{32}$/),
+  images: z
+    .array(z.string().regex(/^\/api\/media\/[a-f0-9]{32}$/))
+    .min(1)
+    .max(8)
+    .refine((images) => new Set(images).size === images.length, "รูปภาพซ้ำ")
+    .optional(),
   version: z.number().int().positive().optional(),
 });
 const approved = (db, uid) => {
@@ -19,6 +40,10 @@ const approved = (db, uid) => {
   )
     fail(403, "ต้องได้รับอนุมัติเป็นตัวแทนฝากขายก่อน");
 };
+const productPage = (result) => ({
+  ...result,
+  items: result.items.map(productDto),
+});
 export function attachConsignments(
   app,
   db,
@@ -28,20 +53,26 @@ export function attachConsignments(
   app.get(
     "/api/consignment",
     auth,
-    asyncRoute((req, res) =>
+    asyncRoute((req, res) => {
+      const membership =
+        db
+          .prepare("SELECT * FROM consignors WHERE user_id=?")
+          .get(req.user.id) || null;
+      const defaultFeePercent = getSettings(db).consignmentFeePercent;
       res.json({
-        membership:
-          db
-            .prepare("SELECT * FROM consignors WHERE user_id=?")
-            .get(req.user.id) || null,
-        feePercent: getSettings(db).consignmentFeePercent,
+        membership,
+        feePercent:
+          membership?.fee_bps != null
+            ? membership.fee_bps / 100
+            : defaultFeePercent,
+        defaultFeePercent,
         totals: db
           .prepare(
             "SELECT COALESCE(SUM(CASE WHEN status='pending' THEN net ELSE 0 END),0) pending,COALESCE(SUM(CASE WHEN status='credited' THEN net ELSE 0 END),0) credited,COALESCE(SUM(CASE WHEN status='credited' THEN fee ELSE 0 END),0) fees FROM consignment_sales WHERE seller_id=?",
           )
           .get(req.user.id),
-      }),
-    ),
+      });
+    }),
   );
   app.post(
     "/api/consignment/apply",
@@ -52,7 +83,9 @@ export function attachConsignments(
         .object({
           shopName: z.string().trim().min(2).max(100),
           acceptTerms: z.literal(true),
+          ...shopProfileFields,
         })
+        .strict()
         .parse(req.body);
       transaction(db, () => {
         const old = db
@@ -60,12 +93,37 @@ export function attachConsignments(
           .get(req.user.id);
         if (old)
           fail(409, "มีคำขอสมัครแล้ว กรุณาติดต่อร้านหากต้องการเปลี่ยนสถานะ");
+        checkOwnedProfileImage(db, v.image, "shop", req.user.id);
         db.prepare(
-          "INSERT INTO consignors(user_id,shop_name,status,created_at,updated_at) VALUES(?,?,?,?,?)",
-        ).run(req.user.id, v.shopName, "pending", now(), now());
+          "INSERT INTO consignors(user_id,shop_name,status,created_at,updated_at,image,service_area) VALUES(?,?,?,?,?,?,?)",
+        ).run(
+          req.user.id,
+          v.shopName,
+          "pending",
+          now(),
+          now(),
+          v.image,
+          v.serviceArea,
+        );
         audit(db, req.user.id, "consignment.applied", req.user.id);
+        notifyMembershipRequest(db, req.user.id, v.shopName);
       });
       res.status(201).json({ ok: true });
+    }),
+  );
+  app.get(
+    "/api/consignment/product-categories",
+    auth,
+    asyncRoute((req, res) => {
+      approved(db, req.user.id);
+      res.json(
+        db
+          .prepare(
+            "SELECT DISTINCT category FROM products WHERE category!='' AND (active=1 OR consignor_id=?) ORDER BY category LIMIT 500",
+          )
+          .all(req.user.id)
+          .map((r) => r.category),
+      );
     }),
   );
   app.get(
@@ -73,11 +131,13 @@ export function attachConsignments(
     auth,
     asyncRoute((req, res) =>
       res.json(
-        pageRows(
-          db,
-          "SELECT id,name,description,category,price,stock,image,active,version,consignment_status FROM products WHERE consignor_id=? AND name LIKE ? ORDER BY created_at DESC",
-          [req.user.id, "%" + String(req.query.q || "").slice(0, 100) + "%"],
-          req,
+        productPage(
+          pageRows(
+            db,
+            "SELECT id,name,description,category,price,stock,image,images,active,version,consignment_status FROM products WHERE consignor_id=? AND name LIKE ? ORDER BY created_at DESC",
+            [req.user.id, "%" + String(req.query.q || "").slice(0, 100) + "%"],
+            req,
+          ),
         ),
       ),
     ),
@@ -116,14 +176,22 @@ export function attachConsignments(
           if (method === "put" && !old) fail(404, "ไม่พบสินค้าฝากขายของคุณ");
           if (old && old.version !== v.version)
             fail(409, "สินค้าเปลี่ยนแล้ว กรุณาโหลดใหม่");
-          if (
-            !db
-              .prepare(
-                "SELECT id FROM media WHERE id=? AND kind='product' AND actor_id=?",
-              )
-              .get(v.image.split("/").at(-1), req.user.id)
-          )
-            fail(400, "กรุณาอัปโหลดรูปสินค้าของคุณผ่านระบบ");
+          const uploadedImages = v.images || [v.image];
+          // Owners may retain images already attached by an authorized product admin.
+          // New references must come from this seller's own product uploads.
+          const existingImages = new Set(old ? productDto(old).images : []);
+          if (v.images && v.image !== v.images[0])
+            fail(400, "รูปหลักต้องเป็นรูปแรกของชุดรูปภาพ");
+          for (const image of uploadedImages)
+            if (
+              !existingImages.has(image) &&
+              !db
+                .prepare(
+                  "SELECT id FROM media WHERE id=? AND kind='product' AND actor_id=?",
+                )
+                .get(image.split("/").at(-1), req.user.id)
+            )
+              fail(400, "กรุณาอัปโหลดรูปสินค้าของคุณผ่านระบบ");
           if (
             !old &&
             db
@@ -132,23 +200,28 @@ export function attachConsignments(
           )
             fail(409, "ฝากขายได้สูงสุด 200 สินค้าต่อตัวแทน");
           const pid = old?.id || id();
+          const gallery = v.images
+            ? JSON.stringify(v.images)
+            : old?.image === v.image
+              ? old.images
+              : "[]";
           if (old)
             db.prepare(
-              "UPDATE products SET name=?,description=?,category=?,price=?,stock=?,images=CASE WHEN image=? THEN images ELSE '[]' END,image=?,active=0,consignment_status='pending',version=version+1 WHERE id=? AND consignor_id=?",
+              "UPDATE products SET name=?,description=?,category=?,price=?,stock=?,images=?,image=?,active=0,consignment_status='pending',version=version+1 WHERE id=? AND consignor_id=?",
             ).run(
               v.name,
               v.description,
               v.category,
               v.price,
               v.stock,
-              v.image,
+              gallery,
               v.image,
               pid,
               req.user.id,
             );
           else
             db.prepare(
-              "INSERT INTO products(id,name,description,category,price,cost,stock,image,active,created_at,consignor_id,consignment_status) VALUES(?,?,?,?,?,0,?,?,0,?,?,'pending')",
+              "INSERT INTO products(id,name,description,category,price,cost,stock,image,images,active,created_at,consignor_id,consignment_status) VALUES(?,?,?,?,?,0,?,?,?,0,?,?,'pending')",
             ).run(
               pid,
               v.name,
@@ -157,6 +230,7 @@ export function attachConsignments(
               v.price,
               v.stock,
               v.image,
+              gallery,
               now(),
               req.user.id,
             );
@@ -167,6 +241,14 @@ export function attachConsignments(
               ? "consignment.product_updated"
               : "consignment.product_submitted",
             pid,
+          );
+          notifyProductRequest(
+            db,
+            db
+              .prepare(
+                "SELECT id,name,version,consignor_id FROM products WHERE id=?",
+              )
+              .get(pid),
           );
         });
         res.status(method === "post" ? 201 : 200).json({ ok: true });
@@ -272,14 +354,15 @@ export function attachConsignments(
     "/api/admin/consignments",
     permission("consignments"),
     asyncRoute((req, res) =>
-      res.json(
-        pageRows(
+      res.json({
+        ...pageRows(
           db,
           "SELECT c.*,u.name,u.email,u.phone FROM consignors c JOIN users u ON u.id=c.user_id WHERE c.shop_name LIKE ? OR u.name LIKE ? ORDER BY c.created_at DESC",
           Array(2).fill("%" + String(req.query.q || "").slice(0, 100) + "%"),
           req,
         ),
-      ),
+        defaultFeePercent: getSettings(db).consignmentFeePercent,
+      }),
     ),
   );
   app.put(
@@ -291,9 +374,22 @@ export function attachConsignments(
           status: z.enum(["approved", "suspended", "rejected"]),
           note: z.string().trim().max(300),
           version: z.number().int().positive(),
+          feePercent: z
+            .number()
+            .min(0)
+            .max(100)
+            .multipleOf(0.01)
+            .nullable()
+            .optional(),
         })
+        .strict()
         .parse(req.body);
+      if (v.feePercent !== undefined && !hasPermission(req.user, "settings"))
+        fail(403, "เฉพาะผู้มีสิทธิ์ตั้งค่าระบบที่เปลี่ยนค่าฝากขายได้");
       transaction(db, () => {
+        const previous = db
+          .prepare("SELECT * FROM consignors WHERE user_id=?")
+          .get(req.params.id);
         if (
           !db
             .prepare(
@@ -306,6 +402,22 @@ export function attachConsignments(
           db.prepare(
             "UPDATE products SET active=0,version=version+1 WHERE consignor_id=?",
           ).run(req.params.id);
+        if (v.feePercent !== undefined) {
+          const feeBps =
+            v.feePercent === null ? null : Math.round(v.feePercent * 100);
+          db.prepare("UPDATE consignors SET fee_bps=? WHERE user_id=?").run(
+            feeBps,
+            req.params.id,
+          );
+          if (previous?.fee_bps !== feeBps)
+            audit(
+              db,
+              req.user.id,
+              "consignment.shop_fee_changed",
+              req.params.id,
+              { beforeBps: previous?.fee_bps ?? null, afterBps: feeBps },
+            );
+        }
         audit(
           db,
           req.user.id,
@@ -313,6 +425,8 @@ export function attachConsignments(
           req.params.id,
           { status: v.status },
         );
+        if (previous && previous.status !== v.status)
+          notifyMembershipDecision(db, previous, v.status, v.version + 1);
       });
       res.json({ ok: true });
     }),
@@ -322,11 +436,13 @@ export function attachConsignments(
     permission("consignments"),
     asyncRoute((req, res) =>
       res.json(
-        pageRows(
-          db,
-          "SELECT p.*,c.shop_name FROM products p JOIN consignors c ON c.user_id=p.consignor_id WHERE p.name LIKE ? ORDER BY p.created_at DESC",
-          ["%" + String(req.query.q || "").slice(0, 100) + "%"],
-          req,
+        productPage(
+          pageRows(
+            db,
+            "SELECT p.*,c.shop_name FROM products p JOIN consignors c ON c.user_id=p.consignor_id WHERE p.name LIKE ? ORDER BY p.created_at DESC",
+            ["%" + String(req.query.q || "").slice(0, 100) + "%"],
+            req,
+          ),
         ),
       ),
     ),
@@ -362,6 +478,12 @@ export function attachConsignments(
         audit(db, req.user.id, "consignment.product_moderated", p.id, {
           approved: v.approved,
         });
+        resolveApprovalNotices(db, "consignment.product", p.id);
+        if (
+          p.consignment_status !== (v.approved ? "approved" : "rejected") ||
+          !!p.active !== v.approved
+        )
+          notifyProductDecision(db, p, v.approved, v.version + 1);
       });
       res.json({ ok: true });
     }),

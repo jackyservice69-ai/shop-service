@@ -3,7 +3,7 @@ const reject = (message) => {
   throw Object.assign(new Error(message), { status: 409 });
 };
 export function snapshotConsignments(db, orderId, buyerId, q) {
-  const feeBps = Math.round(getSettings(db).consignmentFeePercent * 100);
+  const defaultFeeBps = Math.round(getSettings(db).consignmentFeePercent * 100);
   const parts = q.items.map((p) => {
     const gross = p.price * p.quantity,
       n = BigInt(q.discount) * BigInt(gross),
@@ -28,11 +28,12 @@ export function snapshotConsignments(db, orderId, buyerId, q) {
       reject("ไม่สามารถสั่งซื้อสินค้าที่ตนเองฝากขายได้");
     const seller = db
       .prepare(
-        "SELECT c.status,u.active FROM consignors c JOIN users u ON u.id=c.user_id WHERE c.user_id=?",
+        "SELECT c.status,c.fee_bps,u.active FROM consignors c JOIN users u ON u.id=c.user_id WHERE c.user_id=?",
       )
       .get(product.consignor_id);
     if (!seller || seller.status !== "approved" || !seller.active)
       reject("ตัวแทนฝากขายไม่พร้อมจำหน่าย กรุณาคำนวณยอดใหม่");
+    const feeBps = seller.fee_bps ?? defaultFeeBps;
     const base = part.gross - part.discount,
       fee = Number((BigInt(base) * BigInt(feeBps)) / 10000n);
     db.prepare("INSERT INTO consignment_sales VALUES(?,?,?,?,?,?,?,?,?,?)").run(

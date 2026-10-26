@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-26",
+  "mode": "built-in Imagegen",
+  "reference": "1-2140.jpg",
+  "styleReference": "public/assets/storefront/category-photos-hd-v2.webp",
+  "jobs": [
+    {
+      "id": "beauty",
+      "prompt": "Use case: product-mockup. Generate ONE premium photorealistic ecommerce category photograph for BEAUTY, landscape 5:4, for the Iya pastel boutique. Input image 1 is a website screenshot: match ONLY the warm realistic photography of its TOP FOUR category cards, not the illustrated circles at the bottom and not the page UI. Input image 2 is the existing four-photo style atlas: match its soft daylight, blush pink/cream/champagne-gold palette and realistic luxury product textures. Subject: an elegant blush-pink tabletop vanity mirror with a slim champagne-gold rim, a soft makeup brush with cream bristles and a pink handle, and one rose-pink lipstick in a small gold-trimmed case. Arrange a natural boutique cosmetics still life on pale cream satin and a subtle pink marble vanity surface. Mirror reflects only soft neutral room light, no person or camera. Real glass, brushed gold metal and tactile bristles, delicate natural contact shadows, restrained highlights, shallow depth of field but recognizable objects sharp. Product group comfortably centered with safe margins, fills roughly 80% of the frame, readable as a small category tile. Continuous full-bleed photographic backdrop to all four edges. No text, letters, labels, numbers, logo, brand, watermark, caption, website, collage, UI, button, circle backdrop, illustrated sparkle, drawn outline, cartoon, 3D icon, purple or baked rounded corners."
+    },
+    {
+      "id": "gadgets",
+      "prompt": "Use case: product-mockup. Generate ONE premium photorealistic ecommerce category photograph for GADGETS, landscape 5:4, for the Iya pastel boutique. Input image 1 is a website screenshot: match ONLY the warm realistic photography of its TOP FOUR category cards, not the illustrated circles at the bottom and not the page UI. Input image 2 is the existing four-photo style atlas: match its soft daylight, blush pink/cream/champagne-gold palette and realistic luxury product textures. Subject: a physically plausible pair of premium blush-pink wireless over-ear headphones with softly padded earcups, a fine champagne-gold metal connection, and a compact cream portable speaker with a subtle rose-pink woven speaker grille. Headphones stand slightly behind the speaker as a balanced tech-accessory still life on a pale cream marble tabletop. Soft pink and warm ivory studio background, a small hint of pale mint far behind, natural contact shadows, realistic matte polymer, metal and woven fabric, gentle highlights, shallow depth of field with the products sharp. Product group comfortably centered with safe margins and roughly 80% frame coverage, recognizable at a small tile size. Continuous full-bleed photographic backdrop to all four edges. No wires, hands, people, text, letters, labels, logo, brand, watermark, caption, website, collage, UI, buttons, circle backdrop, illustrated sparkle, drawn outline, cartoon, 3D icon, purple or baked rounded corners."
+    }
+  ]
+}
