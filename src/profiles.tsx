@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { MapPin, Store, UserRound } from "lucide-react";
 import { useApp, send, type Product } from "./api";
 import { Field, Form, formObject } from "./ui";
@@ -182,8 +183,10 @@ export function ShopLogo({ logo, name }: { logo?: string; name: string }) {
 
 export function ShopInformation({
   shop,
+  onNavigate,
 }: {
   shop: NonNullable<Product["shop"]>;
+  onNavigate?: () => void;
 }) {
   const [failed, setFailed] = useState("");
   return (
@@ -200,10 +203,14 @@ export function ShopInformation({
         )}
       </div>
       <div className="shop-information-copy">
-        <div className="shop-information-heading">
-          <ShopLogo logo={shop.logo} name={shop.name} />
-          <h3>{shop.name}</h3>
-        </div>
+        {shop.id ? (
+          <ShopIdentityLink shop={shop} onNavigate={onNavigate} />
+        ) : (
+          <div className="shop-information-heading">
+            <ShopLogo logo={shop.logo} name={shop.name} />
+            <h3>{shop.name}</h3>
+          </div>
+        )}
         {shop.serviceArea ? (
           <p>
             <MapPin size={16} aria-hidden="true" />
@@ -214,5 +221,32 @@ export function ShopInformation({
         )}
       </div>
     </section>
+  );
+}
+
+export function ShopIdentityLink({
+  shop,
+  compact = false,
+  onNavigate,
+}: {
+  shop: NonNullable<Product["shop"]>;
+  compact?: boolean;
+  onNavigate?: () => void;
+}) {
+  if (!shop.id) return null;
+  return (
+    <Link
+      to={"/shops/" + encodeURIComponent(shop.id)}
+      className={
+        compact
+          ? "product-shop-link"
+          : "shop-information-heading shop-identity-link"
+      }
+      aria-label={"ดูหน้าร้าน " + shop.name}
+      onClick={onNavigate}
+    >
+      <ShopLogo logo={shop.logo} name={shop.name} />
+      {compact ? <span>{shop.name}</span> : <h3>{shop.name}</h3>}
+    </Link>
   );
 }

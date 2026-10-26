@@ -19,6 +19,7 @@ import { attachAdminWallet } from "./admin-wallet.mjs";
 import { attachAddresses } from "./addresses.mjs";
 import { attachConsignments } from "./consignments.mjs";
 import { attachProfileMedia, publicProductShops } from "./profile-media.mjs";
+import { attachPublicShops, findPublicShop } from "./public-shops.mjs";
 import {
   attachNotifications,
   notifyProductRequest,
@@ -599,7 +600,8 @@ export function createApp(db, config) {
         sort = scalar("sort") || "newest",
         cat = scalar("category"),
         q = scalar("q").slice(0, 100),
-        ids = scalar("ids").split(",").filter(Boolean).slice(0, 50);
+        ids = scalar("ids").split(",").filter(Boolean).slice(0, 50),
+        shopId = scalar("shop");
       if (minPrice !== null && maxPrice !== null && minPrice > maxPrice)
         fail(400, "ราคาสูงสุดต้องไม่น้อยกว่าราคาต่ำสุด");
       if (!["", "0", "1"].includes(inStock))
@@ -613,6 +615,11 @@ export function createApp(db, config) {
       if (!Object.hasOwn(sorts, sort)) fail(400, "การเรียงสินค้าไม่ถูกต้อง");
       const conditions = ["active=1", "name LIKE ?", "(?='' OR category=?)"],
         values = ["%" + q + "%", cat, cat];
+      if (shopId) {
+        const shop = findPublicShop(db, shopId);
+        conditions.push("consignor_id=?", "consignment_status='approved'");
+        values.push(shop.user_id);
+      }
       if (minPrice !== null) {
         conditions.push("price>=?");
         values.push(minPrice);
@@ -1606,6 +1613,7 @@ export function createApp(db, config) {
   });
   attachAddresses(app, db, { auth, csrf, asyncRoute });
   attachProfileMedia(app, db, config, { auth, csrf, asyncRoute });
+  attachPublicShops(app, db, { asyncRoute });
   attachNotifications(app, db, { auth, csrf, asyncRoute });
   attachMemberManagement(app, db, { permission, asyncRoute });
   attachConsignments(app, db, config, {

@@ -39,7 +39,22 @@ export type Product = {
   version?: number;
   rating_average?: number;
   review_count?: number;
-  shop?: { name: string; image: string; logo?: string; serviceArea: string };
+  shop?: {
+    id?: string;
+    name: string;
+    image: string;
+    logo?: string;
+    serviceArea: string;
+  };
+};
+export type PublicShop = {
+  id: string;
+  name: string;
+  image: string;
+  logo: string;
+  serviceArea: string;
+  productCount: number;
+  categories: string[];
 };
 export type PageData<T = any> = {
   items: T[];

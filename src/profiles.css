@@ -101,6 +101,40 @@
   width: 40px;
   height: 40px;
 }
+.shop-identity-link,
+.product-shop-link {
+  min-height: 44px;
+  text-decoration: none;
+  color: var(--brand-ink);
+  border-radius: 8px;
+}
+.product-shop-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 13px;
+  min-width: 0;
+}
+.product-shop-link .shop-logo {
+  flex-basis: 28px;
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 7px;
+}
+.product-shop-link span {
+  overflow-wrap: anywhere;
+}
+.shop-identity-link:hover,
+.product-shop-link:hover {
+  text-decoration: underline;
+}
+.shop-identity-link:focus-visible,
+.product-shop-link:focus-visible {
+  outline: 2px solid var(--brand-ink);
+  outline-offset: 3px;
+}
 .shop-information-copy p {
   display: flex;
   align-items: flex-start;

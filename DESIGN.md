@@ -167,3 +167,5 @@ Contact palette v6 (local): src/shop.tsx uses contact-palette-v6.webp (2169px) a
 # Profile and shop media
 
 Account photos reuse the circular header avatar; shop photos and multiline service areas reuse the existing panel, form and upload patterns. See `docs/PROFILES-AND-SHOP-AREAS.md`. Maintain pastel colors, visible labels, explicit save and flat borders without shadows.
+
+Public seller storefronts reuse the existing catalog under a shop-photo/contained-logo identity header. Use the established pastel pink/mint palette, Thai typography, rounded surfaces and flat borders; keep search and product-list behavior shared. Seller logo/name links have native keyboard/modified-click behavior and visible focus. See `docs/PUBLIC-SELLER-SHOPS.md` for routes, empty/error states and privacy requirements.

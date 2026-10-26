@@ -331,6 +331,9 @@ test("shops publish only their current approved photo and service area; ownershi
       name: "ร้านทดสอบรูป",
       image: img,
       logo: "",
+      id: f.db
+        .prepare("SELECT public_id FROM consignors WHERE user_id=?")
+        .get(f.customer.id).public_id,
       serviceArea: area,
     });
     for (const field of [
@@ -521,7 +524,7 @@ test("v13 migration preserves customer funds, products, per-shop fees and read n
     );
     db.close();
     db = openDb(file);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 14);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 15);
     assert.equal(
       db.prepare("SELECT balance FROM users WHERE id=?").get(user.id).balance,
       50000,

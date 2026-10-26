@@ -298,7 +298,7 @@ test("v12 migration adds nullable fees while preserving existing bill snapshots 
     );
     db.close();
     db = openDb(path);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 14);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 15);
     assert.equal(
       db
         .prepare("SELECT fee_bps FROM consignors WHERE user_id=?")

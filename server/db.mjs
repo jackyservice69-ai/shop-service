@@ -134,6 +134,7 @@ export function openDb(path) {
       ["users", "avatar_version", "INTEGER NOT NULL DEFAULT 1"],
       ["consignors", "image", "TEXT NOT NULL DEFAULT ''"],
       ["consignors", "logo", "TEXT NOT NULL DEFAULT ''"],
+      ["consignors", "public_id", "TEXT"],
       ["consignors", "service_area", "TEXT NOT NULL DEFAULT ''"],
       ["users", "must_change_password", "INTEGER NOT NULL DEFAULT 0"],
       ["users", "password_reset_expires_at", "TEXT"],
@@ -273,6 +274,15 @@ export function openDb(path) {
     if (schemaVersion < 14) {
       audit(db, null, "consignment.shop_logo_enabled", "system");
       db.exec("PRAGMA user_version=14");
+    }
+    if (schemaVersion < 15) {
+      db.exec(`UPDATE consignors SET public_id=lower(hex(randomblob(16))) WHERE public_id IS NULL OR public_id='';
+        CREATE UNIQUE INDEX IF NOT EXISTS consignors_public_id ON consignors(public_id);
+        CREATE TRIGGER IF NOT EXISTS consignors_public_id_insert AFTER INSERT ON consignors
+          WHEN NEW.public_id IS NULL OR NEW.public_id=''
+          BEGIN UPDATE consignors SET public_id=lower(hex(randomblob(16))) WHERE user_id=NEW.user_id; END;
+        PRAGMA user_version=15;`);
+      audit(db, null, "consignment.public_shops_enabled", "system");
     }
   });
   const defaults = {

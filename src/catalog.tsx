@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState, type SyntheticEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type SyntheticEvent,
+  type ReactNode,
+} from "react";
 import {
   useLocation,
   useNavigationType,
@@ -12,6 +19,7 @@ import {
   useData,
   type PageData,
   type Product,
+  type PublicShop,
 } from "./api";
 import {
   Badge,
@@ -23,9 +31,10 @@ import {
   Modal,
   PageHeading,
   Pagination,
+  formObject,
 } from "./ui";
 import { ProductReviews, Stars } from "./reviews";
-import { ShopInformation } from "./profiles";
+import { ShopInformation, ShopIdentityLink } from "./profiles";
 import { ProductGallery } from "./product-gallery";
 import "./catalog.css";
 
@@ -68,7 +77,10 @@ function imageFallback(event: SyntheticEvent<HTMLImageElement>) {
   image.src = "/assets/placeholder.svg";
 }
 
-export function CatalogPage() {
+export function CatalogPage({
+  shop,
+  header,
+}: { shop?: PublicShop; header?: ReactNode } = {}) {
   const { publicData, cart, setCart, notify } = useApp();
   const [params, setParams] = useSearchParams();
   const location = useLocation();
@@ -93,7 +105,7 @@ export function CatalogPage() {
   const committedPrices = useRef({ minPrice, maxPrice });
   const [formVersion, setFormVersion] = useState(0);
   const [selected, setSelected] = useState<Product | null>(null);
-  const categories: string[] = publicData?.categories || [];
+  const categories: string[] = shop?.categories || publicData?.categories || [];
   const activeFilterCount = [
     Boolean(category),
     Boolean(minPrice || maxPrice),
@@ -104,6 +116,7 @@ export function CatalogPage() {
   // Forward the full committed state, including invalid links, for server validation.
   for (const key of filterKeys)
     for (const value of params.getAll(key)) query.append(key, value);
+  if (shop) query.set("shop", shop.id);
   const { data, error, loading, reload } = useData<PageData<Product>>(
     "/products?" + query.toString(),
   );
@@ -194,10 +207,41 @@ export function CatalogPage() {
 
   return (
     <div className="catalog-page">
-      <PageHeading
-        title="เลือกซื้อสินค้า"
-        sub="เลือกของที่ชอบ ตามหมวดหมู่และงบของคุณ"
-      />
+      {header}
+      {shop ? (
+        <div className="seller-store-products-heading">
+          <h2>สินค้าในร้าน</h2>
+          <p>เลือกสินค้าจาก {shop.name}</p>
+        </div>
+      ) : (
+        <PageHeading
+          title="เลือกซื้อสินค้า"
+          sub="เลือกของที่ชอบ ตามหมวดหมู่และงบของคุณ"
+        />
+      )}
+      {shop && (
+        <section
+          className="seller-store-search"
+          aria-label="ค้นหาสินค้าในร้านนี้"
+        >
+          <Form
+            key={params.get("q") || ""}
+            noValidate
+            submit="ค้นหาในร้าน"
+            onSubmit={async (form) =>
+              commit({ q: String(formObject(form).q || "").trim() })
+            }
+          >
+            <Field
+              label="ค้นหาสินค้าในร้านนี้"
+              name="q"
+              type="search"
+              defaultValue={params.get("q") || ""}
+              maxLength={100}
+            />
+          </Form>
+        </section>
+      )}
       <div className="catalog-layout">
         <aside
           className="catalog-filters panel"
@@ -355,25 +399,27 @@ export function CatalogPage() {
               <div className="product-grid">
                 {data.items.map((product) => (
                   <article className="product-card" key={product.id}>
-                    <button
-                      type="button"
-                      className="product-image"
-                      onClick={() => setSelected(product)}
-                      aria-label={"ดูรายละเอียด " + product.name}
-                    >
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        width="400"
-                        height="320"
-                        loading="lazy"
-                        onError={imageFallback}
-                      />
+                    <div className="product-media">
+                      <button
+                        type="button"
+                        className="product-image"
+                        onClick={() => setSelected(product)}
+                        aria-label={"ดูรายละเอียด " + product.name}
+                      >
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          width="400"
+                          height="320"
+                          loading="lazy"
+                          onError={imageFallback}
+                        />
+                      </button>
                       <span className="product-tag">{product.category}</span>
                       {!product.stock && (
                         <span className="soldout">สินค้าหมด</span>
                       )}
-                    </button>
+                    </div>
                     <div className="product-copy">
                       <small>{product.category}</small>
                       <button
@@ -383,6 +429,9 @@ export function CatalogPage() {
                       >
                         {product.name}
                       </button>
+                      {!shop && product.shop?.id && (
+                        <ShopIdentityLink compact shop={product.shop} />
+                      )}
                       <p>{product.description}</p>
                       <div className="review-summary">
                         <Stars rating={product.rating_average || 0} />
@@ -428,7 +477,11 @@ export function CatalogPage() {
           ) : (
             <Empty
               title="ยังไม่พบสินค้า"
-              description="ลองเปลี่ยนคำค้น หมวดหมู่ หรือช่วงราคา"
+              description={
+                shop && !shop.productCount
+                  ? "ร้านนี้ยังไม่มีสินค้าที่เปิดขาย ลองกลับมาดูใหม่ภายหลัง"
+                  : "ลองเปลี่ยนคำค้น หมวดหมู่ หรือช่วงราคา"
+              }
             >
               <button
                 type="button"
@@ -447,7 +500,11 @@ export function CatalogPage() {
           <Badge status={selected.category} />
           <p>{selected.description}</p>
           {selected.shop && (
-            <ShopInformation key={selected.id} shop={selected.shop} />
+            <ShopInformation
+              key={selected.id}
+              shop={selected.shop}
+              onNavigate={() => setSelected(null)}
+            />
           )}
           <h2>{money(selected.price)}</h2>
           <p className="muted">คงเหลือ {selected.stock} ชิ้น</p>

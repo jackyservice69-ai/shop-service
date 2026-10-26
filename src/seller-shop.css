@@ -1,0 +1,135 @@
+.seller-store-back {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 12px;
+}
+.seller-store-header {
+  overflow: hidden;
+  margin-bottom: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+}
+.seller-store-cover {
+  height: clamp(150px, 23vw, 290px);
+  background: linear-gradient(
+    125deg,
+    var(--primary-light, #fde8e8),
+    var(--secondary-light, #eff8fb)
+  );
+}
+.seller-store-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.seller-store-content {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 24px;
+}
+.seller-store-logo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 100px;
+  width: 100px;
+  height: 100px;
+  margin-top: -50px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--brand-ink);
+  background: var(--surface);
+}
+.seller-store-logo .shop-logo {
+  width: 100%;
+  height: 100%;
+  flex-basis: auto;
+  padding: 8px;
+  border: 0;
+  border-radius: 20px;
+}
+.seller-store-title {
+  min-width: 0;
+  flex: 1;
+}
+.seller-store-title h1 {
+  margin: 12px 0;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.seller-store-area {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  color: var(--ink-subtle);
+}
+.seller-store-area svg {
+  flex: 0 0 18px;
+  margin-top: 4px;
+}
+.seller-store-area span {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.seller-store-count {
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+.seller-store-products-heading {
+  margin-bottom: 20px;
+}
+.seller-store-products-heading h2 {
+  margin: 0;
+  font-size: 23px;
+}
+.seller-store-products-heading p {
+  color: var(--ink-subtle);
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+.seller-store-search {
+  margin: 0 0 22px;
+}
+.seller-store-search form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+.seller-store-search .field {
+  min-width: 0;
+  margin: 0;
+}
+.seller-store-search .form-actions {
+  margin: 0;
+  padding: 0;
+}
+.seller-store-unavailable {
+  padding-block: 32px;
+}
+@media (max-width: 600px) {
+  .seller-store-content {
+    gap: 14px;
+    padding: 18px;
+    flex-wrap: wrap;
+  }
+  .seller-store-logo {
+    width: 80px;
+    height: 80px;
+    flex-basis: 80px;
+    margin-top: -48px;
+  }
+  .seller-store-title {
+    flex-basis: 100%;
+  }
+  .seller-store-title .badge {
+    white-space: normal;
+  }
+}

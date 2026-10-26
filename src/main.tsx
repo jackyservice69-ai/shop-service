@@ -81,6 +81,7 @@ import "./styles.css";
 import "./storefront-shell.css";
 import "./responsive-ux.css";
 import { CatalogPage } from "./catalog";
+import { SellerShopPage } from "./seller-shop";
 import { StoreNavigation } from "./store-navigation";
 const ShoppingGuidePage = React.lazy(() =>
   import("./shopping-guide").then((page) => ({
@@ -509,6 +510,7 @@ function App() {
           <Route element={<StoreLayout />}>
             <Route index element={<StoreHome />} />
             <Route path="products" element={<CatalogPage />} />
+            <Route path="shops/:shopId" element={<SellerShopPage />} />
             <Route path="contact" element={<ContactPage />} />
             <Route
               path="how-to-order"

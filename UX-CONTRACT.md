@@ -122,3 +122,5 @@ Receiving account alignment v7 (local): align the account information block vert
 # Profile photos and shop coverage
 
 Users control their own saved profile photo. Consignor shops can upload a shop photo and describe their actual service areas; approved shops expose these fields in product details. Uploading alone does not publish a picture. Preserve upload previews, explicit save/removal, privacy, conflict errors and accessible 390/1440 px layouts. Details: `docs/PROFILES-AND-SHOP-AREAS.md`.
+
+Public shop navigation: a seller logo/name opens its stable public storefront. Load and validate the shop before displaying any catalog; never substitute all-store products on lookup failure. Keep filters/search/pagination scoped on every request and reload. Only approved products of an approved shop and active member are public. Reuse the catalog, cart and dialog contracts, and keep internal member identifiers and contacts private. Details: `docs/PUBLIC-SELLER-SHOPS.md`.
