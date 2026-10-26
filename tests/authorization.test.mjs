@@ -578,7 +578,7 @@ test("v8 migration narrows legacy broad grants, revokes staff sessions, preserve
       const count = db.prepare("SELECT COUNT(*) n FROM audit").get().n;
       if (i) assert.equal(count, auditCount);
       auditCount = count;
-      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 13);
+      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 14);
       assert.ok(verifyAudit(db).valid);
       db.close();
       db = null;

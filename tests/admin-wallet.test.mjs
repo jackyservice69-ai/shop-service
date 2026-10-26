@@ -420,7 +420,7 @@ test("v9 migration backfills receipt deduplication and preserves financial histo
         db.prepare("SELECT COUNT(*) n FROM manual_topups").get().n,
         0,
       );
-      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 13);
+      assert.equal(db.prepare("PRAGMA user_version").get().user_version, 14);
       assert.ok(
         db
           .prepare("SELECT permissions FROM roles WHERE id!='admin'")

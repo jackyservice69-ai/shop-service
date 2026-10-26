@@ -70,6 +70,37 @@
 .shop-information-copy h3 {
   margin: 0 0 8px;
 }
+.shop-logo {
+  display: block;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  padding: 4px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+}
+.consignor-shop-heading,
+.shop-information-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.consignor-shop-heading h2,
+.shop-information-heading h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.shop-information-heading {
+  margin-bottom: 8px;
+}
+.shop-information-heading .shop-logo {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+}
 .shop-information-copy p {
   display: flex;
   align-items: flex-start;

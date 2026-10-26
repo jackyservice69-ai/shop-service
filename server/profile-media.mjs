@@ -11,6 +11,7 @@ const imagePath = z.union([
 ]);
 export const shopProfileFields = {
   image: imagePath.default(""),
+  logo: imagePath.default(""),
   serviceArea: z.string().trim().max(1000).default(""),
 };
 export function checkOwnedProfileImage(db, image, kind, userId) {
@@ -34,9 +35,11 @@ export function canReadProfileMedia(db, media, user) {
         .prepare("SELECT id FROM users WHERE id=? AND avatar=?")
         .get(media.actor_id, path)
     );
+  if (!["shop", "shopLogo"].includes(media.kind)) return false;
+  const column = media.kind === "shopLogo" ? "logo" : "image";
   const shop = db
     .prepare(
-      "SELECT c.status,u.active FROM consignors c JOIN users u ON u.id=c.user_id WHERE c.user_id=? AND c.image=?",
+      `SELECT c.status,u.active FROM consignors c JOIN users u ON u.id=c.user_id WHERE c.user_id=? AND c.${column}=?`,
     )
     .get(media.actor_id, path);
   return (
@@ -50,7 +53,7 @@ export function publicProductShops(db, products) {
   if (!products.length) return products;
   const shops = db
     .prepare(
-      `SELECT p.id,c.shop_name,c.image,c.service_area FROM products p
+      `SELECT p.id,c.shop_name,c.image,c.logo,c.service_area FROM products p
     JOIN consignors c ON c.user_id=p.consignor_id JOIN users u ON u.id=c.user_id
     WHERE p.id IN (${products.map(() => "?").join(",")}) AND c.status='approved' AND u.active=1`,
     )
@@ -58,7 +61,12 @@ export function publicProductShops(db, products) {
   const byId = new Map(
     shops.map((s) => [
       s.id,
-      { name: s.shop_name, image: s.image, serviceArea: s.service_area },
+      {
+        name: s.shop_name,
+        image: s.image,
+        logo: s.logo,
+        serviceArea: s.service_area,
+      },
     ]),
   );
   return products.map((p) =>
@@ -81,13 +89,13 @@ export function attachProfileMedia(
     auth,
     csrf,
     (req, res, next) => {
-      if (!["avatar", "shop"].includes(req.params.kind))
+      if (!["avatar", "shop", "shopLogo"].includes(req.params.kind))
         return next(
           Object.assign(new Error("ประเภทภาพไม่ถูกต้อง"), { status: 400 }),
         );
       const recent = db
         .prepare(
-          "SELECT COUNT(*) n FROM media WHERE actor_id=? AND kind IN ('avatar','shop') AND created_at>?",
+          "SELECT COUNT(*) n FROM media WHERE actor_id=? AND kind IN ('avatar','shop','shopLogo') AND created_at>?",
         )
         .get(req.user.id, new Date(Date.now() - 3600000).toISOString()).n;
       if (recent >= 20)
@@ -144,8 +152,8 @@ export function attachProfileMedia(
           kind === "avatar"
             ? pipe.resize(512, 512, { fit: "cover" })
             : pipe.resize({
-                width: 1200,
-                height: 800,
+                width: kind === "shopLogo" ? 512 : 1200,
+                height: kind === "shopLogo" ? 512 : 800,
                 fit: "inside",
                 withoutEnlargement: true,
               })
@@ -159,7 +167,7 @@ export function attachProfileMedia(
       transaction(db, () => {
         const recent = db
           .prepare(
-            "SELECT COUNT(*) n FROM media WHERE actor_id=? AND kind IN ('avatar','shop') AND created_at>?",
+            "SELECT COUNT(*) n FROM media WHERE actor_id=? AND kind IN ('avatar','shop','shopLogo') AND created_at>?",
           )
           .get(req.user.id, new Date(Date.now() - 3600000).toISOString()).n;
         if (recent >= 20)
@@ -230,6 +238,7 @@ export function attachProfileMedia(
       const v = z
         .object({
           image: imagePath,
+          logo: imagePath.optional(),
           serviceArea: z.string().trim().max(1000),
           version: z.number().int().positive(),
         })
@@ -243,12 +252,18 @@ export function attachProfileMedia(
         if (old.version !== v.version)
           fail(409, "ข้อมูลร้านเปลี่ยนแล้ว กรุณาโหลดหน้าใหม่ก่อนบันทึก");
         checkOwnedProfileImage(db, v.image, "shop", req.user.id);
+        const logo = v.logo === undefined ? old.logo : v.logo;
+        checkOwnedProfileImage(db, logo, "shopLogo", req.user.id);
         db.prepare(
-          "UPDATE consignors SET image=?,service_area=?,version=version+1,updated_at=? WHERE user_id=?",
-        ).run(v.image, v.serviceArea, now(), req.user.id);
+          "UPDATE consignors SET image=?,logo=?,service_area=?,version=version+1,updated_at=? WHERE user_id=?",
+        ).run(v.image, logo, v.serviceArea, now(), req.user.id);
         audit(db, req.user.id, "consignment.profile_updated", req.user.id, {
-          before: { image: old.image, serviceArea: old.service_area },
-          after: { image: v.image, serviceArea: v.serviceArea },
+          before: {
+            image: old.image,
+            logo: old.logo,
+            serviceArea: old.service_area,
+          },
+          after: { image: v.image, logo, serviceArea: v.serviceArea },
         });
       });
       res.json({ ok: true });

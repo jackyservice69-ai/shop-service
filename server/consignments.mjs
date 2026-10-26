@@ -94,8 +94,9 @@ export function attachConsignments(
         if (old)
           fail(409, "มีคำขอสมัครแล้ว กรุณาติดต่อร้านหากต้องการเปลี่ยนสถานะ");
         checkOwnedProfileImage(db, v.image, "shop", req.user.id);
+        checkOwnedProfileImage(db, v.logo, "shopLogo", req.user.id);
         db.prepare(
-          "INSERT INTO consignors(user_id,shop_name,status,created_at,updated_at,image,service_area) VALUES(?,?,?,?,?,?,?)",
+          "INSERT INTO consignors(user_id,shop_name,status,created_at,updated_at,image,service_area,logo) VALUES(?,?,?,?,?,?,?,?)",
         ).run(
           req.user.id,
           v.shopName,
@@ -104,6 +105,7 @@ export function attachConsignments(
           now(),
           v.image,
           v.serviceArea,
+          v.logo,
         );
         audit(db, req.user.id, "consignment.applied", req.user.id);
         notifyMembershipRequest(db, req.user.id, v.shopName);

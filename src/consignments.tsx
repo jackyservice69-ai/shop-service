@@ -24,6 +24,7 @@ import {
   ShopProfileFields,
   ShopProfileEditor,
   ShopInformation,
+  ShopLogo,
 } from "./profiles";
 const status = (v: string) =>
   ({
@@ -93,6 +94,7 @@ export function ConsignmentPage() {
     ),
     [editing, setEditing] = useState<any>(null),
     [applicationImage, setApplicationImage] = useState(""),
+    [applicationLogo, setApplicationLogo] = useState(""),
     [uploadingProfile, setUploadingProfile] = useState(false),
     { notify } = useApp();
   if (loading) return <Loading />;
@@ -123,6 +125,7 @@ export function ConsignmentPage() {
                 shopName: v.shopName,
                 acceptTerms: v.acceptTerms === "on",
                 image: applicationImage,
+                logo: applicationLogo,
                 serviceArea: v.serviceArea,
               });
               reload();
@@ -139,6 +142,8 @@ export function ConsignmentPage() {
             <ShopProfileFields
               image={applicationImage}
               onImage={setApplicationImage}
+              logo={applicationLogo}
+              onLogo={setApplicationLogo}
               onBusy={setUploadingProfile}
             />
             <label className="checkbox">
@@ -151,8 +156,21 @@ export function ConsignmentPage() {
         <>
           <section className="panel">
             <div className="panel-title">
-              <h2>{me.membership.shop_name}</h2>
-              <span className="badge status-reserved">
+              <div className="consignor-shop-heading">
+                <ShopLogo
+                  logo={me.membership.logo}
+                  name={me.membership.shop_name}
+                />
+                <h2>{me.membership.shop_name}</h2>
+              </div>
+              <span
+                className={
+                  "badge " +
+                  (me.membership.status === "approved"
+                    ? "status-approved"
+                    : "status-reserved")
+                }
+              >
                 {status(me.membership.status)}
               </span>
             </div>
@@ -530,6 +548,7 @@ export function AdminConsignmentsPage() {
             shop={{
               name: editing.shop_name,
               image: editing.image || "",
+              logo: editing.logo || "",
               serviceArea: editing.service_area || "",
             }}
           />

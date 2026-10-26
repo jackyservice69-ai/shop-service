@@ -330,6 +330,7 @@ test("shops publish only their current approved photo and service area; ownershi
     assert.deepEqual(pub.shop, {
       name: "ร้านทดสอบรูป",
       image: img,
+      logo: "",
       serviceArea: area,
     });
     for (const field of [
@@ -520,7 +521,7 @@ test("v13 migration preserves customer funds, products, per-shop fees and read n
     );
     db.close();
     db = openDb(file);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 13);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 14);
     assert.equal(
       db.prepare("SELECT balance FROM users WHERE id=?").get(user.id).balance,
       50000,

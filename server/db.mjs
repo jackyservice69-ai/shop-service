@@ -133,6 +133,7 @@ export function openDb(path) {
       ["users", "avatar", "TEXT NOT NULL DEFAULT ''"],
       ["users", "avatar_version", "INTEGER NOT NULL DEFAULT 1"],
       ["consignors", "image", "TEXT NOT NULL DEFAULT ''"],
+      ["consignors", "logo", "TEXT NOT NULL DEFAULT ''"],
       ["consignors", "service_area", "TEXT NOT NULL DEFAULT ''"],
       ["users", "must_change_password", "INTEGER NOT NULL DEFAULT 0"],
       ["users", "password_reset_expires_at", "TEXT"],
@@ -268,6 +269,10 @@ export function openDb(path) {
     if (schemaVersion < 13) {
       audit(db, null, "profiles.enabled", "system");
       db.exec("PRAGMA user_version=13");
+    }
+    if (schemaVersion < 14) {
+      audit(db, null, "consignment.shop_logo_enabled", "system");
+      db.exec("PRAGMA user_version=14");
     }
   });
   const defaults = {

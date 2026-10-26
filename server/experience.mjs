@@ -153,7 +153,7 @@ export function attachExperience(
         .prepare("SELECT id,kind,actor_id,mime,body FROM media WHERE id=?")
         .get(req.params.id);
       if (!m) fail(404, "ไม่พบรูปภาพ");
-      const profile = ["avatar", "shop"].includes(m.kind);
+      const profile = ["avatar", "shop", "shopLogo"].includes(m.kind);
       if (profile && !canReadProfileMedia(db, m, req.user))
         fail(404, "ไม่พบรูปภาพ");
       res

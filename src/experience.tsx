@@ -64,6 +64,7 @@ export const IMAGE_SIZES: Record<
   favicon: { w: 256, h: 256, label: "Favicon" },
   avatar: { w: 512, h: 512, label: "รูปโปรไฟล์" },
   shop: { w: 1200, h: 800, label: "รูปหน้าร้าน" },
+  shopLogo: { w: 512, h: 512, label: "โลโก้ร้าน" },
 };
 function luminance(hex: string) {
   const rgb = hex
@@ -276,7 +277,10 @@ export function ImageUpload({
     <div className="image-uploader">
       <div
         className={
-          "upload-preview" + (kind === "favicon" ? " transparency-preview" : "")
+          "upload-preview" +
+          (["favicon", "shopLogo"].includes(kind)
+            ? " transparency-preview"
+            : "")
         }
       >
         {value ? (
@@ -295,6 +299,12 @@ export function ImageUpload({
           {kind === "favicon" ? " · สี่เหลี่ยมจัตุรัส" : ""}
           <br />
           .png / .jpeg / .jpg · สูงสุด 5 MB
+          {kind === "shopLogo" && (
+            <>
+              <br />
+              แนะนำ PNG โปร่งใสเพื่อให้กลมกลืนกับพื้นหลัง โลโก้จะไม่ถูกครอป
+            </>
+          )}
           {kind === "favicon" && (
             <>
               <br />

@@ -38,13 +38,11 @@ test("customer uploads, saves, reloads and removes a private profile photo with 
   await register(page.context());
   await page.goto("/account");
   const section = page.getByRole("region", { name: "รูปโปรไฟล์", exact: true });
-  await section
-    .getByLabel("ไฟล์รูปโปรไฟล์")
-    .setInputFiles({
-      name: "wrong.png",
-      mimeType: "image/png",
-      buffer: Buffer.from("not a png"),
-    });
+  await section.getByLabel("ไฟล์รูปโปรไฟล์").setInputFiles({
+    name: "wrong.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("not a png"),
+  });
   await expect(section.getByRole("alert")).toContainText("ภาพไม่สมบูรณ์");
   await section.getByLabel("ไฟล์รูปโปรไฟล์").setInputFiles(await photo());
   await expect(section.getByRole("status")).toContainText("512 × 512");
@@ -100,23 +98,47 @@ test("seller adds a shop photo and service area, approver sees them, and approve
     const area = "กรุงเทพฯ • เขตบางรัก\nนนทบุรี / จัดส่งทั่วประเทศ";
     await page.goto("/consignment");
     await page.getByLabel("ชื่อร้านตัวแทน").fill(name);
+    const logoFile = {
+      name: "shop-logo.png",
+      mimeType: "image/png",
+      buffer: await sharp({
+        create: {
+          width: 1024,
+          height: 512,
+          channels: 4,
+          background: { r: 246, g: 194, b: 194, alpha: 0.5 },
+        },
+      })
+        .png()
+        .toBuffer(),
+    };
+    await page.getByLabel("ไฟล์โลโก้ร้าน").setInputFiles(logoFile);
+    await expect(
+      page.getByRole("status").filter({ hasText: "512 × 256" }),
+    ).toBeVisible();
     await page.getByLabel("ไฟล์รูปหน้าร้าน").setInputFiles(await photo());
     await expect(
-      page.getByRole("status").filter({ hasText: "จัดเก็บ" }),
-    ).toContainText("800 × 600");
+      page.getByRole("status").filter({ hasText: "800 × 600" }),
+    ).toBeVisible();
     await page.getByLabel("พื้นที่ให้บริการ", { exact: true }).fill(area);
     await page.getByRole("checkbox").check();
     await page
       .getByRole("button", { name: "ส่งคำขอสมัคร", exact: true })
       .click();
     const editor = page.getByRole("region", {
-      name: "รูปหน้าร้านและพื้นที่ให้บริการ",
+      name: "โลโก้ รูปหน้าร้าน และพื้นที่ให้บริการ",
       exact: true,
     });
     await expect(editor).toBeVisible();
+    await expect(
+      page.locator(".panel-title .badge.status-reserved"),
+    ).toHaveText("รออนุมัติ");
     let membership = (await (await page.request.get("/api/consignment")).json())
       .membership;
     expect((await publicContext.request.get(membership.image)).status()).toBe(
+      404,
+    );
+    expect((await publicContext.request.get(membership.logo)).status()).toBe(
       404,
     );
     expect(
@@ -143,12 +165,29 @@ test("seller adds a shop photo and service area, approver sees them, and approve
     await expect(
       dialog.getByRole("img", { name: "รูปหน้าร้าน " + name }),
     ).toBeVisible();
+    await expect(
+      dialog.getByRole("img", { name: "โลโก้ร้าน " + name, exact: true }),
+    ).toBeVisible();
     await expect(dialog.locator(".shop-information")).toContainText("นนทบุรี");
     await dialog
       .getByRole("button", { name: "ยืนยันสถานะตัวแทน", exact: true })
       .click();
     await expect(dialog).toHaveCount(0);
     await page.reload();
+    await expect(page.locator(".badge.status-approved")).toHaveText(
+      "อนุมัติแล้ว",
+    );
+    await expect(page.locator(".badge.status-approved")).toHaveCSS(
+      "background-color",
+      "rgb(226, 242, 213)",
+    );
+    await expect(page.locator(".badge.status-approved")).toHaveCSS(
+      "color",
+      "rgb(45, 106, 79)",
+    );
+    await expect(
+      page.getByRole("img", { name: "โลโก้ร้าน " + name, exact: true }),
+    ).toBeVisible();
     await editor
       .getByLabel("พื้นที่ให้บริการ", { exact: true })
       .fill(area + "\nรับส่งตามนัด 10:00–18:00 น.");
@@ -236,6 +275,9 @@ test("seller adds a shop photo and service area, approver sees them, and approve
     await expect(
       detail.getByRole("img", { name: "รูปหน้าร้าน " + name }),
     ).toBeVisible();
+    await expect(
+      detail.getByRole("img", { name: "โลโก้ร้าน " + name, exact: true }),
+    ).toHaveAttribute("src", membership.logo);
     await fits(publicPage);
     expect(
       (
@@ -247,6 +289,25 @@ test("seller adds a shop photo and service area, approver sees them, and approve
     await detail.screenshot({
       path: "output/playwright/public-shop-information-390.png",
     });
+    const logoUploader = editor
+      .locator(".image-uploader")
+      .filter({ has: page.getByLabel("ไฟล์โลโก้ร้าน") });
+    await logoUploader
+      .getByRole("button", { name: "เอารูปออก", exact: true })
+      .click();
+    await editor
+      .getByRole("button", { name: "บันทึกข้อมูลหน้าร้าน", exact: true })
+      .click();
+    await expect(
+      page.getByRole("img", { name: "โลโก้ร้าน " + name, exact: true }),
+    ).toHaveCount(0);
+    expect((await publicContext.request.get(membership.logo)).status()).toBe(
+      404,
+    );
+    expect(
+      (await (await page.request.get("/api/consignment")).json()).membership
+        .image,
+    ).toBe(membership.image);
   } finally {
     await admin.close();
     await publicContext.close();

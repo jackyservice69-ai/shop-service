@@ -422,6 +422,11 @@ summary {
   background: #fff5df;
   color: #895a14;
 }
+.badge.status-approved {
+  background: #e2f2d5;
+  color: #2d6a4f;
+  border: 1px solid #c3e6aa;
+}
 .status-processing,
 .status-purchase,
 .status-settlement {

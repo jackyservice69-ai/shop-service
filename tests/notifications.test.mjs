@@ -344,7 +344,7 @@ test("v11 upgrade backfills pending approval requests once and retains data and 
     );
     db.close();
     db = openDb(path);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 13);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 14);
     assert.equal(db.prepare("SELECT COUNT(*) n FROM notifications").get().n, 2);
     const n = db.prepare("SELECT id FROM notifications LIMIT 1").get();
     db.prepare("INSERT INTO notification_reads VALUES(?,?,?)").run(

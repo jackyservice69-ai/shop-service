@@ -39,7 +39,7 @@ export type Product = {
   version?: number;
   rating_average?: number;
   review_count?: number;
-  shop?: { name: string; image: string; serviceArea: string };
+  shop?: { name: string; image: string; logo?: string; serviceArea: string };
 };
 export type PageData<T = any> = {
   items: T[];

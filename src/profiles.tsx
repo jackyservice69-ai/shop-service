@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MapPin, Store, UserRound } from "lucide-react";
 import { useApp, send, type Product } from "./api";
 import { Field, Form, formObject } from "./ui";
@@ -70,21 +70,37 @@ export function AccountPhoto() {
 export function ShopProfileFields({
   image,
   onImage,
+  logo,
+  onLogo,
   onBusy,
   area = "",
 }: {
   image: string;
   onImage: (image: string) => void;
+  logo: string;
+  onLogo: (logo: string) => void;
   onBusy: (busy: boolean) => void;
   area?: string;
 }) {
+  const uploads = useRef({ image: false, logo: false });
+  function uploadBusy(kind: "image" | "logo", busy: boolean) {
+    uploads.current[kind] = busy;
+    onBusy(uploads.current.image || uploads.current.logo);
+  }
   return (
     <div className="shop-profile-fields">
+      <ImageUpload
+        kind="shopLogo"
+        value={logo}
+        onChange={onLogo}
+        onBusyChange={(busy) => uploadBusy("logo", busy)}
+        uploadPath="/profile/media/shopLogo"
+      />
       <ImageUpload
         kind="shop"
         value={image}
         onChange={onImage}
-        onBusyChange={onBusy}
+        onBusyChange={(busy) => uploadBusy("image", busy)}
         uploadPath="/profile/media/shop"
       />
       <Field
@@ -108,10 +124,11 @@ export function ShopProfileEditor({
 }) {
   const { notify } = useApp();
   const [image, setImage] = useState(membership.image || ""),
+    [logo, setLogo] = useState(membership.logo || ""),
     [busy, setBusy] = useState(false);
   return (
     <section className="panel" aria-labelledby="shop-profile-heading">
-      <h2 id="shop-profile-heading">รูปหน้าร้านและพื้นที่ให้บริการ</h2>
+      <h2 id="shop-profile-heading">โลโก้ รูปหน้าร้าน และพื้นที่ให้บริการ</h2>
       <p className="muted">
         แสดงในรายละเอียดสินค้าของร้านเมื่อได้รับอนุมัติเป็นตัวแทนแล้ว
       </p>
@@ -125,6 +142,7 @@ export function ShopProfileEditor({
             "/consignment/profile",
             {
               image,
+              logo,
               serviceArea: values.serviceArea,
               version: membership.version,
             },
@@ -137,11 +155,28 @@ export function ShopProfileEditor({
         <ShopProfileFields
           image={image}
           onImage={setImage}
+          logo={logo}
+          onLogo={setLogo}
           onBusy={setBusy}
           area={membership.service_area}
         />
       </Form>
     </section>
+  );
+}
+
+export function ShopLogo({ logo, name }: { logo?: string; name: string }) {
+  const [failed, setFailed] = useState("");
+  if (!logo || failed === logo) return null;
+  return (
+    <img
+      className="shop-logo"
+      src={logo}
+      alt={"โลโก้ร้าน " + name}
+      width={52}
+      height={52}
+      onError={() => setFailed(logo)}
+    />
   );
 }
 
@@ -165,7 +200,10 @@ export function ShopInformation({
         )}
       </div>
       <div className="shop-information-copy">
-        <h3>{shop.name}</h3>
+        <div className="shop-information-heading">
+          <ShopLogo logo={shop.logo} name={shop.name} />
+          <h3>{shop.name}</h3>
+        </div>
         {shop.serviceArea ? (
           <p>
             <MapPin size={16} aria-hidden="true" />
