@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import "./account-navigation.css";
@@ -55,14 +55,21 @@ function fitDropdown(details: HTMLDetailsElement | null) {
 
 export function AccountNavigation() {
   const location = useLocation();
+  const panelId = useId();
+  const supportsPopover =
+    typeof HTMLElement !== "undefined" &&
+    typeof HTMLElement.prototype.showPopover === "function";
   const disclosure = useRef<HTMLDetailsElement>(null);
   const trigger = useRef<HTMLElement>(null);
+  const pointerInside = useRef(false);
   useEffect(() => {
     if (disclosure.current) disclosure.current.open = false;
   }, [location.key]);
   useEffect(() => {
     const fit = () => fitDropdown(disclosure.current);
     const closeOutside = (event: PointerEvent) => {
+      pointerInside.current =
+        disclosure.current?.contains(event.target as Node) || false;
       if (
         !disclosure.current?.contains(event.target as Node) &&
         disclosure.current
@@ -83,11 +90,21 @@ export function AccountNavigation() {
   return (
     <details
       ref={disclosure}
-      onToggle={() => {
+      onToggle={(event) => {
+        // Popover toggle events must not re-run the disclosure's toggle handler.
+        if (event.target !== event.currentTarget) return;
         const panel = disclosure.current?.querySelector<HTMLElement>(
           ".account-navigation-links",
         );
-        if (disclosure.current?.open && panel) panel.scrollTop = 0;
+        if (panel) {
+          // Safari 17 supports the top layer. A plain fixed descendant can be
+          // clipped by the horizontally scrolling navigation on older WebKit.
+          if (typeof panel.showPopover === "function") {
+            if (disclosure.current?.open) panel.showPopover();
+            else panel.hidePopover();
+          }
+          if (disclosure.current?.open) panel.scrollTop = 0;
+        }
         fitDropdown(disclosure.current);
       }}
       className="account-navigation"
@@ -95,6 +112,7 @@ export function AccountNavigation() {
         links.some(([path]) => location.pathname === path) || undefined
       }
       onKeyDown={(event) => {
+        pointerInside.current = false;
         if (event.key === "Escape" && disclosure.current?.open) {
           event.preventDefault();
           event.stopPropagation();
@@ -104,12 +122,16 @@ export function AccountNavigation() {
       }}
       onBlur={(event) => {
         if (
+          // iOS can focus the scrollable nav instead of the tapped link. Keep
+          // the menu mounted through its click; outside presses close above.
+          !pointerInside.current &&
           event.relatedTarget &&
           !event.currentTarget.contains(event.relatedTarget)
         )
           event.currentTarget.open = false;
       }}
       onClick={(event) => {
+        pointerInside.current = false;
         if ((event.target as Element).closest("a")) {
           if (disclosure.current) disclosure.current.open = false;
           requestAnimationFrame(() =>
@@ -120,10 +142,14 @@ export function AccountNavigation() {
         }
       }}
     >
-      <summary ref={trigger}>
+      <summary ref={trigger} aria-controls={panelId}>
         บัญชีของฉัน <ChevronDown size={16} aria-hidden="true" />
       </summary>
-      <div className="account-navigation-links">
+      <div
+        id={panelId}
+        className="account-navigation-links"
+        popover={supportsPopover ? "manual" : undefined}
+      >
         {links.map(([path, label]) => (
           <NavLink to={path} key={path}>
             {label}

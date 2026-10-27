@@ -31,6 +31,9 @@
 }
 .store-shell .account-navigation-links {
   position: fixed;
+  /* Reset popover UA centering; use the existing trigger/viewport coordinates. */
+  inset: auto;
+  margin: 0;
   top: var(--account-menu-top, 100%);
   left: var(--account-menu-left, 12px);
   width: 300px;
@@ -43,6 +46,10 @@
   border-radius: calc(var(--radius) + 8px);
   background: var(--surface);
   z-index: 3;
+}
+.store-shell .account-navigation-links::backdrop {
+  background: transparent;
+  pointer-events: none;
 }
 .store-shell .store-header .account-navigation-links a {
   display: flex;
