@@ -271,7 +271,10 @@ test("seller adds a shop photo and service area, approver sees them, and approve
     });
     await expect(
       detail.getByRole("region", { name: "ข้อมูลร้านผู้ขาย" }),
-    ).toContainText("รับส่งตามนัด");
+    ).not.toContainText("รับส่งตามนัด");
+    await expect(
+      detail.getByRole("region", { name: "ข้อมูลร้านผู้ขาย" }),
+    ).not.toContainText("นนทบุรี");
     await expect(
       detail.getByRole("img", { name: "รูปหน้าร้าน " + name }),
     ).toBeVisible();

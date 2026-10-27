@@ -44,7 +44,6 @@ export type Product = {
     name: string;
     image: string;
     logo?: string;
-    serviceArea: string;
   };
 };
 export type PublicShop = {
@@ -52,7 +51,6 @@ export type PublicShop = {
   name: string;
   image: string;
   logo: string;
-  serviceArea: string;
   productCount: number;
   categories: string[];
 };

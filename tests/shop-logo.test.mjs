@@ -258,7 +258,7 @@ test("v14 migration snapshots a v13 database and adds an empty logo without alte
     assert.match(snapshotPath, /before-schema-13-to-14/);
     const before = openDb(file);
     db = before;
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 16);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 17);
     assert.equal(
       db.prepare("SELECT balance FROM users WHERE id=?").get(user.id).balance,
       50000,

@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { enableWithdrawals } from "./withdrawal-schema.mjs";
+import { retireDemoCatalog } from "./retire-demo-catalog.mjs";
 import socialPlatforms from "../shared/socials.json" with { type: "json" };
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -294,6 +295,12 @@ export function openDb(path) {
         defaultStaffGranted: false,
       });
       db.exec("PRAGMA user_version=16");
+    });
+  if (schemaVersion < 17)
+    transaction(db, () => {
+      const result = retireDemoCatalog(db);
+      audit(db, null, "catalog.demo_retired", "products", result);
+      db.exec("PRAGMA user_version=17");
     });
   const defaults = {
     shopName: "หิ้วลี่",

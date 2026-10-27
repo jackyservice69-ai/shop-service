@@ -334,7 +334,6 @@ test("shops publish only their current approved photo and service area; ownershi
       id: f.db
         .prepare("SELECT public_id FROM consignors WHERE user_id=?")
         .get(f.customer.id).public_id,
-      serviceArea: area,
     });
     for (const field of [
       "consignor_id",
@@ -524,7 +523,7 @@ test("v13 migration preserves customer funds, products, per-shop fees and read n
     );
     db.close();
     db = openDb(file);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 16);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 17);
     assert.equal(
       db.prepare("SELECT balance FROM users WHERE id=?").get(user.id).balance,
       50000,

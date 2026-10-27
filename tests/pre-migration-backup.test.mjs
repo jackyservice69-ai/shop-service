@@ -36,7 +36,7 @@ test("pre-migration backup includes committed WAL data, preserves source, verifi
       snapshot.close();
     }
     assert.equal(db.prepare("PRAGMA user_version").get().user_version, 10);
-    db.exec("UPDATE balances SET amount=13000;PRAGMA user_version=16;");
+    db.exec("UPDATE balances SET amount=13000;PRAGMA user_version=17;");
     assert.equal(await backupBeforeMigration(file), null);
     assert.equal(
       await backupBeforeMigration(join(folder, "missing.sqlite")),

@@ -184,9 +184,11 @@ export function ShopLogo({ logo, name }: { logo?: string; name: string }) {
 export function ShopInformation({
   shop,
   onNavigate,
+  serviceArea,
 }: {
   shop: NonNullable<Product["shop"]>;
   onNavigate?: () => void;
+  serviceArea?: string;
 }) {
   const [failed, setFailed] = useState("");
   return (
@@ -211,13 +213,11 @@ export function ShopInformation({
             <h3>{shop.name}</h3>
           </div>
         )}
-        {shop.serviceArea ? (
+        {serviceArea !== undefined && (
           <p>
             <MapPin size={16} aria-hidden="true" />
-            <span>{shop.serviceArea}</span>
+            <span>{serviceArea || "ยังไม่ระบุพื้นที่ให้บริการ"}</span>
           </p>
-        ) : (
-          <p className="muted">ยังไม่ระบุพื้นที่ให้บริการ</p>
         )}
       </div>
     </section>

@@ -63,21 +63,6 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.seller-store-area {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  margin: 0;
-  color: var(--ink-subtle);
-}
-.seller-store-area svg {
-  flex: 0 0 18px;
-  margin-top: 4px;
-}
-.seller-store-area span {
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-}
 .seller-store-count {
   margin: 12px 0 0;
   font-weight: 600;

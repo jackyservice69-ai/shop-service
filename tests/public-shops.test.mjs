@@ -66,15 +66,7 @@ test("public shop identities are stable and distinct from account IDs; metadata 
     assert.equal(r.status, 200);
     assert.deepEqual(
       Object.keys(r.body).sort(),
-      [
-        "categories",
-        "id",
-        "image",
-        "logo",
-        "name",
-        "productCount",
-        "serviceArea",
-      ].sort(),
+      ["categories", "id", "image", "logo", "name", "productCount"].sort(),
     );
     assert.equal(r.body.productCount, 1);
     assert.deepEqual(r.body.categories, ["กระเป๋า"]);
@@ -108,7 +100,13 @@ test("public shop identities are stable and distinct from account IDs; metadata 
       .body;
     assert.equal(renamed.id, shop.public_id);
     assert.equal(renamed.name, "ชื่อร้านใหม่");
-    assert.equal(renamed.serviceArea, "นนทบุรี");
+    assert.equal(renamed.serviceArea, undefined);
+    assert.equal(publicProduct.shop.serviceArea, undefined);
+    assert.equal(JSON.stringify(r.body).includes(shop.service_area), false);
+    assert.equal(
+      (await c.agent.get("/api/consignment")).body.membership.service_area,
+      "นนทบุรี",
+    );
   } finally {
     f.db.close();
   }
@@ -280,9 +278,9 @@ test("v15 migration generates unique durable public aliases and backs up v14 wit
     );
     db.close();
     db = null;
-    assert.match(await backupBeforeMigration(file), /before-schema-14-to-16/);
+    assert.match(await backupBeforeMigration(file), /before-schema-14-to-17/);
     db = openDb(file);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 16);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 17);
     const aliases = db
       .prepare("SELECT user_id,public_id FROM consignors ORDER BY user_id")
       .all();

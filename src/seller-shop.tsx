@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Store } from "lucide-react";
+import { ArrowLeft, Store } from "lucide-react";
 import { useData, type PublicShop } from "./api";
 import { ErrorBox, Loading, PageHeading } from "./ui";
 import { ShopLogo } from "./profiles";
@@ -40,10 +40,6 @@ function SellerShopHeader({ shop }: { shop: PublicShop }) {
               ตัวแทนฝากขายที่ได้รับอนุมัติ
             </span>
             <h1>{shop.name}</h1>
-            <p className="seller-store-area">
-              <MapPin size={18} aria-hidden="true" />
-              <span>{shop.serviceArea || "ยังไม่ระบุพื้นที่ให้บริการ"}</span>
-            </p>
             <p className="seller-store-count">
               สินค้า {shop.productCount.toLocaleString("th-TH")} รายการ
             </p>

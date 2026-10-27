@@ -554,7 +554,7 @@ test("v15 migration preserves notification reads, wallets and audit, with verifi
     assert.equal(old.prepare("PRAGMA user_version").get().user_version, 15);
     old.close();
     db = openDb(file);
-    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 16);
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, 17);
     assert.equal(db.prepare("SELECT COUNT(*) n FROM ledger").get().n, before);
     assert.equal(
       db.prepare("SELECT balance FROM users WHERE id=?").get(u.id).balance,

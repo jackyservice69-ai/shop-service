@@ -53,7 +53,7 @@ export function publicProductShops(db, products) {
   if (!products.length) return products;
   const shops = db
     .prepare(
-      `SELECT p.id,c.public_id,c.shop_name,c.image,c.logo,c.service_area FROM products p
+      `SELECT p.id,c.public_id,c.shop_name,c.image,c.logo FROM products p
     JOIN consignors c ON c.user_id=p.consignor_id JOIN users u ON u.id=c.user_id
     WHERE p.id IN (${products.map(() => "?").join(",")}) AND c.status='approved' AND u.active=1`,
     )
@@ -65,7 +65,6 @@ export function publicProductShops(db, products) {
         name: s.shop_name,
         image: s.image,
         logo: s.logo,
-        serviceArea: s.service_area,
         id: s.public_id,
       },
     ]),

@@ -166,6 +166,10 @@ test("logo and shop-name links open a scoped storefront with filters, pagination
       page.getByRole("heading", { name: shopName, level: 1, exact: true }),
     ).toBeVisible();
     await expect(page.locator(".product-card")).toHaveCount(12);
+    await expect(page.locator(".seller-store-header")).not.toContainText(
+      "กรุงเทพฯ",
+    );
+    await expect(page.locator(".seller-store-area")).toHaveCount(0);
     await expect(page.locator(".seller-store-count")).toHaveText(
       "สินค้า 13 รายการ",
     );

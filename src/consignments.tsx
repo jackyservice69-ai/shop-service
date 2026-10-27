@@ -551,8 +551,8 @@ export function AdminConsignmentsPage() {
               name: editing.shop_name,
               image: editing.image || "",
               logo: editing.logo || "",
-              serviceArea: editing.service_area || "",
             }}
+            serviceArea={editing.service_area || ""}
           />
           <p>
             การระงับหรือไม่อนุมัติจะปิดสินค้าของตัวแทน
